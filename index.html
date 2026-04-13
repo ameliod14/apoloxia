@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ApoloXia | Bienvenido</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        :root {
+            --pure-black: #000000;
+            --accent-gold: #d4af37;
+            --accent-gold-light: #f0d878;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #333333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--pure-black);
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        /* ===== SPLASH SCREEN ===== */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--pure-black);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+
+        .splash-logo {
+            width: 140px;
+            height: 140px;
+            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            border-radius: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            font-weight: 900;
+            color: var(--pure-black);
+            box-shadow: 
+                0 0 60px rgba(212, 175, 55, 0.9),
+                0 0 120px rgba(212, 175, 55, 0.7),
+                0 0 180px rgba(212, 175, 55, 0.5),
+                0 0 240px rgba(212, 175, 55, 0.3),
+                inset 0 0 40px rgba(255, 255, 255, 0.5);
+            animation: megaGlow 2s ease-in-out infinite alternate, float 3s ease-in-out infinite;
+            margin-bottom: 2rem;
+        }
+
+        @keyframes megaGlow {
+            0% {
+                box-shadow: 
+                    0 0 60px rgba(212, 175, 55, 0.9),
+                    0 0 120px rgba(212, 175, 55, 0.7),
+                    0 0 180px rgba(212, 175, 55, 0.5),
+                    inset 0 0 40px rgba(255, 255, 255, 0.5);
+            }
+            100% {
+                box-shadow: 
+                    0 0 100px rgba(212, 175, 55, 1),
+                    0 0 200px rgba(212, 175, 55, 0.9),
+                    0 0 300px rgba(212, 175, 55, 0.7),
+                    inset 0 0 60px rgba(255, 255, 255, 0.7);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .splash-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+        }
+
+        .splash-title span {
+            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .splash-subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        /* ===== LOGIN SCREEN ===== */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--pure-black);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 900;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .login-screen.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--pure-black);
+            margin: 0 auto 2rem;
+            box-shadow: 
+                0 0 40px rgba(212, 175, 55, 0.8),
+                0 0 80px rgba(212, 175, 55, 0.6),
+                inset 0 0 20px rgba(255, 255, 255, 0.4);
+            animation: glowPulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glowPulse {
+            0% {
+                box-shadow: 
+                    0 0 40px rgba(212, 175, 55, 0.8),
+                    0 0 80px rgba(212, 175, 55, 0.6),
+                    inset 0 0 20px rgba(255, 255, 255, 0.4);
+            }
+            100% {
+                box-shadow: 
+                    0 0 70px rgba(212, 175, 55, 1),
+                    0 0 140px rgba(212, 175, 55, 0.9),
+                    inset 0 0 30px rgba(255, 255, 255, 0.6);
+            }
+        }
+
+        .login-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .login-subtitle {
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            font-weight: 500;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 1.25rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .input-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 1.25rem 1.5rem;
+            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            border: none;
+            border-radius: 16px;
+            color: var(--pure-black);
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 50px rgba(212, 175, 55, 0.5);
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
+        }
+
+        /* ===== INTERFACE SCREEN ===== */
+        .interface-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--pure-black);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 800;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .interface-screen.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .interface-content {
+            text-align: center;
+            padding: 2rem;
+            max-width: 700px;
+        }
+
+        .interface-logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--pure-black);
+            margin: 0 auto 2rem;
+            box-shadow: 
+                0 0 50px rgba(212, 175, 55, 0.9),
+                0 0 100px rgba(212, 175, 55, 0.7),
+                0 0 150px rgba(212, 175, 55, 0.5),
+                inset 0 0 30px rgba(255, 255, 255, 0.5);
+            animation: interfaceGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes interfaceGlow {
+            0% {
+                box-shadow: 
+                    0 0 50px rgba(212, 175, 55, 0.9),
+                    0 0 100px rgba(212, 175, 55, 0.7),
+                    0 0 150px rgba(212, 175, 55, 0.5),
+                    inset 0 0 30px rgba(255, 255, 255, 0.5);
+            }
+            100% {
+                box-shadow: 
+                    0 0 80px rgba(212, 175, 55, 1),
+                    0 0 160px rgba(212, 175, 55, 0.9),
+                    0 0 240px rgba(212, 175, 55, 0.7),
+                    inset 0 0 50px rgba(255, 255, 255, 0.7);
+            }
+        }
+
+        .welcome-message {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .user-name {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 3rem;
+            word-break: break-all;
+            letter-spacing: -0.02em;
+        }
+
+        .access-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 3rem;
+            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            border: none;
+            border-radius: 20px;
+            color: var(--pure-black);
+            font-size: 1.25rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.3);
+            margin-bottom: 3rem;
+        }
+
+        .access-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 25px 70px rgba(212, 175, 55, 0.5);
+        }
+
+        .access-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .access-btn:hover::before {
+            left: 100%;
+        }
+
+        .access-btn svg {
+            width: 28px;
+            height: 28px;
+            stroke-width: 2.5;
+        }
+
+        .logout-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .logout-btn:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .copyright {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .splash-logo {
+                width: 110px;
+                height: 110px;
+                font-size: 4rem;
+            }
+            
+            .splash-title {
+                font-size: 2.5rem;
+            }
+            
+            .login-container {
+                padding: 1.5rem;
+            }
+            
+            .user-name {
+                font-size: 1.8rem;
+            }
+            
+            .access-btn {
+                padding: 1.25rem 2rem;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SPLASH SCREEN -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-logo">A</div>
+        <h1 class="splash-title">Apolo<span>Xia</span></h1>
+        <p class="splash-subtitle">Premium</p>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="login-logo">A</div>
+            <h2 class="login-title">Acceso</h2>
+            <p class="login-subtitle">Ingresa tu correo para continuar</p>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label for="email">Correo electrónico</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="nombre@correo.com" 
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+                
+                <button type="submit" class="login-btn">
+                    Ingresar →
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- INTERFACE SCREEN -->
+    <div class="interface-screen" id="interfaceScreen">
+        <div class="interface-content">
+            <div class="interface-logo">A</div>
+            <p class="welcome-message">Bienvenido</p>
+            <p class="user-name" id="userNameDisplay">Usuario</p>
+            
+            <button class="access-btn" onclick="accessAgent()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                Acceder al agente de IA Apolo
+            </button>
+            
+            <button class="logout-btn" onclick="logout()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Cerrar sesión
+            </button>
+            
+            <p class="copyright">Derechos reservados — Panamá 2026</p>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONEXIÓN CON CHAT.HTML - SISTEMA DE SESIÓN
+        // ==========================================
+        
+        // Estado global
+        let userEmail = '';
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verificar si ya hay sesión guardada (usando la clave que espera chat.html)
+            const savedEmail = localStorage.getItem('apoloxia_session_email');
+            if (savedEmail) {
+                userEmail = savedEmail;
+                // Ocultar splash y mostrar interface directo
+                document.getElementById('splashScreen').style.display = 'none';
+                showInterface(savedEmail);
+            } else {
+                // Mostrar splash por 3 segundos, luego login
+                setTimeout(() => {
+                    showLoginScreen();
+                }, 3000);
+            }
+        });
+        
+        function showLoginScreen() {
+            const splash = document.getElementById('splashScreen');
+            const login = document.getElementById('loginScreen');
+            
+            splash.classList.add('hidden');
+            
+            setTimeout(() => {
+                splash.style.display = 'none';
+                login.style.display = 'flex';
+                // Forzar reflow
+                void login.offsetWidth;
+                login.classList.add('active');
+                
+                // Enfocar input
+                setTimeout(() => {
+                    document.getElementById('email').focus();
+                }, 100);
+            }, 800);
+        }
+        
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const emailInput = document.getElementById('email');
+            userEmail = emailInput.value.trim().toLowerCase(); // Guardar en minúsculas para consistencia
+            
+            if (userEmail && userEmail.includes('@')) {
+                // Guardar en localStorage con la clave que espera chat.html
+                localStorage.setItem('apoloxia_session_email', userEmail);
+                
+                // Ocultar login, mostrar interface
+                const login = document.getElementById('loginScreen');
+                login.classList.remove('active');
+                
+                setTimeout(() => {
+                    login.style.display = 'none';
+                    showInterface(userEmail);
+                }, 800);
+            } else {
+                alert('Por favor ingresa un email válido');
+            }
+        }
+        
+        function showInterface(email) {
+            const interface = document.getElementById('interfaceScreen');
+            const userNameDisplay = document.getElementById('userNameDisplay');
+            
+            // Extraer el nombre del correo (parte antes del @)
+            const userName = email.split('@')[0];
+            userNameDisplay.textContent = userName;
+            
+            interface.style.display = 'flex';
+            // Forzar reflow
+            void interface.offsetWidth;
+            interface.classList.add('active');
+        }
+        
+        function accessAgent() {
+            // Redirigir a chat.html (cambio clave para la conexión)
+            window.location.href = 'chat.html';
+        }
+        
+        function logout() {
+            // Limpiar la sesión
+            localStorage.removeItem('apoloxia_session_email');
+            localStorage.removeItem('apoloxia_user_email'); // Por si acaso
+            
+            // Recargar la página para volver al login
+            window.location.reload();
+        }
+        
+        // Permitir Enter en el formulario
+        document.getElementById('email').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleLogin(e);
+            }
+        });
+    </script>
+</body>
+</html>

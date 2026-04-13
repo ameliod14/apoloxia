@@ -1,0 +1,3058 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ApoloXia Pro | AI Assistant Elite</title>
+    <style>
+        /* ===== ESTILOS (SIN CAMBIOS) ===== */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --pure-black: #000000;
+            --black-primary: #050505;
+            --black-secondary: #0a0a0a;
+            --black-tertiary: #111111;
+            --black-elevated: #161616;
+            --black-hover: #1c1c1c;
+            --black-card: #141414;
+            
+            --border-subtle: #1f1f1f;
+            --border-default: #262626;
+            --border-prominent: #333333;
+            --border-focus: #404040;
+            
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #666666;
+            --text-muted: #444444;
+            
+            --accent-pro: #d4af37;
+            --accent-pro-glow: rgba(212, 175, 55, 0.15);
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            
+            --gradient-pro: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            --gradient-dark: linear-gradient(180deg, rgba(212,175,55,0.03) 0%, transparent 100%);
+            
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.8);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.9);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.9);
+            --shadow-pro: 0 0 40px rgba(212,175,55,0.08);
+            
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.25s ease;
+            --transition-slow: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: var(--pure-black);
+        }
+
+        body {
+            background: var(--pure-black);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Ambient Background */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: 
+                radial-gradient(ellipse at 15% 15%, rgba(212, 175, 55, 0.025) 0%, transparent 40%),
+                radial-gradient(ellipse at 85% 85%, rgba(59, 130, 246, 0.015) 0%, transparent 40%),
+                var(--pure-black);
+            pointer-events: none;
+        }
+
+        .grain-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.025;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .app {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            height: 100vh;
+            background: transparent;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: var(--black-secondary);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--transition-slow);
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .brand-mark {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-pro);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--pure-black);
+            box-shadow: var(--shadow-pro);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-icon::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .brand-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+        }
+
+        .brand-text span {
+            color: var(--accent-pro);
+            font-weight: 800;
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            margin-bottom: 1.25rem;
+            transition: all var(--transition-base);
+            cursor: pointer;
+        }
+
+        .user-card:hover {
+            border-color: var(--border-default);
+            background: var(--black-elevated);
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            background: var(--black-hover);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--accent-pro);
+            border: 1px solid var(--border-default);
+            transition: all var(--transition-base);
+        }
+
+        .user-card:hover .user-avatar {
+            border-color: var(--accent-pro);
+            box-shadow: 0 0 15px var(--accent-pro-glow);
+        }
+
+        .user-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.9375rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-tier {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .user-tier.pro {
+            color: var(--accent-pro);
+        }
+
+        .tier-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.125rem 0.5rem;
+            background: var(--accent-pro-glow);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: var(--radius-sm);
+            font-size: 0.625rem;
+            font-weight: 700;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 0.875rem 1.125rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.9375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.625rem;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .new-chat-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-pro);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .new-chat-btn:hover {
+            border-color: var(--accent-pro);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-pro);
+        }
+
+        .new-chat-btn:hover::before {
+            opacity: 0.05;
+        }
+
+        .new-chat-btn:active {
+            transform: translateY(0);
+        }
+
+        .new-chat-btn svg, .new-chat-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-back {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1.125rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.75rem;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .nav-back:hover {
+            border-color: var(--border-default);
+            color: var(--text-primary);
+            background: var(--black-tertiary);
+        }
+
+        .history-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .section-label {
+            padding: 0.625rem 0.875rem;
+            color: var(--text-muted);
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-label::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            background: var(--accent-pro);
+            border-radius: 50%;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+        }
+
+        .history-item {
+            padding: 0.875rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border: 1px solid transparent;
+            position: relative;
+        }
+
+        .history-item:hover {
+            background: var(--black-tertiary);
+            border-color: var(--border-default);
+        }
+
+        .history-item.active {
+            background: var(--black-elevated);
+            border-color: var(--accent-pro);
+            box-shadow: 0 0 0 1px var(--accent-pro-glow);
+        }
+
+        .history-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.5;
+        }
+
+        .history-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+        }
+
+        .history-date {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .history-delete {
+            opacity: 0;
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            transition: all var(--transition-base);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+
+        .history-item:hover .history-delete {
+            opacity: 1;
+        }
+
+        .history-delete:hover {
+            color: var(--accent-red);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--pure-black);
+            position: relative;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: var(--black-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            min-height: 68px;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-base);
+        }
+
+        .menu-toggle:hover {
+            background: var(--black-tertiary);
+            color: var(--text-primary);
+        }
+
+        .current-chat-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .top-bar-center {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Plan Toggle */
+        .plan-toggle {
+            display: flex;
+            align-items: center;
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            padding: 0.375rem;
+            position: relative;
+        }
+
+        .plan-option {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            padding: 0.625rem 1.25rem;
+            border-radius: var(--radius-xl);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            position: relative;
+            z-index: 1;
+        }
+
+        .plan-option:hover {
+            color: var(--text-secondary);
+        }
+
+        .plan-option.active {
+            color: var(--text-primary);
+            background: var(--black-hover);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plan-option.active[data-plan="pro"] {
+            background: var(--gradient-pro);
+            color: var(--pure-black);
+            font-weight: 700;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.625rem 1.125rem;
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent-green);
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
+
+        .status-text strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .pro-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            background: var(--accent-pro-glow);
+            color: var(--accent-pro);
+            padding: 0.375rem 0.875rem;
+            border-radius: var(--radius-xl);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .agent-selector-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem 0;
+            width: 100%;
+        }
+
+        .agent-selector {
+            width: 100%;
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            color: var(--text-primary);
+            border-radius: var(--radius-md);
+            padding: 0.875rem 1rem;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+            transition: all var(--transition-base);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.75rem;
+            font-weight: 500;
+        }
+
+        .agent-selector:hover {
+            border-color: var(--border-prominent);
+        }
+
+        .agent-selector:focus {
+            border-color: var(--accent-pro);
+            box-shadow: 0 0 0 3px var(--accent-pro-glow);
+        }
+
+        .agent-selector option {
+            background: var(--black-secondary);
+            color: var(--text-primary);
+            padding: 0.75rem;
+            font-weight: 500;
+        }
+
+        .agent-selector option:disabled {
+            color: var(--text-muted);
+            background: var(--black-tertiary);
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            scroll-behavior: smooth;
+        }
+
+        .messages-container {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Welcome State */
+        .welcome-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 65vh;
+            text-align: center;
+            animation: fadeIn 0.6s ease;
+            padding: 2rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .welcome-logo {
+            width: 90px;
+            height: 90px;
+            background: var(--gradient-pro);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.75rem;
+            font-weight: 800;
+            color: var(--pure-black);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-pro), 0 0 60px rgba(212, 175, 55, 0.2);
+            position: relative;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .welcome-title {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.04em;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(180deg, #ffffff 0%, #a0a0a0 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .welcome-title span {
+            color: var(--accent-pro);
+            background: var(--gradient-pro);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-bottom: 3rem;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .suggestion-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .suggestion-card {
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            text-align: left;
+            line-height: 1.6;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .suggestion-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--gradient-pro);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .suggestion-card:hover {
+            background: var(--black-elevated);
+            border-color: var(--border-prominent);
+            color: var(--text-primary);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .suggestion-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .suggestion-card.pro-only {
+            position: relative;
+        }
+
+        .suggestion-card.pro-only::after {
+            content: 'PRO';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--accent-pro);
+            color: var(--pure-black);
+            font-size: 0.625rem;
+            font-weight: 800;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Messages */
+        .message {
+            display: flex;
+            gap: 1.25rem;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            justify-content: flex-start;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: var(--accent-blue);
+            color: white;
+            order: 2;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .message.assistant .message-avatar {
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            color: var(--accent-pro);
+            font-weight: 800;
+        }
+
+        .message-content {
+            max-width: 85%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.625rem;
+        }
+
+        .message.user .message-content {
+            align-items: flex-end;
+        }
+
+        .message-bubble {
+            padding: 1.25rem;
+            border-radius: var(--radius-lg);
+            line-height: 1.8;
+            font-size: 1rem;
+            position: relative;
+        }
+
+        .message.user .message-bubble {
+            background: var(--accent-blue);
+            color: white;
+            border-bottom-right-radius: var(--radius-sm);
+            font-weight: 500;
+        }
+
+        .message.assistant .message-bubble {
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            color: var(--text-primary);
+            border-bottom-left-radius: var(--radius-sm);
+        }
+
+        .message-text {
+            white-space: pre-wrap;
+        }
+
+        .message-text strong {
+            color: var(--accent-pro);
+            font-weight: 700;
+        }
+
+        .message-text code {
+            background: var(--pure-black);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            color: var(--accent-pro);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .message-text pre {
+            background: var(--pure-black);
+            padding: 1.25rem;
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            border: 1px solid var(--border-default);
+            margin: 1rem 0;
+        }
+
+        .message-text pre code {
+            background: none;
+            padding: 0;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.7;
+        }
+
+        .message-media {
+            margin-top: 1rem;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border-default);
+            background: var(--pure-black);
+        }
+
+        .message-media img {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        .message-file {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding: 0.875rem 1.25rem;
+            background: var(--pure-black);
+            border: 1px solid var(--accent-pro);
+            border-radius: var(--radius-md);
+            color: var(--accent-pro);
+            font-size: 0.9375rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all var(--transition-base);
+            cursor: pointer;
+        }
+
+        .message-file:hover {
+            background: var(--accent-pro-glow);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+        }
+
+        .message-actions {
+            display: flex;
+            gap: 0.625rem;
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .message:hover .message-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            color: var(--text-tertiary);
+            font-size: 0.8125rem;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-family: inherit;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .action-btn:hover {
+            background: var(--black-hover);
+            border-color: var(--border-prominent);
+            color: var(--text-primary);
+        }
+
+        .action-btn.copied {
+            background: var(--accent-green);
+            color: var(--pure-black);
+            border-color: var(--accent-green);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 1.25rem;
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            border-bottom-left-radius: var(--radius-sm);
+            width: fit-content;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.375rem;
+        }
+
+        .typing-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--accent-pro);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0.5); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .streaming-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background: var(--accent-pro);
+            margin-left: 2px;
+            animation: blink 1s infinite;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Input Area */
+        .input-container {
+            padding: 1.5rem;
+            background: var(--black-secondary);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .input-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .input-box {
+            flex: 1;
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 1rem 1.25rem;
+            transition: all var(--transition-base);
+        }
+
+        .input-box:focus-within {
+            border-color: var(--accent-pro);
+            box-shadow: 0 0 0 3px var(--accent-pro-glow), var(--shadow-pro);
+        }
+
+        .message-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            max-height: 200px;
+            min-height: 24px;
+            line-height: 1.7;
+            font-weight: 500;
+        }
+
+        .message-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 0.875rem;
+            padding-top: 0.875rem;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .toolbar-btn {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            padding: 0.5rem 0.875rem;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .toolbar-btn:hover {
+            color: var(--text-primary);
+            background: var(--black-hover);
+        }
+
+        .toolbar-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .toolbar-btn.pro-feature {
+            color: var(--accent-pro);
+            background: var(--accent-pro-glow);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .toolbar-btn.pro-feature:hover:not(:disabled) {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: rgba(212, 175, 55, 0.4);
+        }
+
+        .toolbar-btn.pro-feature:disabled {
+            opacity: 0.4;
+            background: var(--black-hover);
+            border-color: var(--border-default);
+            color: var(--text-muted);
+        }
+
+        .toolbar-btn .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--accent-pro);
+            color: var(--pure-black);
+            font-size: 0.625rem;
+            font-weight: 800;
+            padding: 0.125rem 0.375rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .char-counter {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .char-counter.warning {
+            color: var(--accent-red);
+        }
+
+        .send-button {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            background: var(--accent-pro);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-base);
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.08) rotate(-5deg);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
+        }
+
+        .send-button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .send-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--pure-black);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--accent-pro-glow);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: var(--radius-sm);
+            font-size: 0.8125rem;
+            color: var(--accent-pro);
+            font-weight: 600;
+        }
+
+        .file-preview button {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        /* Upgrade Panel */
+        .upgrade-panel {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 460px;
+            height: 100vh;
+            background: var(--black-secondary);
+            border-left: 1px solid var(--border-subtle);
+            z-index: 100;
+            transform: translateX(100%);
+            transition: transform var(--transition-slow);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .upgrade-panel.open {
+            transform: translateX(0);
+        }
+
+        .upgrade-panel-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--gradient-dark);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .upgrade-panel-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .upgrade-panel-title span {
+            color: var(--accent-pro);
+        }
+
+        .upgrade-panel-close {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            font-size: 1.75rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-base);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upgrade-panel-close:hover {
+            color: var(--text-primary);
+            background: var(--black-tertiary);
+        }
+
+        .upgrade-content {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .plan-card {
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plan-card:hover {
+            border-color: var(--border-prominent);
+            transform: translateY(-2px);
+        }
+
+        .plan-card.current {
+            border-color: var(--border-prominent);
+            background: var(--black-elevated);
+        }
+
+        .plan-card.pro {
+            border-color: var(--accent-pro);
+            background: linear-gradient(135deg, var(--black-tertiary) 0%, rgba(212, 175, 55, 0.03) 100%);
+            box-shadow: var(--shadow-pro);
+        }
+
+        .plan-card.pro::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--gradient-pro);
+        }
+
+        .plan-card.pro::after {
+            content: 'RECOMENDADO';
+            position: absolute;
+            top: 1rem;
+            right: -2rem;
+            background: var(--accent-pro);
+            color: var(--pure-black);
+            font-size: 0.625rem;
+            font-weight: 800;
+            padding: 0.25rem 2.5rem;
+            transform: rotate(45deg);
+            letter-spacing: 0.1em;
+        }
+
+        .plan-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .plan-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+        }
+
+        .plan-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 0.375rem 0.875rem;
+            border-radius: var(--radius-xl);
+            letter-spacing: 0.05em;
+        }
+
+        .plan-badge.free {
+            background: var(--black-hover);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-default);
+        }
+
+        .plan-badge.pro {
+            background: var(--accent-pro);
+            color: var(--pure-black);
+            font-weight: 800;
+        }
+
+        .plan-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .plan-price span {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-tertiary);
+        }
+
+        .plan-price.pro {
+            color: var(--accent-pro);
+        }
+
+        .plan-description {
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+            line-height: 1.7;
+            font-weight: 500;
+        }
+
+        .plan-features {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .plan-feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.875rem;
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .plan-feature::before {
+            content: "✓";
+            color: var(--accent-pro);
+            font-weight: 800;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .plan-feature.disabled {
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .plan-feature.disabled::before {
+            content: "—";
+            color: var(--text-muted);
+        }
+
+        .plan-cta {
+            width: 100%;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: none;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .plan-cta.free {
+            background: var(--black-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+        }
+
+        .plan-cta.free:hover {
+            border-color: var(--border-prominent);
+            background: var(--black-elevated);
+        }
+
+        .plan-cta.pro {
+            background: var(--gradient-pro);
+            color: var(--pure-black);
+            font-weight: 800;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plan-cta.pro::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .plan-cta.pro:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4);
+        }
+
+        .plan-cta.pro:hover::before {
+            left: 100%;
+        }
+
+        .pro-benefits {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .pro-benefits-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--accent-pro);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pro-benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+
+        .pro-benefit-item {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            padding: 0.75rem;
+            background: var(--pure-black);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            font-weight: 500;
+            transition: all var(--transition-fast);
+        }
+
+        .pro-benefit-item:hover {
+            border-color: var(--accent-pro);
+            color: var(--text-primary);
+            background: var(--accent-pro-glow);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--black-tertiary);
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-default);
+            font-size: 0.9375rem;
+            font-weight: 600;
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            pointer-events: auto;
+        }
+
+        .toast.success {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .toast.error {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .toast.warning {
+            border-color: var(--accent-pro);
+            color: var(--accent-pro);
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .modal-overlay.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal {
+            background: var(--black-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform var(--transition-base);
+        }
+
+        .modal-overlay.open .modal {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: var(--black-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 0.875rem 1rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            font-family: inherit;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--accent-pro);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            border: none;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .modal-btn.secondary {
+            background: var(--black-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-default);
+        }
+
+        .modal-btn.secondary:hover {
+            background: var(--black-hover);
+            color: var(--text-primary);
+        }
+
+        .modal-btn.primary {
+            background: var(--accent-pro);
+            color: var(--pure-black);
+        }
+
+        .modal-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--pure-black);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+            border-radius: 5px;
+            border: 2px solid var(--pure-black);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-prominent);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -320px;
+                height: 100vh;
+                z-index: 50;
+                box-shadow: var(--shadow-lg);
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .menu-toggle {
+                display: flex;
+            }
+
+            .upgrade-panel {
+                width: 100%;
+            }
+
+            .suggestion-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .message-content {
+                max-width: 92%;
+            }
+
+            .welcome-title {
+                font-size: 2rem;
+            }
+
+            .plan-toggle {
+                display: none;
+            }
+            
+            .agent-selector-container {
+                padding: 0.75rem 1rem 0;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loading States */
+        .skeleton {
+            background: linear-gradient(90deg, var(--black-tertiary) 25%, var(--black-hover) 50%, var(--black-tertiary) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-sm);
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Error States */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            margin: 1rem 0;
+            font-size: 0.9375rem;
+            font-weight: 500;
+        }
+
+        .retry-btn {
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            margin-left: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-bg"></div>
+    <div class="grain-overlay"></div>
+
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-mark">
+                    <div class="brand-icon">A</div>
+                    <div class="brand-text">Apolo<span>Xia</span></div>
+                </div>
+                
+                <div class="user-card" onclick="showUserMenu()">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-meta">
+                        <div class="user-name" id="userName">Usuario</div>
+                        <div class="user-tier" id="userTier">
+                            Free
+                            <span class="tier-badge hidden" id="tierBadge">PRO</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Nueva conversación</span>
+                </button>
+                
+                <button class="nav-back" onclick="window.location.href='index.html'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Volver al inicio
+                </button>
+            </div>
+
+            <div class="history-section">
+                <div class="section-label">Historial de conversaciones</div>
+                <div class="history-list" id="historyList">
+                    <div class="empty-state">No hay conversaciones aún</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <span class="current-chat-label" id="currentChatLabel">Nueva conversación</span>
+                </div>
+
+                <div class="top-bar-center">
+                    <div class="plan-toggle" id="planSelector">
+                        <button class="plan-option active" data-plan="free" onclick="changePlan('free')">Free</button>
+                        <button class="plan-option" data-plan="pro" onclick="changePlan('pro')">Pro</button>
+                    </div>
+
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        <span class="status-text">
+                            <span id="remainingMessages">50</span> mensajes restantes
+                        </span>
+                    </div>
+                </div>
+
+                <div style="width: 40px;"></div>
+            </header>
+
+            <!-- Agent Selector -->
+            <div class="agent-selector-container">
+                <select class="agent-selector" id="agentSelect">
+                    <option value="general">🤖 Agente General — Asistente versátil para cualquier tarea</option>
+                    <option value="codigo" disabled>💻 Agente Codex — Generación y análisis de código avanzado (Pro)</option>
+                    <option value="investigador" disabled>🔍 Agente Investigador — Investigación profunda con fuentes (Pro)</option>
+                    <option value="planificador" disabled>📋 Agente Planificador — Coordinación multi-agente (Pro)</option>
+                    <option value="analista" disabled>📊 Agente Analista — Análisis de datos empresariales (Pro)</option>
+                </select>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="chat-area" id="chatContainer">
+                <!-- Welcome State -->
+                <div class="welcome-state" id="welcomeScreen">
+                    <div class="welcome-logo">A</div>
+                    <h1 class="welcome-title">Apolo<span>Xia</span></h1>
+                    <p class="welcome-subtitle" id="welcomeSubtitle">
+                        Asistente IA de élite. Selecciona un plan para comenzar.
+                    </p>
+                    
+                    <div class="suggestion-grid" id="suggestionGrid">
+                        <div class="suggestion-card" onclick="sendSuggestion('Explícame todas tus capacidades en detalle')">
+                            🚀 Descubre todas las capacidades
+                        </div>
+                        <div class="suggestion-card" onclick="sendSuggestion('Ayúdame a escribir un email profesional')">
+                            ✉️ Escribir email profesional
+                        </div>
+                        <div class="suggestion-card pro-only" onclick="sendSuggestion('Genera un informe ejecutivo completo sobre IA generativa')">
+                            📄 Generar informe ejecutivo
+                        </div>
+                        <div class="suggestion-card pro-only" onclick="sendSuggestion('Investiga a fondo el mercado de energías renovables 2024')">
+                            🔬 Investigación de mercado profunda
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="messages-container hidden" id="messages"></div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <div class="input-box">
+                        <textarea 
+                            class="message-input" 
+                            id="messageInput" 
+                            rows="1" 
+                            placeholder="Escribe tu mensaje..."
+                            oninput="autoResize()"
+                        ></textarea>
+                        
+                        <div id="filePreview" class="file-preview hidden">
+                            <span id="fileName"></span>
+                            <button onclick="clearFile()">×</button>
+                        </div>
+                        
+                        <div class="input-toolbar">
+                            <div class="toolbar-actions">
+                                <button class="toolbar-btn pro-feature" id="attachBtn" onclick="triggerFileUpload()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                    </svg>
+                                    Adjuntar archivo
+                                </button>
+                                
+                                <button class="toolbar-btn pro-feature" id="deepResearchBtn" onclick="startDeepResearch()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    Deep Research
+                                </button>
+                                
+                                <button class="toolbar-btn pro-feature" id="agentSwarmBtn" onclick="startAgentSwarm()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                        <polyline points="2 17 12 22 22 17"></polyline>
+                                        <polyline points="2 12 12 17 22 12"></polyline>
+                                    </svg>
+                                    Agent Swarm
+                                    <span class="badge">PRO</span>
+                                </button>
+                            </div>
+                            
+                            <span class="char-counter" id="charCount">0 / 4000</span>
+                        </div>
+                    </div>
+
+                    <button class="send-button" id="sendBtn" onclick="sendMessage()" disabled>
+                        <svg class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                    
+                    <input type="file" class="file-input" id="fileInput" onchange="handleFileSelect(event)" accept=".pdf,.docx,.xlsx,.txt,.md,.csv,.json,.jpg,.png,.mp4,.mp3,.wav">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Upgrade Panel -->
+    <div class="upgrade-panel" id="upgradePanel">
+        <div class="upgrade-panel-header">
+            <h2 class="upgrade-panel-title">
+                Obtener <span>ApoloXia Pro</span>
+            </h2>
+            <button class="upgrade-panel-close" onclick="toggleUpgradePanel()">×</button>
+        </div>
+        
+        <div class="upgrade-content">
+            <!-- Free Plan -->
+            <div class="plan-card current" id="freeCard">
+                <div class="plan-header">
+                    <span class="plan-name">ApoloXia Free</span>
+                    <span class="plan-badge free">Actual</span>
+                </div>
+                <div class="plan-price">0€ <span>/mes</span></div>
+                <p class="plan-description">
+                    Comienza a explorar con funciones básicas. Ideal para probar la plataforma.
+                </p>
+                <ul class="plan-features">
+                    <li class="plan-feature">50 mensajes por día</li>
+                    <li class="plan-feature">1 agente general</li>
+                    <li class="plan-feature">Memoria básica (4K contexto)</li>
+                    <li class="plan-feature">Respuestas estándar</li>
+                    <li class="plan-feature disabled">Sin subida de archivos</li>
+                    <li class="plan-feature disabled">Sin generación de documentos</li>
+                    <li class="plan-feature disabled">Sin investigación profunda</li>
+                    <li class="plan-feature disabled">Sin multimedia avanzado</li>
+                </ul>
+                <button class="plan-cta free" onclick="changePlan('free'); toggleUpgradePanel()">
+                    Continuar con Free
+                </button>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="plan-card pro" id="proCard">
+                <div class="plan-header">
+                    <span class="plan-name">
+                        ApoloXia Pro
+                        <span class="pro-badge">PRO</span>
+                    </span>
+                    <span class="plan-badge pro">Premium</span>
+                </div>
+                <div class="plan-price pro">9.99€ <span>/mes</span></div>
+                <p class="plan-description">
+                    Desbloquea el máximo potencial. Respuestas ilimitadas, extensas y profundas 
+                    con capacidades profesionales completas.
+                </p>
+                <ul class="plan-features">
+                    <li class="plan-feature">Mensajes ilimitados</li>
+                    <li class="plan-feature">5 agentes especializados</li>
+                    <li class="plan-feature">Memoria masiva (128K contexto)</li>
+                    <li class="plan-feature">Respuestas extensas (1500+ palabras)</li>
+                    <li class="plan-feature">Subida de archivos hasta 500MB</li>
+                    <li class="plan-feature">Generación de PDF, Word, Excel</li>
+                    <li class="plan-feature">Investigación profunda con fuentes</li>
+                    <li class="plan-feature">Reproductor multimedia multi-idioma</li>
+                    <li class="plan-feature">Transcripción automática</li>
+                    <li class="plan-feature">Agent Swarm coordinado</li>
+                    <li class="plan-feature">Análisis de documentos empresariales</li>
+                    <li class="plan-feature">Código avanzado con explicaciones</li>
+                </ul>
+                
+                <div class="pro-benefits">
+                    <div class="pro-benefits-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        Beneficios exclusivos Pro
+                    </div>
+                    <div class="pro-benefits-grid">
+                        <div class="pro-benefit-item">Contexto completo máxima memoria</div>
+                        <div class="pro-benefit-item">Investigaciones exhaustivas</div>
+                        <div class="pro-benefit-item">Planificación con agentes</div>
+                        <div class="pro-benefit-item">Automatización de flujos</div>
+                        <div class="pro-benefit-item">Tareas avanzadas ilimitadas</div>
+                        <div class="pro-benefit-item">Chat principal ilimitado</div>
+                        <div class="pro-benefit-item">Exploración exhaustiva temas</div>
+                        <div class="pro-benefit-item">Carga contenido sin límites</div>
+                    </div>
+                </div>
+                
+                <button class="plan-cta pro" onclick="changePlan('pro'); toggleUpgradePanel()">
+                    Obtener ApoloXia Pro →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h3 class="modal-title" id="modalTitle">Título</h3>
+            <input type="text" class="modal-input" id="modalInput" placeholder="Escribe aquí...">
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeModal()">Cancelar</button>
+                <button class="modal-btn primary" id="modalConfirm" onclick="confirmModal()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ==========================================
+        // CONFIGURACIÓN Y ESTADO GLOBAL
+        // ==========================================
+        
+        const CONFIG = {
+            BACKEND_URL: 'http://127.0.0.1:8000',
+            MAX_FILE_SIZE_MB: 500,
+            ALLOWED_FILE_TYPES: ['pdf', 'docx', 'xlsx', 'txt', 'md', 'csv', 'json', 'jpg', 'png', 'mp4', 'mp3', 'wav'],
+            FREE_DAILY_LIMIT: 50,
+            MAX_CHARS: 4000
+        };
+
+        const AGENTS = {
+            free: ['general'],
+            pro: ['general', 'codigo', 'investigador', 'planificador', 'analista']
+        };
+
+        const AGENT_NAMES = {
+            general: '🤖 General',
+            codigo: '💻 Codex',
+            investigador: '🔍 Investigador',
+            planificador: '📋 Planificador',
+            analista: '📊 Analista'
+        };
+
+        // Estado global
+        let state = {
+            currentUser: null,
+            userEmail: '',        // NUEVO: almacenar email
+            userName: '',
+            tier: 'free',
+            currentConversationId: null,
+            conversations: [],
+            messages: [],
+            isProcessing: false,
+            selectedFile: null,
+            currentAgent: 'general',
+            remainingMessages: CONFIG.FREE_DAILY_LIMIT,
+            sidebarOpen: false,
+            upgradePanelOpen: false,
+            modalCallback: null
+        };
+
+        // ==========================================
+        // INICIALIZACIÓN (MODIFICADA PARA LEER EMAIL DE SESIÓN)
+        // ==========================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeUser();
+            loadConversations();
+            updateUI();
+            setupEventListeners();
+            
+            // Verificar conexión con backend
+            checkBackendHealth();
+        });
+
+        function initializeUser() {
+            // Obtener el email guardado por index.html
+            const sessionEmail = localStorage.getItem('apoloxia_session_email');
+            
+            if (sessionEmail) {
+                state.userEmail = sessionEmail;
+                // Extraer nombre (parte antes del @)
+                state.userName = sessionEmail.split('@')[0];
+            } else {
+                // Fallback si no hay sesión (acceso directo a chat.html)
+                state.userEmail = 'invitado@temp.com';
+                state.userName = 'Invitado';
+                // Crear un ID de usuario aleatorio para compatibilidad con backend
+                state.currentUser = 'user_' + Math.random().toString(36).substr(2, 9);
+            }
+            
+            // Si no hay currentUser (usado por el backend), crear uno basado en email
+            if (!state.currentUser) {
+                state.currentUser = 'user_' + btoa(state.userEmail).replace(/[^a-z0-9]/gi, '').substring(0, 12);
+            }
+            
+            localStorage.setItem('apoloxia_user_id', state.currentUser);
+            localStorage.setItem('apoloxia_user_email', state.userEmail); // Para compatibilidad
+            
+            // Recuperar tier
+            state.tier = localStorage.getItem('apoloxia_tier') || 'free';
+            
+            // Actualizar UI de usuario
+            document.getElementById('userAvatar').textContent = state.userName.charAt(0).toUpperCase();
+            document.getElementById('userName').textContent = state.userName;
+            updateTierUI();
+            
+            // Actualizar mensaje de bienvenida
+            updateWelcomeMessage();
+        }
+
+        function updateTierUI() {
+            const tierEl = document.getElementById('userTier');
+            const badgeEl = document.getElementById('tierBadge');
+            
+            if (state.tier === 'pro') {
+                tierEl.innerHTML = 'Pro<span class="tier-badge">PRO</span>';
+                tierEl.classList.add('pro');
+                badgeEl.classList.remove('hidden');
+            } else {
+                tierEl.textContent = 'Free';
+                tierEl.classList.remove('pro');
+                badgeEl.classList.add('hidden');
+            }
+        }
+
+        // NUEVA FUNCIÓN: Personalizar el subtítulo de bienvenida
+        function updateWelcomeMessage() {
+            const subtitleEl = document.getElementById('welcomeSubtitle');
+            if (subtitleEl) {
+                const baseText = state.tier === 'pro' 
+                    ? 'Asistente IA de élite con capacidades ilimitadas. Genera documentos, investiga a fondo y coordina agentes especializados.'
+                    : 'Asistente IA eficiente con respuestas rápidas. Actualiza a Pro para desbloquear todo el potencial.';
+                
+                subtitleEl.innerHTML = `Bienvenido, <strong style="color: var(--accent-pro);">${state.userName}</strong>. ${baseText}`;
+            }
+        }
+
+        // ==========================================
+        // UI UPDATES
+        // ==========================================
+
+        function updateUI() {
+            // Plan toggle
+            document.querySelectorAll('.plan-option').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.plan === state.tier);
+            });
+            
+            // Plan cards
+            document.getElementById('freeCard').classList.toggle('current', state.tier === 'free');
+            document.getElementById('proCard').classList.toggle('current', state.tier === 'pro');
+            
+            // Agent selector
+            updateAgentSelector();
+            
+            // Pro features
+            updateProFeatures();
+            
+            // Welcome text (ya actualizado en initialize, pero se llama de nuevo por si cambia el tier)
+            updateWelcomeMessage();
+            
+            // Suggestions
+            updateSuggestions();
+            
+            // Remaining messages
+            updateRemainingMessages();
+        }
+
+        function updateAgentSelector() {
+            const select = document.getElementById('agentSelect');
+            const allowedAgents = AGENTS[state.tier] || AGENTS.free;
+            
+            for (let option of select.options) {
+                const isAllowed = allowedAgents.includes(option.value);
+                option.disabled = !isAllowed;
+                
+                if (!isAllowed) {
+                    option.textContent = option.textContent.replace(' (Pro)', '') + ' (Pro)';
+                }
+            }
+            
+            // Reset to general if current not allowed
+            if (!allowedAgents.includes(state.currentAgent)) {
+                state.currentAgent = 'general';
+                select.value = 'general';
+            }
+        }
+
+        function updateProFeatures() {
+            const isPro = state.tier === 'pro';
+            const proButtons = document.querySelectorAll('.pro-feature');
+            
+            proButtons.forEach(btn => {
+                btn.disabled = !isPro;
+                
+                if (!isPro) {
+                    btn.title = 'Disponible en ApoloXia Pro';
+                } else {
+                    btn.title = '';
+                }
+            });
+            
+            // Update file input accept
+            const fileInput = document.getElementById('fileInput');
+            fileInput.disabled = !isPro;
+        }
+
+        function updateSuggestions() {
+            const isPro = state.tier === 'pro';
+            document.querySelectorAll('.suggestion-card.pro-only').forEach(card => {
+                card.style.display = isPro ? 'block' : 'none';
+            });
+        }
+
+        function updateRemainingMessages() {
+            const remainingEl = document.getElementById('remainingMessages');
+            if (state.tier === 'pro') {
+                remainingEl.textContent = '∞';
+                remainingEl.style.color = 'var(--accent-pro)';
+            } else {
+                remainingEl.textContent = state.remainingMessages;
+                remainingEl.style.color = state.remainingMessages < 10 ? 'var(--accent-red)' : 'var(--text-primary)';
+            }
+        }
+
+        // ==========================================
+        // CHAT FUNCTIONS (SIN CAMBIOS)
+        // ==========================================
+
+        async function sendMessage(text = null, useStreaming = true) {
+            const messageText = text || document.getElementById('messageInput').value.trim();
+            
+            if ((!messageText && !state.selectedFile) || state.isProcessing) return;
+            
+            // Check limits
+            if (state.tier === 'free' && state.remainingMessages <= 0) {
+                showToast('Has alcanzado el límite de mensajes diarios', 'error');
+                toggleUpgradePanel();
+                return;
+            }
+            
+            // Hide welcome, show chat
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('messages').classList.remove('hidden');
+            
+            // Add user message
+            if (messageText) {
+                addMessage('user', messageText);
+                document.getElementById('messageInput').value = '';
+                autoResize();
+            }
+            
+            // Show typing
+            state.isProcessing = true;
+            updateSendButton();
+            showTyping();
+            
+            try {
+                if (useStreaming && window.EventSource) {
+                    await sendMessageStreaming(messageText);
+                } else {
+                    await sendMessageStandard(messageText);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                hideTyping();
+                addMessage('assistant', '❌ Error de conexión. Verifica que el servidor esté activo en el puerto 8000', true);
+            } finally {
+                state.isProcessing = false;
+                updateSendButton();
+                saveConversation();
+            }
+        }
+
+        async function sendMessageStreaming(messageText) {
+            const formData = new FormData();
+            formData.append('message', messageText);
+            formData.append('user_id', state.currentUser);
+            formData.append('tier', state.tier);
+            formData.append('agent', state.currentAgent);
+            
+            if (state.selectedFile) {
+                formData.append('file', state.selectedFile);
+            }
+            
+            // Create message container for streaming
+            hideTyping();
+            const messageId = 'msg_' + Date.now();
+            const messageHTML = createStreamingMessageHTML(messageId);
+            document.getElementById('messages').insertAdjacentHTML('beforeend', messageHTML);
+            
+            const contentEl = document.getElementById(`content-${messageId}`);
+            let fullContent = '';
+            
+            try {
+                const response = await fetch(`${CONFIG.BACKEND_URL}/chat`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error === 'limit_reached') {
+                    contentEl.innerHTML = formatMessage(data.reply);
+                    toggleUpgradePanel();
+                } else if (data.upgrade_required) {
+                    contentEl.innerHTML = formatMessage(data.reply);
+                    toggleUpgradePanel();
+                } else {
+                    // Simulate streaming for better UX
+                    const text = data.reply;
+                    const chunks = text.match(/.{1,10}/g) || [text];
+                    
+                    for (let chunk of chunks) {
+                        fullContent += chunk;
+                        contentEl.innerHTML = formatMessage(fullContent) + '<span class="streaming-cursor"></span>';
+                        scrollToBottom();
+                        await sleep(20);
+                    }
+                    
+                    contentEl.innerHTML = formatMessage(fullContent);
+                    
+                    // Handle file/media
+                    if (data.file_data) {
+                        addFileDownload(messageId, data.file_data, data.file_type);
+                    }
+                    
+                    // Update remaining
+                    if (data.remaining_messages !== undefined) {
+                        state.remainingMessages = data.remaining_messages === 'unlimited' ? Infinity : data.remaining_messages;
+                        updateRemainingMessages();
+                    }
+                }
+                
+                // Add actions
+                addMessageActions(messageId);
+                
+            } catch (error) {
+                contentEl.innerHTML = '❌ Error al procesar la respuesta';
+            }
+            
+            clearFile();
+        }
+
+        async function sendMessageStandard(messageText) {
+            const formData = new FormData();
+            formData.append('message', messageText);
+            formData.append('user_id', state.currentUser);
+            formData.append('tier', state.tier);
+            formData.append('agent', state.currentAgent);
+            
+            if (state.selectedFile) {
+                formData.append('file', state.selectedFile);
+            }
+            
+            const response = await fetch(`${CONFIG.BACKEND_URL}/chat`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            hideTyping();
+            
+            if (data.error === 'limit_reached') {
+                addMessage('assistant', data.reply, true);
+                toggleUpgradePanel();
+            } else if (data.upgrade_required) {
+                addMessage('assistant', data.reply, true);
+                toggleUpgradePanel();
+            } else {
+                addMessage('assistant', data.reply, false, data.media_html, data.file_data, data.file_type);
+                
+                if (data.remaining_messages !== undefined) {
+                    state.remainingMessages = data.remaining_messages === 'unlimited' ? Infinity : data.remaining_messages;
+                    updateRemainingMessages();
+                }
+            }
+            
+            clearFile();
+        }
+
+        function createStreamingMessageHTML(id) {
+            return `
+                <div class="message assistant" id="${id}">
+                    <div class="message-avatar">A</div>
+                    <div class="message-content">
+                        <div class="message-bubble">
+                            <div class="message-text" id="content-${id}"><span class="streaming-cursor"></span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addMessage(role, content, isError = false, mediaHtml = null, fileData = null, fileType = null) {
+            const messageId = 'msg_' + Date.now();
+            const isUser = role === 'user';
+            const avatar = isUser ? state.userName.charAt(0).toUpperCase() : 'A';
+            
+            let fileHtml = '';
+            if (fileData && fileType) {
+                fileHtml = `
+                    <a href="data:application/octet-stream;base64,${fileData}" 
+                       download="apoloxia_${Date.now()}.${fileType}"
+                       class="message-file">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Descargar ${fileType.toUpperCase()}
+                    </a>
+                `;
+            }
+            
+            const mediaSection = mediaHtml ? `<div class="message-media">${mediaHtml}</div>` : '';
+            
+            const html = `
+                <div class="message ${role}" id="${messageId}">
+                    ${!isUser ? `<div class="message-avatar">${avatar}</div>` : ''}
+                    <div class="message-content">
+                        <div class="message-bubble" style="${isError ? 'border-color: var(--accent-red);' : ''}">
+                            <div class="message-text">${formatMessage(content)}</div>
+                            ${mediaSection}
+                            ${fileHtml}
+                        </div>
+                        ${!isUser ? `
+                            <div class="message-actions">
+                                <button class="action-btn" onclick="copyMessage('${messageId}')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                    Copiar
+                                </button>
+                                <button class="action-btn" onclick="regenerateResponse()">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="23 4 23 10 17 10"></polyline>
+                                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                    </svg>
+                                    Reintentar
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${isUser ? `<div class="message-avatar">${avatar}</div>` : ''}
+                </div>
+            `;
+            
+            document.getElementById('messages').insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
+            
+            // Store in state
+            state.messages.push({
+                id: messageId,
+                role,
+                content,
+                timestamp: Date.now()
+            });
+        }
+
+        function addMessageActions(messageId) {
+            const message = document.getElementById(messageId);
+            const content = message.querySelector('.message-content');
+            
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+            actions.innerHTML = `
+                <button class="action-btn" onclick="copyMessage('${messageId}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copiar
+                </button>
+                <button class="action-btn" onclick="regenerateResponse()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    Reintentar
+                </button>
+            `;
+            
+            content.appendChild(actions);
+        }
+
+        function addFileDownload(messageId, fileData, fileType) {
+            const message = document.getElementById(messageId);
+            const bubble = message.querySelector('.message-bubble');
+            
+            const link = document.createElement('a');
+            link.href = `data:application/octet-stream;base64,${fileData}`;
+            link.download = `apoloxia_${Date.now()}.${fileType}`;
+            link.className = 'message-file';
+            link.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Descargar ${fileType.toUpperCase()}
+            `;
+            
+            bubble.appendChild(link);
+        }
+
+        function formatMessage(text) {
+            if (!text) return '';
+            
+            return text
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function showTyping() {
+            const html = `
+                <div class="message assistant" id="typingIndicator">
+                    <div class="message-avatar">A</div>
+                    <div class="message-content">
+                        <div class="typing-indicator">
+                            <div class="typing-dots">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('messages').insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            const el = document.getElementById('typingIndicator');
+            if (el) el.remove();
+        }
+
+        // ==========================================
+        // PRO FEATURES (SIN CAMBIOS)
+        // ==========================================
+
+        async function startDeepResearch() {
+            if (state.tier !== 'pro') {
+                showToast('Deep Research requiere ApoloXia Pro', 'warning');
+                toggleUpgradePanel();
+                return;
+            }
+            
+            showModal('Investigación Profunda', '¿Sobre qué tema quieres investigar?', async (topic) => {
+                if (!topic) return;
+                
+                document.getElementById('agentSelect').value = 'investigador';
+                state.currentAgent = 'investigador';
+                
+                await sendMessage(`Investigación exhaustiva sobre: ${topic}. Incluye fuentes, análisis multidimensional y conclusiones detalladas.`);
+            });
+        }
+
+        async function startAgentSwarm() {
+            if (state.tier !== 'pro') {
+                showToast('Agent Swarm requiere ApoloXia Pro', 'warning');
+                toggleUpgradePanel();
+                return;
+            }
+            
+            showModal('Agent Swarm', 'Describe la tarea compleja para coordinación multi-agente:', async (task) => {
+                if (!task) return;
+                
+                document.getElementById('agentSelect').value = 'planificador';
+                state.currentAgent = 'planificador';
+                
+                await sendMessage(`Coordinación Agent Swarm para: ${task}. Desarrollo completo con múltiples perspectivas y plan integrado.`);
+            });
+        }
+
+        function triggerFileUpload() {
+            if (state.tier !== 'pro') {
+                showToast('Subida de archivos requiere ApoloXia Pro', 'warning');
+                toggleUpgradePanel();
+                return;
+            }
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate size
+            const sizeMB = file.size / (1024 * 1024);
+            if (sizeMB > CONFIG.MAX_FILE_SIZE_MB) {
+                showToast(`Archivo demasiado grande. Máximo ${CONFIG.MAX_FILE_SIZE_MB}MB`, 'error');
+                return;
+            }
+            
+            // Validate type
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!CONFIG.ALLOWED_FILE_TYPES.includes(ext)) {
+                showToast('Tipo de archivo no permitido', 'error');
+                return;
+            }
+            
+            state.selectedFile = file;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('filePreview').classList.remove('hidden');
+            updateSendButton();
+            
+            showToast(`Archivo "${file.name}" listo para enviar`, 'success');
+        }
+
+        function clearFile() {
+            state.selectedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('filePreview').classList.add('hidden');
+            updateSendButton();
+        }
+
+        // ==========================================
+        // CONVERSATION MANAGEMENT (MODIFICADO PARA USAR EMAIL COMO CLAVE)
+        // ==========================================
+
+        function getStorageKey() {
+            // Usa el email para crear una clave única por usuario
+            return `apoloxia_conversations_${state.userEmail}`;
+        }
+
+        function loadConversations() {
+            const stored = localStorage.getItem(getStorageKey());
+            if (stored) {
+                state.conversations = JSON.parse(stored);
+                renderHistory();
+                
+                // Load last conversation or create new
+                if (state.conversations.length > 0) {
+                    loadConversation(state.conversations[0].id);
+                } else {
+                    startNewChat();
+                }
+            } else {
+                startNewChat();
+            }
+        }
+
+        function saveConversations() {
+            localStorage.setItem(getStorageKey(), JSON.stringify(state.conversations));
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            
+            if (state.conversations.length === 0) {
+                list.innerHTML = '<div class="empty-state">No hay conversaciones aún</div>';
+                return;
+            }
+            
+            list.innerHTML = state.conversations.map(conv => `
+                <div class="history-item ${conv.id === state.currentConversationId ? 'active' : ''}" 
+                     onclick="loadConversation('${conv.id}')" data-id="${conv.id}">
+                    <div class="history-title">${escapeHtml(conv.title)}</div>
+                    <div class="history-meta">
+                        <span class="history-date">${formatDate(conv.lastUpdated)}</span>
+                        <span class="history-delete" onclick="event.stopPropagation(); deleteConversation('${conv.id}')">
+                            Eliminar
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadConversation(id) {
+            const conv = state.conversations.find(c => c.id === id);
+            if (!conv) return;
+            
+            state.currentConversationId = id;
+            state.messages = conv.messages || [];
+            
+            // Render messages
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('messages').classList.remove('hidden');
+            document.getElementById('messages').innerHTML = '';
+            
+            state.messages.forEach(msg => {
+                if (msg.role === 'user') {
+                    addMessage('user', msg.content);
+                } else {
+                    addMessage('assistant', msg.content);
+                }
+            });
+            
+            document.getElementById('currentChatLabel').textContent = conv.title;
+            renderHistory();
+        }
+
+        function saveConversation() {
+            if (state.messages.length === 0) return;
+            
+            const title = state.messages[0].content.substring(0, 55) + (state.messages[0].content.length > 55 ? '...' : '');
+            const convData = {
+                id: state.currentConversationId,
+                title,
+                lastUpdated: Date.now(),
+                messages: state.messages
+            };
+            
+            const index = state.conversations.findIndex(c => c.id === state.currentConversationId);
+            if (index !== -1) {
+                state.conversations[index] = convData;
+            } else {
+                state.conversations.unshift(convData);
+            }
+            
+            // Keep only last 50
+            if (state.conversations.length > 50) {
+                state.conversations = state.conversations.slice(0, 50);
+            }
+            
+            saveConversations();
+            renderHistory();
+        }
+
+        function startNewChat() {
+            state.currentConversationId = 'conv_' + Date.now();
+            state.messages = [];
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+            document.getElementById('messages').classList.add('hidden');
+            document.getElementById('currentChatLabel').textContent = 'Nueva conversación';
+            clearFile();
+            renderHistory();
+        }
+
+        function deleteConversation(id) {
+            if (!confirm('¿Eliminar esta conversación permanentemente?')) return;
+            
+            state.conversations = state.conversations.filter(c => c.id !== id);
+            saveConversations();
+            
+            if (state.currentConversationId === id) {
+                startNewChat();
+            } else {
+                renderHistory();
+            }
+            
+            showToast('Conversación eliminada', 'success');
+        }
+
+        // ==========================================
+        // UI HELPERS (SIN CAMBIOS)
+        // ==========================================
+
+        function changePlan(tier) {
+            state.tier = tier;
+            localStorage.setItem('apoloxia_tier', tier);
+            
+            // Reset agent if not available
+            const allowedAgents = AGENTS[tier] || AGENTS.free;
+            if (!allowedAgents.includes(state.currentAgent)) {
+                state.currentAgent = 'general';
+                document.getElementById('agentSelect').value = 'general';
+            }
+            
+            updateUI();
+            showToast(tier === 'pro' ? '✨ ApoloXia Pro activado' : 'Plan Free activado', 'success');
+            
+            // Refresh status
+            checkBackendHealth();
+        }
+
+        function toggleUpgradePanel() {
+            const panel = document.getElementById('upgradePanel');
+            panel.classList.toggle('open');
+            state.upgradePanelOpen = !state.upgradePanelOpen;
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+            state.sidebarOpen = !state.sidebarOpen;
+        }
+
+        function sendSuggestion(text) {
+            document.getElementById('messageInput').value = text;
+            autoResize();
+            sendMessage();
+        }
+
+        function autoResize() {
+            const textarea = document.getElementById('messageInput');
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+            
+            // Update char counter
+            const count = textarea.value.length;
+            const counter = document.getElementById('charCount');
+            counter.textContent = `${count} / ${CONFIG.MAX_CHARS}`;
+            counter.classList.toggle('warning', count > CONFIG.MAX_CHARS * 0.9);
+            
+            updateSendButton();
+        }
+
+        function updateSendButton() {
+            const btn = document.getElementById('sendBtn');
+            const hasText = document.getElementById('messageInput').value.trim().length > 0;
+            const hasFile = state.selectedFile !== null;
+            btn.disabled = state.isProcessing || (!hasText && !hasFile);
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chatContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function copyMessage(messageId) {
+            const message = document.getElementById(messageId);
+            const text = message.querySelector('.message-text').innerText;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = message.querySelector('.action-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✓ Copiado';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function regenerateResponse() {
+            if (state.messages.length < 2) return;
+            
+            // Remove last assistant message
+            state.messages.pop();
+            
+            // Get last user message
+            const lastUserMsg = state.messages[state.messages.length - 1];
+            
+            // Re-render
+            document.getElementById('messages').innerHTML = '';
+            state.messages.forEach(msg => addMessage(msg.role, msg.content));
+            
+            // Resend
+            sendMessage(lastUserMsg.content);
+        }
+
+        // ==========================================
+        // MODAL SYSTEM (SIN CAMBIOS)
+        // ==========================================
+
+        function showModal(title, placeholder, callback) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalInput').placeholder = placeholder;
+            document.getElementById('modalInput').value = '';
+            document.getElementById('modal').classList.add('open');
+            state.modalCallback = callback;
+            
+            setTimeout(() => document.getElementById('modalInput').focus(), 100);
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('open');
+            state.modalCallback = null;
+        }
+
+        function confirmModal() {
+            const value = document.getElementById('modalInput').value.trim();
+            if (state.modalCallback && value) {
+                state.modalCallback(value);
+            }
+            closeModal();
+        }
+
+        // ==========================================
+        // TOAST NOTIFICATIONS (SIN CAMBIOS)
+        // ==========================================
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
+            
+            toast.innerHTML = `${icons[type] || 'ℹ'} ${message}`;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ==========================================
+        // UTILITIES (SIN CAMBIOS)
+        // ==========================================
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            return date.toLocaleDateString();
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function checkBackendHealth() {
+            try {
+                const response = await fetch(`${CONFIG.BACKEND_URL}/user-status?user_id=${state.currentUser}&tier=${state.tier}`);
+                const data = await response.json();
+                
+                if (data.remaining_messages !== undefined) {
+                    state.remainingMessages = data.remaining_messages === 'unlimited' ? Infinity : data.remaining_messages;
+                    updateRemainingMessages();
+                }
+            } catch (error) {
+                console.warn('Backend no disponible:', error);
+                showToast('Servidor no conectado. Inicia el backend en puerto 8000', 'warning');
+            }
+        }
+
+        function setupEventListeners() {
+            // Input events
+            document.getElementById('messageInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!document.getElementById('sendBtn').disabled) {
+                        sendMessage();
+                    }
+                }
+            });
+            
+            // Agent selector
+            document.getElementById('agentSelect').addEventListener('change', (e) => {
+                state.currentAgent = e.target.value;
+            });
+            
+            // Modal enter key
+            document.getElementById('modalInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') confirmModal();
+            });
+            
+            // Close modal on overlay click
+            document.getElementById('modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('modal')) closeModal();
+            });
+            
+            // Close sidebar on outside click (mobile)
+            document.addEventListener('click', (e) => {
+                const sidebar = document.getElementById('sidebar');
+                const menuToggle = document.querySelector('.menu-toggle');
+                
+                if (window.innerWidth <= 768 && 
+                    state.sidebarOpen &&
+                    !sidebar.contains(e.target) && 
+                    !menuToggle.contains(e.target)) {
+                    toggleSidebar();
+                }
+            });
+        }
+
+        // ==========================================
+        // GLOBAL EXPORTS (SIN CAMBIOS)
+        // ==========================================
+
+        window.startNewChat = startNewChat;
+        window.loadConversation = loadConversation;
+        window.deleteConversation = deleteConversation;
+        window.sendSuggestion = sendSuggestion;
+        window.toggleUpgradePanel = toggleUpgradePanel;
+        window.changePlan = changePlan;
+        window.toggleSidebar = toggleSidebar;
+        window.startDeepResearch = startDeepResearch;
+        window.startAgentSwarm = startAgentSwarm;
+        window.triggerFileUpload = triggerFileUpload;
+        window.handleFileSelect = handleFileSelect;
+        window.clearFile = clearFile;
+        window.sendMessage = sendMessage;
+        window.copyMessage = copyMessage;
+        window.regenerateResponse = regenerateResponse;
+        window.autoResize = autoResize;
+        window.closeModal = closeModal;
+        window.confirmModal = confirmModal;
+        window.showUserMenu = () => {
+            // Future: user menu dropdown
+            showToast(`Usuario: ${state.userName}`, 'info');
+        };
+    </script>
+</body>
+</html>
