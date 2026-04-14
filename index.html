@@ -527,7 +527,7 @@
 
     <script>
         // ==========================================
-        // CONEXIÓN CON CHAT.HTML - SISTEMA DE SESIÓN
+        // CONEXIÓN CON EL CHAT - REDIRIGE A /chat (endpoint del backend)
         // ==========================================
         
         // Estado global
@@ -535,15 +535,12 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', () => {
-            // Verificar si ya hay sesión guardada (usando la clave que espera chat.html)
             const savedEmail = localStorage.getItem('apoloxia_session_email');
             if (savedEmail) {
                 userEmail = savedEmail;
-                // Ocultar splash y mostrar interface directo
                 document.getElementById('splashScreen').style.display = 'none';
                 showInterface(savedEmail);
             } else {
-                // Mostrar splash por 3 segundos, luego login
                 setTimeout(() => {
                     showLoginScreen();
                 }, 3000);
@@ -559,11 +556,9 @@
             setTimeout(() => {
                 splash.style.display = 'none';
                 login.style.display = 'flex';
-                // Forzar reflow
                 void login.offsetWidth;
                 login.classList.add('active');
                 
-                // Enfocar input
                 setTimeout(() => {
                     document.getElementById('email').focus();
                 }, 100);
@@ -574,13 +569,11 @@
             event.preventDefault();
             
             const emailInput = document.getElementById('email');
-            userEmail = emailInput.value.trim().toLowerCase(); // Guardar en minúsculas para consistencia
+            userEmail = emailInput.value.trim().toLowerCase();
             
             if (userEmail && userEmail.includes('@')) {
-                // Guardar en localStorage con la clave que espera chat.html
                 localStorage.setItem('apoloxia_session_email', userEmail);
                 
-                // Ocultar login, mostrar interface
                 const login = document.getElementById('loginScreen');
                 login.classList.remove('active');
                 
@@ -594,34 +587,28 @@
         }
         
         function showInterface(email) {
-            const interface = document.getElementById('interfaceScreen');
+            const interfaceDiv = document.getElementById('interfaceScreen');
             const userNameDisplay = document.getElementById('userNameDisplay');
             
-            // Extraer el nombre del correo (parte antes del @)
             const userName = email.split('@')[0];
             userNameDisplay.textContent = userName;
             
-            interface.style.display = 'flex';
-            // Forzar reflow
-            void interface.offsetWidth;
-            interface.classList.add('active');
+            interfaceDiv.style.display = 'flex';
+            void interfaceDiv.offsetWidth;
+            interfaceDiv.classList.add('active');
         }
         
+        // CORRECCIÓN AQUÍ: redirige a /chat (endpoint del backend) en lugar de chat.html
         function accessAgent() {
-            // Redirigir a chat.html (cambio clave para la conexión)
-            window.location.href = 'chat.html';
+            window.location.href = '/chat';
         }
         
         function logout() {
-            // Limpiar la sesión
             localStorage.removeItem('apoloxia_session_email');
-            localStorage.removeItem('apoloxia_user_email'); // Por si acaso
-            
-            // Recargar la página para volver al login
+            localStorage.removeItem('apoloxia_user_email');
             window.location.reload();
         }
         
-        // Permitir Enter en el formulario
         document.getElementById('email').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 handleLogin(e);
