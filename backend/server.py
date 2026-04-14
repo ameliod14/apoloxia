@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Form, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse  # ← AÑADIDO HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.responses import StreamingResponse
 import uvicorn
 from datetime import datetime
@@ -12,7 +12,7 @@ import asyncio
 import hashlib
 import time
 import os
-from pathlib import Path  # ← AÑADIDO para manejar rutas
+from pathlib import Path
 
 app = FastAPI()
 
@@ -362,20 +362,28 @@ def detect_web_search_need(message: str) -> tuple[bool, str]:
 # ENDPOINTS API
 # ==========================================
 
-# ✅ NUEVO ENDPOINT RAIZ: sirve el frontend chat.html
+# ✅ Endpoint raíz: sirve index.html (login) primero
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    # Busca chat.html en la raíz del proyecto (un nivel arriba de backend)
-    html_path = Path(__file__).parent.parent / "chat.html"
-    if html_path.exists():
-        return html_path.read_text(encoding="utf-8")
-    # Fallback a index.html si existe
+    # Primero busca index.html (página de login)
     html_path = Path(__file__).parent.parent / "index.html"
     if html_path.exists():
         return html_path.read_text(encoding="utf-8")
-    return HTMLResponse("<h1>ApoloXia</h1><p>Frontend no encontrado. La API está funcionando.</p>")
+    # Si no existe, fallback a chat.html
+    html_path = Path(__file__).parent.parent / "chat.html"
+    if html_path.exists():
+        return html_path.read_text(encoding="utf-8")
+    return HTMLResponse("<h1>ApoloXia</h1><p>Frontend no encontrado</p>")
 
-# Los demás endpoints (health, config, user-status, chat, etc.) permanecen igual
+# ✅ Endpoint /chat: sirve el chatbot
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page():
+    html_path = Path(__file__).parent.parent / "chat.html"
+    if html_path.exists():
+        return html_path.read_text(encoding="utf-8")
+    return HTMLResponse("<h1>Chat no disponible</h1>")
+
+# Los demás endpoints (health, config, user-status, chat post, etc.) permanecen igual
 
 @app.get("/health")
 def health():
