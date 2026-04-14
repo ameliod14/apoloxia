@@ -10,6 +10,7 @@ from typing import Optional, List, Dict, Any
 import asyncio
 import hashlib
 import time
+import os   # <--- IMPORTANTE: añadido para que funcione os.getenv()
 
 app = FastAPI()
 
@@ -715,10 +716,11 @@ def get_conversations(user_id: str, tier: str = "free"):
     }
 
 # ==========================================
-# INICIO DEL SERVIDOR
+# INICIO DEL SERVIDOR (CORREGIDO, UNIFICADO)
 # ==========================================
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))  # Render usa este puerto
     print("=" * 80)
     print("🚀 APOLOXIA PRO ENTERPRISE - API v3.0")
     print("=" * 80)
@@ -730,17 +732,12 @@ if __name__ == "__main__":
     print(f"   PRO  - Investigador: {MODELS['pro']['investigador']}")
     print(f"   PRO  - Planificador: {MODELS['pro']['planificador']}")
     print(f"   PRO  - Analista:     {MODELS['pro']['analista']}")
-    print("\n📍 URL: http://localhost:8000")
+    print(f"\n📍 Puerto: {port}")
     print("📖 Docs: http://localhost:8000/docs")
     print("🔧 Config: http://localhost:8000/config")
     print("=" * 80)
     print("⛔ Presiona CTRL+C para detener\n")
     
-    import os
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Render usa este puerto
-
     uvicorn.run(
         app,
         host="0.0.0.0",
