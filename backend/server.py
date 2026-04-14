@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Form, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, HTMLResponse  # ← AÑADIDO HTMLResponse
+from fastapi.responses import StreamingResponse
 import uvicorn
 from datetime import datetime
 import base64
@@ -10,7 +11,8 @@ from typing import Optional, List, Dict, Any
 import asyncio
 import hashlib
 import time
-import os   # <--- IMPORTANTE: añadido para que funcione os.getenv()
+import os
+from pathlib import Path  # ← AÑADIDO para manejar rutas
 
 app = FastAPI()
 
@@ -36,15 +38,15 @@ TAVILY_URL = "https://api.tavily.com/search"
 
 MODELS = {
     "free": {
-        "general": "llama-3.3-70b-versatile",      # 🚀 Modelo GRANDE para Free - Respuestas largas y definidas
-        "codigo": "codellama-34b-instruct"          # 💻 Código optimizado
+        "general": "llama-3.3-70b-versatile",
+        "codigo": "codellama-34b-instruct"
     },
     "pro": {
-        "general": "deepseek-r1-distill-llama-70b", # 🧠 Razonamiento profundo
-        "codigo": "qwen-2.5-coder-32b",              # 💻 Codex avanzado
-        "investigador": "llama-3.3-70b-versatile",   # 🔍 Análisis exhaustivo
-        "planificador": "deepseek-r1-distill-llama-70b", # 📋 Planificación estratégica
-        "analista": "llama-3.3-70b-versatile"        # 📊 Análisis de datos
+        "general": "deepseek-r1-distill-llama-70b",
+        "codigo": "qwen-2.5-coder-32b",
+        "investigador": "llama-3.3-70b-versatile",
+        "planificador": "deepseek-r1-distill-llama-70b",
+        "analista": "llama-3.3-70b-versatile"
     }
 }
 
@@ -55,8 +57,8 @@ MODELS = {
 PLAN_CONFIG = {
     "free": {
         "name": "ApoloXia",
-        "daily_messages": 100,  # Aumentado para más uso
-        "max_tokens": 2000,     # Respuestas largas
+        "daily_messages": 100,
+        "max_tokens": 2000,
         "context_window": "128K",
         "features": [
             "Respuestas extensas y bien definidas",
@@ -77,44 +79,33 @@ PLAN_CONFIG = {
     "pro": {
         "name": "ApoloXia Pro Enterprise",
         "daily_messages": float('inf'),
-        "max_tokens": 8000,     # Respuestas ultra-extensas
-        "context_window": "1M", # Memoria masiva
+        "max_tokens": 8000,
+        "context_window": "1M",
         "features": [
-            # 🔒 SEGURIDAD EMPRESARIAL
             "Protección SSO (Single Sign-On)",
             "Autenticación MFA (Multi-Factor)",
             "Protección de privacidad total",
             "Datos NUNCA usados para entrenamiento",
             "Encriptación end-to-end",
-            
-            # 🤝 COLABORACIÓN
             "Comparte proyectos personalizados",
             "Comparte GPTs personalizados",
             "Integración con SharePoint",
             "Integración con Microsoft 365",
             "Integración con Google Workspace",
             "Gestión de equipos y permisos",
-            
-            # 💼 GESTIÓN EMPRESARIAL
             "Facturación centralizada",
             "Gestión de usuarios empresarial",
             "Roles y permisos avanzados",
             "Auditoría de uso completa",
-            
-            # 🎙️ PRODUCTIVIDAD
             "Transcripción automática de reuniones",
             "Notas de reuniones con IA",
             "Resúmenes ejecutivos automáticos",
-            
-            # 🤖 AGENTES AVANZADOS
             "Agente Codex (programación experta)",
             "Agente Investigador (análisis profundo)",
             "Agente Planificador (gestión de proyectos)",
             "Agente Analista (datos empresariales)",
             "Agent Swarm (coordinación multi-agente)",
             "Acceso anticipado a funciones experimentales",
-            
-            # 🧠 CAPACIDADES PREMIUM
             "Contexto completo máxima capacidad",
             "Memoria ilimitada para respuestas inteligentes",
             "Planificación avanzada de tareas",
@@ -154,7 +145,6 @@ class UserSession:
             "timestamp": time.time()
         })
         
-        # Mantener últimos 50 mensajes por conversación
         if len(self.conversations[conversation_id]) > 50:
             self.conversations[conversation_id] = self.conversations[conversation_id][-50:]
         
@@ -164,12 +154,9 @@ class UserSession:
     def get_context(self, conversation_id: str, max_messages: int = 10) -> List[Dict]:
         if conversation_id not in self.conversations:
             return []
-        
-        # Pro tiene más contexto
         context_limit = 50 if self.tier == "pro" else max_messages
         return self.conversations[conversation_id][-context_limit:]
 
-# Almacenamiento de sesiones
 sessions: Dict[str, UserSession] = {}
 
 def get_session(user_id: str, tier: str) -> UserSession:
@@ -183,7 +170,6 @@ def get_session(user_id: str, tier: str) -> UserSession:
 # ==========================================
 
 async def search_web(query: str, depth: str = "advanced") -> Dict[str, Any]:
-    """Búsqueda web inteligente con Tavily"""
     try:
         async with aiohttp.ClientSession() as session:
             payload = {
@@ -194,7 +180,6 @@ async def search_web(query: str, depth: str = "advanced") -> Dict[str, Any]:
                 "include_images": False,
                 "max_results": 8 if depth == "advanced" else 4
             }
-            
             async with session.post(TAVILY_URL, json=payload, timeout=20) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -216,13 +201,10 @@ async def call_groq(
     temperature: float = 0.7,
     stream: bool = False
 ) -> str:
-    """Llama a Groq con el modelo especificado"""
-    
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
-    
     payload = {
         "model": model,
         "messages": messages,
@@ -230,34 +212,21 @@ async def call_groq(
         "temperature": temperature,
         "top_p": 0.9
     }
-    
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(
-                GROQ_URL, 
-                headers=headers, 
-                json=payload, 
-                timeout=45
-            ) as response:
-                
+            async with session.post(GROQ_URL, headers=headers, json=payload, timeout=45) as response:
                 if response.status != 200:
                     error = await response.text()
                     print(f"❌ Groq error: {error}")
-                    
-                    # Si el modelo falla, intentar con llama-3.3-70b como fallback
                     if model != "llama-3.3-70b-versatile":
                         print(f"🔄 Intentando fallback...")
                         return await call_groq(messages, "llama-3.3-70b-versatile", max_tokens, temperature)
-                    
                     return "Error del servicio. Intenta de nuevo en un momento."
-                
                 data = await response.json()
-                
                 if 'choices' in data and len(data['choices']) > 0:
                     return data['choices'][0]['message']['content']
                 else:
                     return "No se pudo generar una respuesta adecuada."
-                    
     except asyncio.TimeoutError:
         return "La consulta está tomando demasiado tiempo. Intenta con una pregunta más específica."
     except Exception as e:
@@ -270,11 +239,7 @@ def build_system_prompt(
     has_web_info: bool = False,
     conversation_context: str = ""
 ) -> str:
-    """Construye el system prompt más completo y detallado"""
-    
     current_date = "Abril 2026"
-    
-    # Base según tier
     if tier == "free":
         base = f"""Eres Apolo, un asistente AI avanzado de clase mundial. Fecha actual: {current_date}.
 
@@ -315,15 +280,11 @@ NUNCA seas breve. Siempre desarrolla tus respuestas con profundidad.
 6. **TONO**: Ejecutivo, estratégico, orientado a resultados
 7. **IDIOMA**: Español empresarial perfecto"""
 
-    # Agregar contexto web si existe
     if has_web_info:
         base += f"\n\n🔍 INFORMACIÓN WEB ACTUALIZADA (2024-2026) disponible. Usa estos datos recientes para respuestas precisas."
-    
-    # Agregar contexto de conversación
     if conversation_context:
         base += f"\n\n💬 CONTEXTO DE LA CONVERSACIÓN:\n{conversation_context}"
     
-    # Especialización por agente
     agent_specs = {
         "general": "",
         "codigo": """
@@ -333,7 +294,6 @@ NUNCA seas breve. Siempre desarrolla tus respuestas con profundidad.
 - Incluye manejo de errores y casos edge
 - Menciona mejores prácticas (SOLID, DRY, KISS)
 - Da alternativas de implementación""",
-        
         "investigador": """
 🔬 ESPECIALIDAD: Investigación Académica y Análisis Profundo
 - Metodología científica rigurosa
@@ -342,7 +302,6 @@ NUNCA seas breve. Siempre desarrolla tus respuestas con profundidad.
 - Análisis crítico de fuentes
 - Conclusiones basadas en evidencia
 - Sugerencias para investigación futura""",
-        
         "planificador": """
 📋 ESPECIALIDAD: Gestión Estratégica de Proyectos
 - Marco metodológico (PMI, Agile, Lean)
@@ -351,7 +310,6 @@ NUNCA seas breve. Siempre desarrolla tus respuestas con profundidad.
 - Gestión de riesgos con matriz de probabilidad/impacto
 - KPIs y métricas de éxito
 - Plan de contingencia""",
-        
         "analista": """
 📊 ESPECIALIDAD: Análisis de Datos y Business Intelligence
 - Análisis descriptivo, predictivo y prescriptivo
@@ -361,11 +319,8 @@ NUNCA seas breve. Siempre desarrolla tus respuestas con profundidad.
 - Visualización de datos (conceptual)
 - Insights accionables para stakeholders"""
     }
-    
     if agent in agent_specs:
         base += agent_specs[agent]
-    
-    # Capacidades específicas según tier
     if tier == "pro":
         base += """
         
@@ -375,14 +330,10 @@ NUNCA seas breve. Siempre desarrolla tus respuestas con profundidad.
 - Automatización de flujos de trabajo complejos
 - Transcripción y análisis de reuniones
 - Generación de documentos ejecutivos"""
-    
     return base
 
 def detect_web_search_need(message: str) -> tuple[bool, str]:
-    """Detecta si necesita búsqueda web y qué tipo"""
     message_lower = message.lower()
-    
-    # Palabras clave para búsqueda avanzada (noticias, actualidad)
     urgent_keywords = [
         "noticia", "noticias", "hoy", "ayer", "última hora", "breaking",
         "acaba de", "acaban de", "acaba de pasar", "está pasando",
@@ -392,8 +343,6 @@ def detect_web_search_need(message: str) -> tuple[bool, str]:
         "precio del dólar", "precio del euro", "bitcoin", "acciones",
         "mercado hoy", "bolsa hoy", "wall street"
     ]
-    
-    # Palabras clave para búsqueda estándar
     standard_keywords = [
         "2024", "2025", "2026", "nuevo", "nueva", "último", "reciente",
         "microsoft", "google", "apple", "openai", "meta", "tesla",
@@ -401,34 +350,32 @@ def detect_web_search_need(message: str) -> tuple[bool, str]:
         "ley", "nueva ley", "regulación", "gobierno", "presidente",
         "mundial", "olimpiadas", "champions", "super bowl"
     ]
-    
     for kw in urgent_keywords:
         if kw in message_lower:
             return True, "advanced"
-    
     for kw in standard_keywords:
         if kw in message_lower:
             return True, "basic"
-    
     return False, "none"
 
 # ==========================================
 # ENDPOINTS API
 # ==========================================
 
-@app.get("/")
-def root():
-    return {
-        "status": "online",
-        "service": "ApoloXia Pro Enterprise",
-        "version": "3.0.0",
-        "date": "2026",
-        "models": MODELS,
-        "features": {
-            "free": len(PLAN_CONFIG["free"]["features"]),
-            "pro": len(PLAN_CONFIG["pro"]["features"])
-        }
-    }
+# ✅ NUEVO ENDPOINT RAIZ: sirve el frontend chat.html
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    # Busca chat.html en la raíz del proyecto (un nivel arriba de backend)
+    html_path = Path(__file__).parent.parent / "chat.html"
+    if html_path.exists():
+        return html_path.read_text(encoding="utf-8")
+    # Fallback a index.html si existe
+    html_path = Path(__file__).parent.parent / "index.html"
+    if html_path.exists():
+        return html_path.read_text(encoding="utf-8")
+    return HTMLResponse("<h1>ApoloXia</h1><p>Frontend no encontrado. La API está funcionando.</p>")
+
+# Los demás endpoints (health, config, user-status, chat, etc.) permanecen igual
 
 @app.get("/health")
 def health():
@@ -441,7 +388,6 @@ def health():
 
 @app.get("/config")
 def get_config():
-    """Retorna configuración de planes para el frontend"""
     return {
         "plans": PLAN_CONFIG,
         "models": MODELS,
@@ -455,9 +401,7 @@ def get_config():
 def user_status(user_id: str, tier: str = "free"):
     session = get_session(user_id, tier)
     config = PLAN_CONFIG[tier]
-    
     remaining = "unlimited" if config["daily_messages"] == float('inf') else max(0, config["daily_messages"] - session.message_count)
-    
     return {
         "user_id": user_id,
         "tier": tier,
@@ -479,17 +423,13 @@ async def chat(
     conversation_id: str = Form("default"),
     file: Optional[UploadFile] = File(None)
 ):
-    """Endpoint principal de chat con todos los modelos"""
-    
     print(f"\n{'='*60}")
     print(f"📝 [{tier.upper()}] {agent.upper()} | {user_id[:15]}...")
     print(f"💬 Mensaje: {message[:70]}...")
     
-    # Obtener o crear sesión
     session = get_session(user_id, tier)
     config = PLAN_CONFIG[tier]
     
-    # Verificar límite
     if not session.can_send_message():
         return JSONResponse({
             "error": "limit_reached",
@@ -506,7 +446,6 @@ async def chat(
             "remaining_messages": 0
         })
     
-    # Verificar archivo (solo Pro)
     file_data = None
     file_type = None
     if file:
@@ -516,27 +455,22 @@ async def chat(
                 "reply": "📎 La subida de archivos hasta 500MB requiere ApoloXia Pro Enterprise.",
                 "upgrade_required": True
             })
-        
         content = await file.read()
-        if len(content) > 500 * 1024 * 1024:  # 500MB
+        if len(content) > 500 * 1024 * 1024:
             return JSONResponse({
                 "error": "file_too_large",
                 "reply": "Archivo demasiado grande. Límite: 500MB en Pro."
             })
-        
         file_data = base64.b64encode(content).decode()
         file_type = file.filename.split('.')[-1].lower()
         print(f"📎 Archivo: {file.filename} ({len(content)/1024/1024:.2f} MB)")
     
-    # Verificar agente disponible
     available_agents = list(MODELS[tier].keys())
     if agent not in available_agents:
         agent = "general"
     
-    # Detectar necesidad de búsqueda web
     needs_web, search_depth = detect_web_search_need(message)
     web_info = {}
-    
     if needs_web:
         print(f"🔍 Búsqueda web ({search_depth})...")
         web_info = await search_web(message, search_depth)
@@ -545,18 +479,15 @@ async def chat(
         else:
             print(f"⚠️ Web falló: {web_info.get('error', 'unknown')}")
     
-    # Obtener contexto de conversación
     context_messages = session.get_context(conversation_id)
     context_str = ""
     if context_messages:
-        # Resumir contexto para el prompt
-        recent = context_messages[-5:]  # Últimos 5 mensajes
+        recent = context_messages[-5:]
         context_str = "Conversación reciente:\n" + "\n".join([
             f"{'Usuario' if m['role'] == 'user' else 'Apolo'}: {m['content'][:100]}..."
             for m in recent
         ])
     
-    # Construir mensajes para la IA
     system_prompt = build_system_prompt(
         tier=tier,
         agent=agent,
@@ -564,7 +495,6 @@ async def chat(
         conversation_context=context_str
     )
     
-    # Preparar contenido del usuario
     user_content = message
     if web_info.get("success"):
         web_context = f"""INFORMACIÓN WEB ACTUALIZADA (2024-2026):
@@ -574,32 +504,25 @@ Fuentes principales:
 """
         for i, r in enumerate(web_info.get('results', [])[:3], 1):
             web_context += f"{i}. {r.get('title', '')}: {r.get('content', '')[:300]}...\n"
-        
         user_content = f"{web_context}\n\nPREGUNTA DEL USUARIO:\n{message}"
     
     messages = [
         {"role": "system", "content": system_prompt},
-        *[{"role": m["role"], "content": m["content"]} for m in context_messages[-3:]],  # Incluir contexto
+        *[{"role": m["role"], "content": m["content"]} for m in context_messages[-3:]],
         {"role": "user", "content": user_content}
     ]
     
-    # Seleccionar modelo según agente y tier
     model = MODELS[tier].get(agent, MODELS[tier]["general"])
     max_tokens = config["max_tokens"]
-    
     print(f"🤖 Modelo: {model}")
     print(f"🎯 Tokens máx: {max_tokens}")
     
-    # Llamar a IA
     reply = await call_groq(messages, model, max_tokens, temperature=0.7)
     
-    # Guardar en sesión
     session.add_message(conversation_id, "user", message)
     session.add_message(conversation_id, "assistant", reply)
     
-    # Calcular restantes
     remaining = "unlimited" if config["daily_messages"] == float('inf') else max(0, config["daily_messages"] - session.message_count)
-    
     print(f"✅ Respuesta: {len(reply)} caracteres | Restantes: {remaining}")
     print(f"{'='*60}\n")
     
@@ -613,7 +536,7 @@ Fuentes principales:
         "tier": tier,
         "web_search_used": web_info.get("success", False),
         "conversation_id": conversation_id,
-        "tokens_used": len(reply) // 4  # Estimación aproximada
+        "tokens_used": len(reply) // 4
     }
 
 @app.post("/deep-research")
@@ -622,20 +545,16 @@ async def deep_research(
     user_id: str = Form(...),
     tier: str = Form("pro")
 ):
-    """Investigación profunda (solo Pro)"""
     if tier != "pro":
         return JSONResponse({
             "error": "pro_required",
             "message": "Deep Research requiere ApoloXia Pro Enterprise"
         }, status_code=403)
     
-    # Búsqueda exhaustiva
     web_info = await search_web(topic, "advanced")
-    
     if not web_info.get("success"):
         return {"error": "search_failed", "message": "No se pudo realizar la investigación"}
     
-    # Preparar prompt de investigación
     system_prompt = """Eres un investigador académico senior. Realiza un análisis exhaustivo con:
 1. Estado del arte
 2. Múltiples perspectivas teóricas
@@ -657,9 +576,7 @@ FUENTES:
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": f"{context}\n\nGenera un informe de investigación completo en español."}
     ]
-    
     reply = await call_groq(messages, "llama-3.3-70b-versatile", 8000, temperature=0.5)
-    
     return {
         "research_report": reply,
         "sources": web_info.get("results", []),
@@ -670,15 +587,13 @@ FUENTES:
 @app.post("/generate-document")
 async def generate_document(
     content: str = Form(...),
-    doc_type: str = Form("pdf"),  # pdf, docx, xlsx
+    doc_type: str = Form("pdf"),
     user_id: str = Form(...),
     tier: str = Form("pro")
 ):
-    """Genera documentos descargables (solo Pro)"""
     if tier != "pro":
         return JSONResponse({"error": "pro_required"}, status_code=403)
     
-    # Generar contenido formateado según tipo
     if doc_type == "pdf":
         formatted = f"""APOLOXIA PRO - DOCUMENTO GENERADO
 {'='*50}
@@ -690,13 +605,11 @@ Generado: {datetime.now().isoformat()}
 Usuario: {user_id}
 """
     elif doc_type == "xlsx":
-        # Simulación de CSV para Excel
         formatted = f"Título,Contenido,Fecha\nApoloXia Export,{content[:100]}...,{datetime.now().isoformat()}"
     else:
         formatted = content
     
     encoded = base64.b64encode(formatted.encode()).decode()
-    
     return {
         "file_data": encoded,
         "file_type": doc_type,
@@ -705,22 +618,21 @@ Usuario: {user_id}
 
 @app.get("/conversations/{user_id}")
 def get_conversations(user_id: str, tier: str = "free"):
-    """Obtiene historial de conversaciones"""
     session = get_session(user_id, tier)
     return {
         "conversations": {
             k: [{"role": m["role"], "content": m["content"][:200], "time": m["timestamp"]} 
-                for m in v[-10:]]  # Últimos 10 mensajes resumidos
+                for m in v[-10:]]
             for k, v in session.conversations.items()
         }
     }
 
 # ==========================================
-# INICIO DEL SERVIDOR (CORREGIDO, UNIFICADO)
+# INICIO DEL SERVIDOR
 # ==========================================
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Render usa este puerto
+    port = int(os.environ.get("PORT", 10000))
     print("=" * 80)
     print("🚀 APOLOXIA PRO ENTERPRISE - API v3.0")
     print("=" * 80)
