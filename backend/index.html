@@ -436,7 +436,6 @@
             text-transform: uppercase;
         }
 
-        /* Responsive */
         @media (max-width: 480px) {
             .splash-logo {
                 width: 110px;
@@ -527,13 +526,11 @@
 
     <script>
         // ==========================================
-        // CONEXIÓN CON EL CHAT - REDIRIGE A /chat (endpoint del backend)
+        // CONEXIÓN CON EL CHAT
         // ==========================================
         
-        // Estado global
         let userEmail = '';
         
-        // Inicialización
         document.addEventListener('DOMContentLoaded', () => {
             const savedEmail = localStorage.getItem('apoloxia_session_email');
             if (savedEmail) {
@@ -598,9 +595,9 @@
             interfaceDiv.classList.add('active');
         }
         
-        // CORRECCIÓN AQUÍ: redirige a /chat (endpoint del backend) en lugar de chat.html
+        // ✅ Función corregida: redirige al chat.html
         function accessAgent() {
-            window.location.href = '/chat';
+            window.location.href = 'chat.html';
         }
         
         function logout() {
