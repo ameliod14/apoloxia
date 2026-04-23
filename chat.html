@@ -1049,7 +1049,8 @@
 
 <script>
     // ========== CONFIGURACIÓN GLOBAL ==========
-    const API_BASE_URL = 'http://localhost:8000';
+    // ✅ CORREGIDO: usar cadena vacía para rutas relativas al mismo dominio
+    const API_BASE_URL = '';
     let state = {
         userEmail: '',
         userName: '',
