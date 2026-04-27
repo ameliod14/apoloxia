@@ -529,6 +529,13 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     if agent not in config.available_agents:
         agent = AgentType.GENERAL
     system = AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
+    
+    # ===== INSTRUCCIÓN DE IDIOMA =====
+    system += "\n\n📢 **INSTRUCCIÓN DE IDIOMA:** Responde SIEMPRE en el MISMO IDIOMA que el usuario ha usado en su mensaje. "
+    system += "Si el usuario escribe en inglés, responde en inglés; si escribe en francés, en francés; si escribe en alemán, en alemán; "
+    system += "si escribe en portugués, en portugués; si escribe en italiano, en italiano, etc. "
+    system += "NUNCA cambies de idioma. Mantén la coherencia lingüística con la pregunta del usuario.\n"
+    
     system += f"\n\n[Tier actual: {config.name} | Modelos disponibles: {', '.join(config.available_models)}]"
     
     # LIMITAR CONTEXTO para no exceder TPM [^8^]
