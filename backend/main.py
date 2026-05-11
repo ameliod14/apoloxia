@@ -156,6 +156,10 @@ class AgentType(Enum):
     MARKETING_DIGITAL = "marketing_digital"
     CREACION_CONTENIDO = "creacion_contenido"
     INVESTIGACION_CIENTIFICA = "investigacion_cientifica"
+    # ========== NUEVOS AGENTES ==========
+    GENERADOR_SITIOS_WEB = "generador_sitios_web"
+    CREADOR_PANELES_VENTAS = "creador_paneles_ventas"
+    DESARROLLADOR_AVANZADO = "desarrollador_avanzado"
 
 AGENT_PROMPTS = {
     AgentType.GENERAL: "Eres ApoloXia, un asistente de IA amigable y eficiente. Proporciona respuestas claras y concisas.",
@@ -191,6 +195,19 @@ AGENT_PROMPTS = {
     AgentType.MARKETING_DIGITAL: "Eres el Agente Marketing Digital de ApoloXia GT. Estratega de performance.",
     AgentType.CREACION_CONTENIDO: "Eres el Agente Creación de Contenido de ApoloXia GT. Creador de alto impacto.",
     AgentType.INVESTIGACION_CIENTIFICA: "Eres el Agente Investigación Científica de ApoloXia GT. Investigador académico.",
+    # ========== PROMPTS DE LOS NUEVOS AGENTES ==========
+    AgentType.GENERADOR_SITIOS_WEB: """Eres un experto desarrollador frontend. Genera código HTML/CSS/JS completo y responsivo para sitios web de negocios.
+El código debe ser moderno, usar una paleta oscura con acentos dorados (estilo lujoso), incluir secciones: Hero, Servicios, Testimonios, Contacto.
+Asegúrate de que sea una landing page funcional y atractiva. Responde SIEMPRE en el MISMO IDIOMA que el usuario.
+Si el usuario pide un sitio para un negocio específico, personaliza el contenido con el nombre y rubro. Entrega el código completo dentro de un bloque de código markdown (```html).""",
+    
+    AgentType.CREADOR_PANELES_VENTAS: """Eres un especialista en dashboards de ventas. Genera paneles interactivos con HTML/CSS/JS y Chart.js (incluye la librería CDN).
+Debe mostrar métricas clave (ventas, ingresos, conversiones) con gráficos de barras, líneas o dona. Estilo oscuro premium con detalles dorados.
+El panel debe ser completamente funcional, con datos de ejemplo realistas. Responde en el mismo idioma del usuario. Entrega el código completo en bloque ```html.""",
+    
+    AgentType.DESARROLLADOR_AVANZADO: """Eres un full-stack developer experto. Crea aplicaciones web completas, APIs simuladas, o componentes complejos según lo que pida el usuario.
+Soporta frameworks como React, Vue, o vanilla JS. El código debe ser limpio, bien comentado y escalable. Siempre responde en el mismo idioma del usuario.
+Si no se especifica, entrega una solución funcional con HTML/CSS/JS y explicación clara."""
 }
 
 # ============ CONFIGURACIÓN POR TIER ============
@@ -221,7 +238,9 @@ TIER_CONFIGS = {
          AgentType.RESPUESTA_HUMANA, AgentType.RECUPERA_VENTAS, AgentType.RECOMENDADOR_INTELIGENTE,
          AgentType.ATENCION_24_7, AgentType.AHORRO_TIEMPO, AgentType.ANALISTA_CONVERSACIONES,
          AgentType.PERSONALIZACION, AgentType.SEGUIMIENTO_AUTOMATICO, AgentType.EDUCADOR,
-         AgentType.MANEJO_OBJECIONES, AgentType.GENERADOR_LEADS, AgentType.RESUMEN_INTELIGENTE],
+         AgentType.MANEJO_OBJECIONES, AgentType.GENERADOR_LEADS, AgentType.RESUMEN_INTELIGENTE,
+         # NUEVOS AGENTES DISPONIBLES EN PLAN PLUS
+         AgentType.GENERADOR_SITIOS_WEB, AgentType.CREADOR_PANELES_VENTAS, AgentType.DESARROLLADOR_AVANZADO],
         50, True, True, True, True, True, True, True, True),
     "gt": TierConfig("ApoloXia GT", 5000, 90,
         ["compound", "compound-mini", "gpt-oss-120b", "gpt-oss-20b", "qwen-3-32b", "llama-4-scout", "llama-3.3-70b", "llama-3.1-8b"],
@@ -507,6 +526,10 @@ def select_relevant_agents(message: str, available_agents: List[AgentType]) -> L
         AgentType.MARKETING_DIGITAL: ["marketing", "anuncios", "seo", "redes sociales", "ventas"],
         AgentType.CREACION_CONTENIDO: ["escribir", "blog", "guion", "copy", "contenido"],
         AgentType.INVESTIGACION_CIENTIFICA: ["investigar", "paper", "estudio", "ciencia", "tesis"],
+        # Nuevos agentes también pueden ser detectados por palabras clave
+        AgentType.GENERADOR_SITIOS_WEB: ["sitio web", "página web", "landing page", "website", "página de aterrizaje", "crear web"],
+        AgentType.CREADOR_PANELES_VENTAS: ["panel de ventas", "dashboard", "tablero", "métricas", "gráfico", "chart"],
+        AgentType.DESARROLLADOR_AVANZADO: ["aplicación web", "app completa", "api", "react", "vue", "fullstack", "sistema complejo"],
     }
     scores = []
     for agent in available_agents:
