@@ -6,6 +6,7 @@ import json
 import uuid
 import asyncio
 import time
+import urllib.parse
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
@@ -23,6 +24,10 @@ import httpx
 # ============ CONFIGURACIÓN API KEYS (DESDE VARIABLES DE ENTORNO) ============
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+
+# Para WhatsApp Business API (opcional)
+WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
+WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN")
 
 # ============ MODELOS GROQ ACTUALIZADOS (ABRIL 2026) ============
 # SOLO modelos confirmados activos según documentación oficial Groq
@@ -195,19 +200,82 @@ AGENT_PROMPTS = {
     AgentType.MARKETING_DIGITAL: "Eres el Agente Marketing Digital de ApoloXia GT. Estratega de performance.",
     AgentType.CREACION_CONTENIDO: "Eres el Agente Creación de Contenido de ApoloXia GT. Creador de alto impacto.",
     AgentType.INVESTIGACION_CIENTIFICA: "Eres el Agente Investigación Científica de ApoloXia GT. Investigador académico.",
-    # ========== PROMPTS DE LOS NUEVOS AGENTES ==========
-    AgentType.GENERADOR_SITIOS_WEB: """Eres un experto desarrollador frontend. Genera código HTML/CSS/JS completo y responsivo para sitios web de negocios.
-El código debe ser moderno, usar una paleta oscura con acentos dorados (estilo lujoso), incluir secciones: Hero, Servicios, Testimonios, Contacto.
-Asegúrate de que sea una landing page funcional y atractiva. Responde SIEMPRE en el MISMO IDIOMA que el usuario.
-Si el usuario pide un sitio para un negocio específico, personaliza el contenido con el nombre y rubro. Entrega el código completo dentro de un bloque de código markdown (```html).""",
     
-    AgentType.CREADOR_PANELES_VENTAS: """Eres un especialista en dashboards de ventas. Genera paneles interactivos con HTML/CSS/JS y Chart.js (incluye la librería CDN).
-Debe mostrar métricas clave (ventas, ingresos, conversiones) con gráficos de barras, líneas o dona. Estilo oscuro premium con detalles dorados.
-El panel debe ser completamente funcional, con datos de ejemplo realistas. Responde en el mismo idioma del usuario. Entrega el código completo en bloque ```html.""",
-    
-    AgentType.DESARROLLADOR_AVANZADO: """Eres un full-stack developer experto. Crea aplicaciones web completas, APIs simuladas, o componentes complejos según lo que pida el usuario.
-Soporta frameworks como React, Vue, o vanilla JS. El código debe ser limpio, bien comentado y escalable. Siempre responde en el mismo idioma del usuario.
-Si no se especifica, entrega una solución funcional con HTML/CSS/JS y explicación clara."""
+    # ========== PROMPTS MEJORADOS PARA GENERACIÓN COMPLETA ==========
+    AgentType.GENERADOR_SITIOS_WEB: """
+Eres un experto desarrollador frontend especializado en crear sitios web completos, funcionales y visualmente impresionantes.
+
+Cuando un usuario te pida un sitio web, DEBES:
+1. Entender el tipo de negocio/idea que pide (ej: tienda, restaurante, portafolio, startup, clínica, inmobiliaria, tecnología, moda, etc.).
+2. Generar código HTML/CSS/JS totalmente autónomo, responsivo y listo para copiar y pegar en un archivo .html.
+3. El diseño debe ser moderno, atractivo, usar una paleta oscura con acentos dorados/gradientes (opcionalmente otros colores si el usuario lo específica).
+4. Incluir secciones típicas profesionales: 
+   - Navbar fijo con logo y menú hamburguesa en móvil
+   - Hero section con título impactante, subtítulo, CTA y animaciones suaves
+   - Servicios/Productos con cards animadas
+   - Sobre Nosotros / About
+   - Testimonios de clientes con carrusel
+   - Galería/Portafolio si aplica
+   - Precios/Paquetes si aplica
+   - Contacto (con formulario funcional usando Formspree o mailto)
+   - Footer completo con redes sociales, links y newsletter
+5. Usar Flexbox/Grid, fuentes de Google Fonts, FontAwesome (CDN) para iconos, y AOS (Animate On Scroll) para animaciones.
+6. Asegurarte de que el código sea 100% válido, semántico, accesible (ARIA labels) y funcione al abrirlo sin servidor.
+7. Si el usuario da un nombre de negocio o detalles, personaliza TODO el contenido con ese nombre, descripción, colores y tipografía.
+8. RESPONDER SIEMPRE EN EL MISMO IDIOMA que el usuario usó en su petición.
+9. ENTREGAR EL CÓDIGO COMPLETO dentro de un bloque de código markdown con la etiqueta ```html. No añadas explicaciones largas antes o después, solo una breve introducción y el bloque de código.
+10. El código debe incluir CSS interno en <style> y JS en <script>, todo en un solo archivo .html.
+11. Debe ser responsive: móvil, tablet y desktop.
+12. Incluir efectos hover, transiciones suaves, y un diseño que parezca hecho por una agencia profesional de $5000+.
+
+Si el usuario no da un nombre específico, usa un nombre genérico apropiado al nicho. Siempre entrega el código completo, nunca abreviado.
+""",
+
+    AgentType.CREADOR_PANELES_VENTAS: """
+Eres un especialista en dashboards de ventas, analytics y Business Intelligence.
+
+Cuando te pidan un panel de ventas, DEBES:
+1. Generar código HTML/CSS/JS completo con gráficos usando Chart.js (incluye la CDN).
+2. El panel debe mostrar métricas clave en tiempo real: ventas totales, ingresos mensuales, número de transacciones, tasa de conversión, clientes nuevos, ticket promedio, etc. (con datos de ejemplo realistas y variados).
+3. Incluir al menos 4 tipos de gráficos: barras (ventas por mes), líneas (tendencia), dona (categorías de productos), y KPI cards animadas.
+4. Diseño oscuro premium (dark mode) con tarjetas glassmorphism, gráficos claros, sidebar de navegación, y header con notificaciones.
+5. El código debe ser autónomo, responsivo y funcional al abrirse en un navegador.
+6. Incluir tabla de transacciones recientes con búsqueda y filtros simulados.
+7. Si el usuario pide un tipo específico de negocio o métricas, adáptalo completamente.
+8. RESPONDER EN EL MISMO IDIOMA del usuario.
+9. ENTREGAR EL CÓDIGO COMPLETO dentro de un bloque ```html. No omitas nada.
+10. Incluir interactividad: tooltips, filtros por fecha simulados, y animaciones de entrada.
+""",
+
+    AgentType.DESARROLLADOR_AVANZADO: """
+Eres un full-stack developer senior con 10+ años de experiencia en crear aplicaciones web completas, componentes complejos, APIs y sistemas empresariales.
+
+Dependiendo de lo que pida el usuario:
+
+SI PIDE UNA APLICACIÓN WEB (ej. lista de tareas, chat, CRM, panel admin, e-commerce simple):
+- Genera el código HTML/CSS/JS completo con funcionalidad real usando localStorage para persistencia de datos.
+- Incluir autenticación simulada, CRUD completo, búsqueda, filtros, paginación, y diseño profesional.
+- Si pide React/Vue/Angular, genera el código en ese framework con la estructura correcta.
+- Si no especifica, usa vanilla JS pero con arquitectura modular y limpia.
+
+SI PIDE UNA API:
+- Genera un esqueleto completo de Node.js/Express o Python/FastAPI con rutas, modelos, validaciones, middleware de auth, y manejo de errores.
+- Incluye documentación de endpoints y ejemplo de requests.
+
+SI PIDE UN COMPONENTE (ej. carrusel 3D, modal avanzado, drag-and-drop, data table):
+- Genera ese componente listo para integrar, con todas las funcionalidades y estados.
+- Incluye ejemplos de uso y props configurables.
+
+SI PIDE UN SCRIPT/AUTOMATIZACIÓN:
+- Genera código Python o JavaScript completo con manejo de errores, logging, y comentarios explicativos.
+
+REGLAS ESTRICTAS:
+- El código debe ser limpio, bien comentado, escalable y seguir las mejores prácticas actuales (2026).
+- Siempre responde en el MISMO IDIOMA del usuario.
+- Entrega el código completo dentro del bloque markdown correspondiente (```html, ```javascript, ```python, etc.).
+- Si el código es muy largo, entrégalo completo sin abreviar ni usar comentarios del tipo "// ... resto del código".
+- Explica brevemente cómo usarlo al final, pero prioriza el código funcional.
+"""
 }
 
 # ============ CONFIGURACIÓN POR TIER ============
@@ -398,6 +466,29 @@ class ChatResponse(BaseModel):
     search_results: Optional[List[Dict]] = None
     multi_agent_responses: Optional[List[Dict]] = None
 
+class ShareRequest(BaseModel):
+    platform: str  # "whatsapp", "wechat", "facebook", "tiktok", "instagram", "twitter", "telegram", "linkedin", "reddit", "pinterest", "snapchat", "discord", "email"
+    text: str
+    user_phone_number: Optional[str] = None  # para WhatsApp
+    user_wechat_id: Optional[str] = None  # para WeChat (opcional)
+    url: Optional[str] = None  # URL opcional para compartir junto al texto
+
+class ShareLinksResponse(BaseModel):
+    whatsapp: str
+    wechat: str
+    facebook: str
+    tiktok: str
+    instagram: str
+    twitter: str
+    telegram: str
+    linkedin: str
+    reddit: str
+    pinterest: str
+    snapchat: str
+    discord: str
+    email: str
+    copy_text: str
+
 class TierInfo(BaseModel):
     tier: str
     name: str
@@ -411,6 +502,91 @@ class UserConfigUpdate(BaseModel):
     theme: Optional[str] = None
     language: Optional[str] = None
     notifications: Optional[bool] = None
+
+# ============ FUNCIONES DE COMPARTIR EN REDES SOCIALES ============
+def generate_share_links(text: str, url: Optional[str] = None) -> ShareLinksResponse:
+    """Genera URLs de compartir para todas las plataformas soportadas."""
+    encoded_text = urllib.parse.quote(text)
+    encoded_url = urllib.parse.quote(url) if url else ""
+    
+    # WhatsApp
+    whatsapp_url = f"https://wa.me/?text={encoded_text}"
+    
+    # WeChat (deep link limitado, abre la app)
+    wechat_url = f"weixin://dl/chat?text={encoded_text}"
+    
+    # Facebook
+    facebook_url = f"https://www.facebook.com/sharer/sharer.php?quote={encoded_text}&u={encoded_url}" if url else f"https://www.facebook.com/sharer/sharer.php?quote={encoded_text}"
+    
+    # TikTok (esquema de app, solo funciona en móvil con app instalada)
+    tiktok_url = f"snssdk112://share?text={encoded_text}"
+    
+    # Instagram (limitado, usa esquema de app)
+    instagram_url = f"instagram://library?AssetPath={encoded_text}"
+    
+    # Twitter/X
+    twitter_url = f"https://twitter.com/intent/tweet?text={encoded_text}&url={encoded_url}" if url else f"https://twitter.com/intent/tweet?text={encoded_text}"
+    
+    # Telegram
+    telegram_url = f"https://t.me/share/url?url={encoded_url}&text={encoded_text}" if url else f"https://t.me/share/url?text={encoded_text}"
+    
+    # LinkedIn
+    linkedin_url = f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_url}" if url else f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_text}"
+    
+    # Reddit
+    reddit_url = f"https://www.reddit.com/submit?title={encoded_text}&url={encoded_url}" if url else f"https://www.reddit.com/submit?title={encoded_text}"
+    
+    # Pinterest
+    pinterest_url = f"https://pinterest.com/pin/create/button/?description={encoded_text}&url={encoded_url}" if url else f"https://pinterest.com/pin/create/button/?description={encoded_text}"
+    
+    # Snapchat (esquema de app)
+    snapchat_url = f"snapchat://share?text={encoded_text}"
+    
+    # Discord (usa esquema de app o web)
+    discord_url = f"https://discord.com/channels/@me?message={encoded_text}"
+    
+    # Email
+    email_url = f"mailto:?subject=Compartido desde ApoloXia&body={encoded_text}"
+    
+    return ShareLinksResponse(
+        whatsapp=whatsapp_url,
+        wechat=wechat_url,
+        facebook=facebook_url,
+        tiktok=tiktok_url,
+        instagram=instagram_url,
+        twitter=twitter_url,
+        telegram=telegram_url,
+        linkedin=linkedin_url,
+        reddit=reddit_url,
+        pinterest=pinterest_url,
+        snapchat=snapchat_url,
+        discord=discord_url,
+        email=email_url,
+        copy_text=text
+    )
+
+async def send_whatsapp_message(phone_number: str, text: str) -> Dict:
+    """
+    Envía un mensaje vía WhatsApp Business API (requiere configurar variables de entorno).
+    Retorna el resultado de la API.
+    """
+    if not WHATSAPP_PHONE_NUMBER_ID or not WHATSAPP_ACCESS_TOKEN:
+        return {"error": "WhatsApp Business API no configurada. Añade WHATSAPP_PHONE_NUMBER_ID y WHATSAPP_ACCESS_TOKEN."}
+    
+    url = f"https://graph.facebook.com/v18.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": phone_number,
+        "type": "text",
+        "text": {"body": text}
+    }
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+        return resp.json()
 
 # ============ FUNCIONES DE API ============
 async def call_groq_api(messages: List[Dict], model_id: str, temperature: float = 0.7, max_tokens: Optional[int] = None) -> str:
@@ -480,13 +656,28 @@ async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
                 print(f"Tavily error: {resp.status_code}")
                 return []
             data = resp.json()
-            return [{"title": r.get("title", ""), "url": r.get("url", ""), "content": r.get("content", ""), "score": r.get("score", 0)} for r in data.get("results", [])]
+            results = []
+            for r in data.get("results", []):
+                results.append({
+                    "title": r.get("title", ""),
+                    "url": r.get("url", ""),
+                    "content": r.get("content", ""),
+                    "score": r.get("score", 0)
+                })
+            if data.get("answer"):
+                results.insert(0, {
+                    "title": "Respuesta destacada",
+                    "url": "",
+                    "content": data["answer"],
+                    "score": 1.0
+                })
+            return results
     except Exception as e:
         print(f"Tavily exception: {e}")
         return []
 
 def needs_web_search(message: str) -> bool:
-    indicators = ["actualidad", "actual", "hoy", "ahora", "reciente", "último", "nuevo", "news", "today", "now", "recent", "latest", "current", "2026", "2025", "precio de", "cotización", "clima", "resultado", "elección", "partido", "lanzamiento", "estreno", "evento", "conferencia", "mercado", "bolsa"]
+    indicators = ["actualidad", "actual", "hoy", "ahora", "reciente", "último", "nuevo", "news", "today", "now", "recent", "latest", "current", "2026", "2025", "precio de", "cotización", "clima", "resultado", "elección", "partido", "lanzamiento", "estreno", "evento", "conferencia", "mercado", "bolsa", "noticia", "breaking", "última hora", "qué pasó", "qué sucede", "cambio", "nuevo lanzamiento", "actualización"]
     return any(ind in message.lower() for ind in indicators)
 
 async def run_multi_agent(user_message: str, tier: str, context: List[Dict]) -> List[Dict]:
@@ -527,9 +718,9 @@ def select_relevant_agents(message: str, available_agents: List[AgentType]) -> L
         AgentType.CREACION_CONTENIDO: ["escribir", "blog", "guion", "copy", "contenido"],
         AgentType.INVESTIGACION_CIENTIFICA: ["investigar", "paper", "estudio", "ciencia", "tesis"],
         # Nuevos agentes también pueden ser detectados por palabras clave
-        AgentType.GENERADOR_SITIOS_WEB: ["sitio web", "página web", "landing page", "website", "página de aterrizaje", "crear web"],
-        AgentType.CREADOR_PANELES_VENTAS: ["panel de ventas", "dashboard", "tablero", "métricas", "gráfico", "chart"],
-        AgentType.DESARROLLADOR_AVANZADO: ["aplicación web", "app completa", "api", "react", "vue", "fullstack", "sistema complejo"],
+        AgentType.GENERADOR_SITIOS_WEB: ["sitio web", "página web", "landing page", "website", "página de aterrizaje", "crear web", "diseño web", "portafolio web", "web para"],
+        AgentType.CREADOR_PANELES_VENTAS: ["panel de ventas", "dashboard", "tablero", "métricas", "gráfico", "chart", "panel admin", "analytics"],
+        AgentType.DESARROLLADOR_AVANZADO: ["aplicación web", "app completa", "api", "react", "vue", "fullstack", "sistema complejo", "crud", "aplicación completa", "software"],
     }
     scores = []
     for agent in available_agents:
@@ -556,7 +747,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     # ===== INSTRUCCIÓN DE IDIOMA =====
     system += "\n\n📢 **INSTRUCCIÓN DE IDIOMA:** Responde SIEMPRE en el MISMO IDIOMA que el usuario ha usado en su mensaje. "
     system += "Si el usuario escribe en inglés, responde en inglés; si escribe en francés, en francés; si escribe en alemán, en alemán; "
-    system += "si escribe en portugués, en portugués; si escribe en italiano, en italiano, etc. "
+    system += "si escribe en portugués, en portugués; si escribe en italiano, en italiano, en chino, en chino; en japonés, en japonés, etc. "
     system += "NUNCA cambies de idioma. Mantén la coherencia lingüística con la pregunta del usuario.\n"
     
     system += f"\n\n[Tier actual: {config.name} | Modelos disponibles: {', '.join(config.available_models)}]"
@@ -654,6 +845,10 @@ async def chat(request: ChatRequest):
     # No exceder el max_completion del modelo
     safe_max_tokens = min(tier_max_tokens, model.max_completion)
     
+    # Para agentes de desarrollo web, permitir respuestas más largas
+    if request.agent_type in ["generador_sitios_web", "creador_paneles_ventas", "desarrollador_avanzado"]:
+        safe_max_tokens = min(4096, model.max_completion)
+    
     temp = 0.7 if tier == "free" else 0.5
     
     # Intentar con modelo principal, fallback si falla
@@ -702,6 +897,36 @@ async def chat(request: ChatRequest):
         search_results=web_results,
         multi_agent_responses=multi_resp
     )
+
+# ============ ENDPOINTS PARA COMPARTIR EN REDES SOCIALES ============
+
+@app.post("/share/links", response_model=ShareLinksResponse)
+async def get_share_links(share_req: ShareRequest):
+    """Devuelve las URLs para compartir en diferentes plataformas."""
+    return generate_share_links(share_req.text, share_req.url)
+
+@app.post("/share/send")
+async def share_to_platform(share_req: ShareRequest):
+    """Envía el mensaje directamente a la plataforma (solo WhatsApp implementado)."""
+    platform = share_req.platform.lower()
+    text = share_req.text
+    
+    if platform == "whatsapp":
+        if not share_req.user_phone_number:
+            raise HTTPException(400, "Se requiere número de teléfono para WhatsApp")
+        result = await send_whatsapp_message(share_req.user_phone_number, text)
+        return {"platform": "whatsapp", "message": "Enviado", "result": result}
+    else:
+        # Para otras plataformas, solo devolvemos los enlaces
+        links = generate_share_links(text, share_req.url)
+        return {"platform": platform, "message": "Use los enlaces de compartir", "links": links.dict()}
+
+@app.get("/share/links")
+async def get_share_links_get(text: str, url: Optional[str] = None):
+    """Versión GET para obtener enlaces de compartir (útil para uso rápido)."""
+    return generate_share_links(text, url).dict()
+
+# ============ ENDPOINTS EXISTENTES ============
 
 @app.get("/tier-info/{user_id}", response_model=TierInfo)
 async def get_tier_info(user_id: str):
@@ -756,6 +981,7 @@ async def list_agents():
 async def health_check():
     return {"status": "ok", "version": "3.1.0", "groq_api": "configured", "tavily_api": "configured",
             "models_loaded": len(MODELS), "agents_loaded": len(AGENT_PROMPTS),
+            "share_platforms": 13, "web_builders": 3,
             "note": "Rate limits implementados para evitar errores 429"}
 
 @app.post("/search-web")
@@ -844,7 +1070,7 @@ async def serve_chat():
 @app.get("/{filename}")
 async def serve_static_file(filename: str):
     api_routes = {"chat", "models", "agents", "health", "conversations", "tier-info", 
-                  "user-config", "upgrade-tier", "search-web"}
+                  "user-config", "upgrade-tier", "search-web", "share"}
     if filename in api_routes:
         raise HTTPException(404, "Not found")
     if filename.startswith(".") or ".." in filename:
@@ -858,6 +1084,8 @@ if __name__ == "__main__":
     print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
     print("🔍 Tavily configurado | 💾 Memoria por usuario activada")
     print("⏱️ Rate limits de Groq implementados (TPM/RPM controlados)")
+    print("📱 Compartir a 13 plataformas: WhatsApp, WeChat, Facebook, TikTok, Instagram, Twitter, Telegram, LinkedIn, Reddit, Pinterest, Snapchat, Discord, Email")
+    print("🌐 Generadores web activos: Sitios Web, Dashboards, Apps Full-Stack")
     print("✅ Modelos verificados: llama-3.1-8b, llama-3.3-70b, llama-4-scout, gpt-oss-20b/120b, qwen3-32b, compound")
     print("❌ Eliminado: llama-3.3-70b-specdec (decommissioned)")
     print("=" * 60)
