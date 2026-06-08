@@ -360,16 +360,26 @@
             letter-spacing: -0.02em;
         }
 
+        /* Botones de acceso (dos) */
+        .buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
         .access-btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 1rem;
-            padding: 1.5rem 3rem;
+            padding: 1.2rem 2.5rem;
             background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
             border: none;
             border-radius: 20px;
             color: var(--pure-black);
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             font-weight: 800;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -378,7 +388,21 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 10px 40px rgba(212, 175, 55, 0.3);
-            margin-bottom: 3rem;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .access-btn.jarvis-btn {
+            background: linear-gradient(135deg, #1e2a3a 0%, #0f172a 50%, #1e2a3a 100%);
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.1);
+        }
+
+        .access-btn.jarvis-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(212, 175, 55, 0.3);
+            background: linear-gradient(135deg, #2a3a4a 0%, #1a2a3a 50%, #2a3a4a 100%);
         }
 
         .access-btn:hover {
@@ -402,9 +426,9 @@
         }
 
         .access-btn svg {
-            width: 28px;
-            height: 28px;
-            stroke-width: 2.5;
+            width: 24px;
+            height: 24px;
+            stroke-width: 2;
         }
 
         .logout-btn {
@@ -420,7 +444,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 1rem;
+            margin-top: 0rem;
         }
 
         .logout-btn:hover {
@@ -434,6 +458,7 @@
             color: var(--text-muted);
             letter-spacing: 0.1em;
             text-transform: uppercase;
+            margin-top: 1.5rem;
         }
 
         @media (max-width: 480px) {
@@ -456,8 +481,9 @@
             }
             
             .access-btn {
-                padding: 1.25rem 2rem;
-                font-size: 1.1rem;
+                padding: 1rem 1.8rem;
+                font-size: 1rem;
+                max-width: 300px;
             }
         }
     </style>
@@ -504,12 +530,28 @@
             <p class="welcome-message">Bienvenido</p>
             <p class="user-name" id="userNameDisplay">Usuario</p>
             
-            <button class="access-btn" onclick="accessAgent()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                </svg>
-                Acceder al agente de IA Apolo
-            </button>
+            <div class="buttons-container">
+                <button class="access-btn" onclick="accessAgent()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    Acceder al agente de IA Apolo
+                </button>
+                
+                <!-- NUEVO BOTÓN PARA JARVIS (ASISTENTE DE VOZ) -->
+                <button class="access-btn jarvis-btn" onclick="accessJarvis()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 2 L12 7"/>
+                        <path d="M12 17 L12 22"/>
+                        <path d="M2 12 L7 12"/>
+                        <path d="M17 12 L22 12"/>
+                        <path d="M8 8 L12 12 L16 8"/>
+                        <path d="M8 16 L12 12 L16 16"/>
+                    </svg>
+                    Asistente de voz J.A.R.V.I.S.
+                </button>
+            </div>
             
             <button class="logout-btn" onclick="logout()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -526,7 +568,7 @@
 
     <script>
         // ==========================================
-        // CONEXIÓN CON EL CHAT
+        // CONEXIÓN CON EL CHAT Y JARVIS
         // ==========================================
         
         let userEmail = '';
@@ -595,14 +637,20 @@
             interfaceDiv.classList.add('active');
         }
         
-        // ✅ Función corregida: redirige al chat.html
+        // Redirige al chat estándar
         function accessAgent() {
             window.location.href = 'chat.html';
+        }
+        
+        // ✅ Nueva función para acceder al asistente de voz Jarvis
+        function accessJarvis() {
+            window.location.href = 'jarvis.html';
         }
         
         function logout() {
             localStorage.removeItem('apoloxia_session_email');
             localStorage.removeItem('apoloxia_user_email');
+            localStorage.removeItem('jarvis_conversation_id'); // Limpia también ID de Jarvis
             window.location.reload();
         }
         
