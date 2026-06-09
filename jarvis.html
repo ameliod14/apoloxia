@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
+        /* ==================== ESTILOS COMPLETOS ==================== */
         :root {
             --gold: #FFD700;
             --gold-dim: #B8860B;
@@ -726,7 +727,6 @@
             box-shadow: 0 0 10px var(--cyan);
             transition: width 0.3s;
         }
-        /* Selector de idioma adicional */
         .lang-selector {
             position: fixed;
             bottom: 120px;
@@ -867,7 +867,6 @@
         </div>
     </div>
 
-    <!-- Selector de idioma de voz -->
     <div class="lang-selector">
         <label><i class="fas fa-language"></i> Voz:</label>
         <select id="voiceLangSelect">
@@ -888,8 +887,8 @@
     </div>
 
     <script>
-        // ==================== CONFIGURACIÓN BACKEND ====================
-        const API_BASE = '';
+        // ==================== CONFIGURACIÓN GLOBAL ====================
+        const API_BASE = '';  // Misma ruta del backend
         let conversationId = localStorage.getItem('jarvis_conversation_id') || null;
         let userEmail = localStorage.getItem('apoloxia_session_email');
         if (!userEmail) {
@@ -900,11 +899,24 @@
         let currentAgent = 'general';
         let lastCommand = '';
         let lastResponse = 'J.A.R.V.I.S. v3.0 listo. Voz humana multilingüe activada.';
+        let isListening = false;
 
-        // ==================== VOZ MEJORADA (HUMANA) ====================
+        // ==================== ELEMENTOS DOM ====================
+        const terminalElem = document.getElementById('terminal');
+        const termBodyElem = document.getElementById('termBody');
+        const statusTextSpan = document.getElementById('statusText');
+        const micBtn = document.getElementById('micBtn');
+        const textInput = document.getElementById('textInput');
+        const bootScreenDiv = document.getElementById('bootScreen');
+        const bootBar = document.getElementById('bootBar');
+        const bootLog = document.getElementById('bootLog');
+        const starFieldDiv = document.getElementById('starField');
+        const voiceLangSelect = document.getElementById('voiceLangSelect');
+        const micIcon = document.getElementById('micIcon');
+
+        // ==================== VOZ HUMANA ====================
         let speechSynth = window.speechSynthesis;
         let availableVoices = [];
-        let preferredLang = 'auto';
 
         function loadVoices() {
             availableVoices = speechSynth.getVoices();
@@ -961,7 +973,7 @@
             if (!text || text.length===0) return;
             let detectedLang = detectLanguageFromText(text);
             let targetLangCode = getFullLangCode(detectedLang);
-            const manualLang = document.getElementById('voiceLangSelect').value;
+            const manualLang = voiceLangSelect.value;
             if (manualLang !== 'auto') targetLangCode = manualLang;
             let voice = getBestVoiceForLang(targetLangCode);
             let utterance = new SpeechSynthesisUtterance(text);
@@ -974,9 +986,8 @@
             speechSynth.speak(utterance);
         }
 
-        // ==================== RECONOCIMIENTO DE VOZ MULTILINGÜE ====================
+        // ==================== RECONOCIMIENTO DE VOZ ====================
         let recognition = null;
-        let isListening = false;
 
         function initRecognition(langCode) {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return null;
@@ -987,19 +998,19 @@
             recog.lang = langCode;
             recog.onstart = () => {
                 isListening = true;
-                document.getElementById('micBtn').classList.add('recording');
-                statusTextSpan.textContent = 'ESCUCHANDO...';
-                document.getElementById('micIcon').className = 'fas fa-microphone-lines';
+                if (micBtn) micBtn.classList.add('recording');
+                if (statusTextSpan) statusTextSpan.textContent = 'ESCUCHANDO...';
+                if (micIcon) micIcon.className = 'fas fa-microphone-lines';
             };
             recog.onend = () => {
                 isListening = false;
-                document.getElementById('micBtn').classList.remove('recording');
-                statusTextSpan.textContent = 'SISTEMA OPERATIVO';
-                document.getElementById('micIcon').className = 'fas fa-microphone';
+                if (micBtn) micBtn.classList.remove('recording');
+                if (statusTextSpan) statusTextSpan.textContent = 'SISTEMA OPERATIVO';
+                if (micIcon) micIcon.className = 'fas fa-microphone';
             };
             recog.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
-                document.getElementById('textInput').value = transcript;
+                if (textInput) textInput.value = transcript;
                 sendMessage();
             };
             recog.onerror = (event) => {
@@ -1011,40 +1022,41 @@
         }
 
         function updateRecognitionLang() {
-            const manualLang = document.getElementById('voiceLangSelect').value;
-            if (recognition) {
+            if (recognition && voiceLangSelect) {
+                const manualLang = voiceLangSelect.value;
                 if (manualLang !== 'auto') recognition.lang = manualLang;
                 else recognition.lang = navigator.language || 'es-ES';
             }
         }
 
-        // Inicializar reconocimiento (por defecto auto)
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        if (('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) && micBtn) {
             recognition = initRecognition(navigator.language || 'es-ES');
         }
 
-        document.getElementById('voiceLangSelect').addEventListener('change', () => {
-            updateRecognitionLang();
-            const selected = document.getElementById('voiceLangSelect').value;
-            let msg = selected === 'auto' ? 'Idioma de voz automático (detecta texto)' : `Idioma cambiado a ${selected}`;
-            showTerminal('🗣️ Idioma', msg);
-        });
+        if (voiceLangSelect) {
+            voiceLangSelect.addEventListener('change', () => {
+                updateRecognitionLang();
+                const selected = voiceLangSelect.value;
+                let msg = selected === 'auto' ? 'Idioma de voz automático (detecta texto)' : `Idioma cambiado a ${selected}`;
+                showTerminal('🗣️ Idioma', msg);
+            });
+        }
 
         function toggleMic() {
             if (!recognition) { showTerminal('ERROR','Reconocimiento de voz no disponible.'); return; }
             if (isListening) recognition.stop();
             else recognition.start();
         }
-        document.getElementById('micBtn').onclick = toggleMic;
+        if (micBtn) micBtn.onclick = toggleMic;
 
         // ==================== ENVÍO AL BACKEND ====================
         async function sendMessage() {
-            const message = document.getElementById('textInput').value.trim();
+            const message = textInput ? textInput.value.trim() : '';
             if (!message) return;
-            document.getElementById('textInput').value = '';
+            if (textInput) textInput.value = '';
             lastCommand = message;
             showTerminal(message, 'Procesando consulta en Apoloxia AI...');
-            statusTextSpan.textContent = 'PROCESANDO...';
+            if (statusTextSpan) statusTextSpan.textContent = 'PROCESANDO...';
             if (!conversationId) {
                 conversationId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
                 localStorage.setItem('jarvis_conversation_id', conversationId);
@@ -1070,24 +1082,27 @@
                 const aiResponse = data.response || 'Lo siento, no pude procesar tu solicitud.';
                 lastResponse = aiResponse;
                 showTerminal(message, aiResponse);
-                statusTextSpan.textContent = 'SISTEMA OPERATIVO';
+                if (statusTextSpan) statusTextSpan.textContent = 'SISTEMA OPERATIVO';
                 speakText(aiResponse);
             } catch (error) {
                 console.error(error);
                 showTerminal(message, `❌ Error: ${error.message}. Verifica el backend.`);
-                statusTextSpan.textContent = 'ERROR DE RED';
+                if (statusTextSpan) statusTextSpan.textContent = 'ERROR DE RED';
                 lastResponse = `Error: ${error.message}`;
             }
         }
 
         function showTerminal(command, response) {
+            if (!termBodyElem) return;
             const timestamp = new Date().toLocaleTimeString('es-ES', { hour12: false });
-            document.getElementById('termBody').innerHTML = `
+            termBodyElem.innerHTML = `
                 <div class="cmd-line">[${timestamp}] ${escapeHtml(command)}</div>
                 <div class="resp-line">${escapeHtml(response)}<span class="cursor-blink"></span></div>
             `;
-            document.getElementById('terminal').classList.add('active');
-            setTimeout(() => { document.getElementById('terminal').classList.remove('active'); }, 10000);
+            if (terminalElem) terminalElem.classList.add('active');
+            setTimeout(() => {
+                if (terminalElem) terminalElem.classList.remove('active');
+            }, 10000);
         }
 
         function escapeHtml(str) {
@@ -1095,6 +1110,7 @@
         }
 
         function handleKeyPress(event) { if (event.key === 'Enter') sendMessage(); }
+        if (textInput) textInput.onkeypress = handleKeyPress;
 
         // ==================== COMPARTIR REDES ====================
         async function shareToNetwork(network) {
@@ -1125,7 +1141,7 @@
             if (network) btn.addEventListener('click', (e) => { e.preventDefault(); shareToNetwork(network); });
         });
 
-        // ==================== CLOCK, UPTIME, STATUS ====================
+        // ==================== RELOJ, UPTIME Y STATUS ====================
         function updateClock() { document.getElementById('clock').textContent = new Date().toLocaleTimeString('es-ES', { hour12: false }); }
         let uptimeSeconds = 0;
         function updateUptime() {
@@ -1142,83 +1158,84 @@
         const statusPhrases = ['SISTEMA OPERATIVO', 'ESPERANDO ÓRDENES', 'CONECTADO A APOLOXIA', 'LISTO PARA ASISTIR', 'REDES ACTIVAS', 'NUCLEO ESTABLE'];
         let statusIndex = 0;
         setInterval(() => {
-            if (!isListening) {
+            if (!isListening && statusTextSpan) {
                 statusIndex = (statusIndex+1)%statusPhrases.length;
-                document.getElementById('statusText').textContent = statusPhrases[statusIndex];
+                statusTextSpan.textContent = statusPhrases[statusIndex];
             }
         }, 4000);
 
         // ==================== PARTÍCULAS Y ESTRELLAS ====================
         const canvas = document.getElementById('particleCanvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-        class Particle {
-            constructor() {
-                this.reset();
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            class Particle {
+                constructor() { this.reset(); }
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.speedX = (Math.random() - 0.5) * 0.5;
+                    this.speedY = (Math.random() - 0.5) * 0.5;
+                    this.opacity = Math.random() * 0.5 + 0.2;
+                    this.color = Math.random() > 0.5 ? '0,240,255' : '255,215,0';
+                }
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    if (this.x<0 || this.x>canvas.width || this.y<0 || this.y>canvas.height) this.reset();
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+                    ctx.fillStyle = `rgba(${this.color},${this.opacity})`;
+                    ctx.fill();
+                }
             }
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 0.5;
-                this.speedX = (Math.random() - 0.5) * 0.5;
-                this.speedY = (Math.random() - 0.5) * 0.5;
-                this.opacity = Math.random() * 0.5 + 0.2;
-                this.color = Math.random() > 0.5 ? '0,240,255' : '255,215,0';
-            }
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                if (this.x<0 || this.x>canvas.width || this.y<0 || this.y>canvas.height) this.reset();
-            }
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
-                ctx.fillStyle = `rgba(${this.color},${this.opacity})`;
-                ctx.fill();
-            }
-        }
-        for(let i=0;i<150;i++) particles.push(new Particle());
-        function drawConnections() {
-            for(let i=0;i<particles.length;i++) {
-                for(let j=i+1;j<particles.length;j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx*dx+dy*dy);
-                    if(dist<120) {
-                        ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = `rgba(0,240,255,${0.1*(1-dist/120)})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
+            for(let i=0;i<150;i++) particles.push(new Particle());
+            function drawConnections() {
+                for(let i=0;i<particles.length;i++) {
+                    for(let j=i+1;j<particles.length;j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx*dx+dy*dy);
+                        if(dist<120) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(0,240,255,${0.1*(1-dist/120)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
                     }
                 }
             }
-        }
-        function animate() {
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            particles.forEach(p=>{p.update(); p.draw();});
-            drawConnections();
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        const starFieldDiv = document.getElementById('starField');
-        for(let i=0;i<20;i++) {
-            const star = document.createElement('div');
-            star.className = 'star-particle';
-            star.innerHTML = '<i class="fas fa-star"></i>';
-            star.style.left = Math.random()*100+'%';
-            star.style.top = Math.random()*100+'%';
-            star.style.animationDelay = Math.random()*2+'s';
-            star.style.fontSize = (Math.random()*6+4)+'px';
-            starFieldDiv.appendChild(star);
+            function animate() {
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                particles.forEach(p=>{p.update(); p.draw();});
+                drawConnections();
+                requestAnimationFrame(animate);
+            }
+            animate();
         }
 
-        // Boot sequence
+        if (starFieldDiv) {
+            for(let i=0;i<20;i++) {
+                const star = document.createElement('div');
+                star.className = 'star-particle';
+                star.innerHTML = '<i class="fas fa-star"></i>';
+                star.style.left = Math.random()*100+'%';
+                star.style.top = Math.random()*100+'%';
+                star.style.animationDelay = Math.random()*2+'s';
+                star.style.fontSize = (Math.random()*6+4)+'px';
+                starFieldDiv.appendChild(star);
+            }
+        }
+
+        // ==================== BOOT SEQUENCE ====================
         const bootLogs = [
             'Inicializando núcleo neural...',
             'Cargando módulos de procesamiento...',
@@ -1230,22 +1247,19 @@
             'Sistema listo. Bienvenido.'
         ];
         let bootStep = 0;
-        const bootBar = document.getElementById('bootBar');
-        const bootLog = document.getElementById('bootLog');
-        const bootScreenDiv = document.getElementById('bootScreen');
         function runBoot() {
             if (bootStep < bootLogs.length) {
-                bootLog.textContent = bootLogs[bootStep];
-                bootBar.style.width = ((bootStep+1)/bootLogs.length*100)+'%';
+                if (bootLog) bootLog.textContent = bootLogs[bootStep];
+                if (bootBar) bootBar.style.width = ((bootStep+1)/bootLogs.length*100)+'%';
                 bootStep++;
                 setTimeout(runBoot,400);
             } else {
-                setTimeout(()=> bootScreenDiv.classList.add('hidden'),800);
+                if (bootScreenDiv) bootScreenDiv.classList.add('hidden');
             }
         }
         setTimeout(runBoot,500);
 
-        // Mensaje de bienvenida con voz humana
+        // Mensaje de bienvenida con voz
         setTimeout(() => {
             speakText(lastResponse);
             showTerminal('Inicialización', lastResponse);
