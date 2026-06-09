@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J.A.R.V.I.S. v2.0 — Conectado a Apoloxia AI</title>
+    <title>J.A.R.V.I.S. v3.0 — Voz Humana MultiIdioma | Apoloxia AI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        /* ===== TODO EL ESTILO ORIGINAL SE MANTIENE EXACTAMENTE IGUAL ===== */
         :root {
             --gold: #FFD700;
             --gold-dim: #B8860B;
@@ -17,9 +16,7 @@
             --glass: rgba(0, 0, 0, 0.4);
             --glass-border: rgba(255, 255, 255, 0.08);
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             background: #000;
             color: #fff;
@@ -32,8 +29,6 @@
             justify-content: center;
             position: relative;
         }
-
-        /* ===== CANVAS PARTICLES ===== */
         #particleCanvas {
             position: fixed;
             top: 0; left: 0;
@@ -41,8 +36,6 @@
             z-index: 0;
             pointer-events: none;
         }
-
-        /* ===== GRID OVERLAY ===== */
         .grid-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -59,24 +52,14 @@
             0% { background-position: 0 0; }
             100% { background-position: 50px 50px; }
         }
-
-        /* ===== SCAN LINES ===== */
         .scan-lines {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 0, 0, 0.3) 2px,
-                rgba(0, 0, 0, 0.3) 4px
-            );
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
             z-index: 2;
             pointer-events: none;
         }
-
-        /* ===== HUD CORNERS ===== */
         .hud-corner {
             position: fixed;
             width: 80px; height: 80px;
@@ -101,8 +84,6 @@
         .hud-corner.br { bottom: 30px; right: 30px; }
         .hud-corner.br::before { width: 40px; height: 2px; bottom: 0; right: 0; }
         .hud-corner.br::after { width: 2px; height: 40px; bottom: 0; right: 0; }
-
-        /* ===== DATA RINGS ===== */
         .data-ring {
             position: fixed;
             border: 1px solid rgba(0, 240, 255, 0.1);
@@ -111,14 +92,12 @@
             z-index: 1;
         }
         .data-ring-1 { width: 500px; height: 500px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotateRing 30s linear infinite; }
-        .data-ring-2 { width: 700px; height: 700px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotateRing 40s linear infinite reverse; border-color: rgba(255, 215, 0, 0.08); }
-        .data-ring-3 { width: 900px; height: 900px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotateRing 50s linear infinite; border-color: rgba(0, 240, 255, 0.05); border-style: dashed; }
+        .data-ring-2 { width: 700px; height: 700px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotateRing 40s linear infinite reverse; border-color: rgba(255,215,0,0.08); }
+        .data-ring-3 { width: 900px; height: 900px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotateRing 50s linear infinite; border-color: rgba(0,240,255,0.05); border-style: dashed; }
         @keyframes rotateRing {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
-
-        /* ===== MAIN CONTAINER ===== */
         .main-container {
             position: relative;
             z-index: 10;
@@ -127,8 +106,6 @@
             align-items: center;
             gap: 25px;
         }
-
-        /* ===== TOP BAR INFO ===== */
         .top-bar {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -158,8 +135,6 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
-
-        /* ===== TITLE ===== */
         .title-section {
             text-align: center;
             margin-bottom: 10px;
@@ -173,7 +148,7 @@
             background: linear-gradient(180deg, #fff 0%, var(--cyan) 50%, var(--cyan-dim) 100%);
             -webkit-background-clip: text;
             background-clip: text;
-            text-shadow: 0 0 40px rgba(0, 240, 255, 0.3);
+            text-shadow: 0 0 40px rgba(0,240,255,0.3);
             position: relative;
         }
         .main-title::after {
@@ -195,22 +170,20 @@
         .subtitle {
             font-family: 'Share Tech Mono', monospace;
             font-size: 11px;
-            color: rgba(255, 215, 0, 0.7);
+            color: rgba(255,215,0,0.7);
             letter-spacing: 6px;
             margin-top: 5px;
         }
         .version-tag {
             display: inline-block;
-            background: rgba(255, 215, 0, 0.15);
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            background: rgba(255,215,0,0.15);
+            border: 1px solid rgba(255,215,0,0.3);
             padding: 2px 10px;
             border-radius: 4px;
             font-size: 10px;
             margin-left: 10px;
             color: var(--gold);
         }
-
-        /* ===== JARVIS CORE BUBBLE ===== */
         .core-container {
             position: relative;
             width: 320px; height: 320px;
@@ -229,20 +202,20 @@
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             animation: ringSpin 8s linear infinite;
-            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+            filter: drop-shadow(0 0 15px rgba(255,215,0,0.5));
         }
         .outer-ring-2 {
             position: absolute;
             width: 110%; height: 110%;
             border-radius: 50%;
-            border: 1px dashed rgba(0, 240, 255, 0.3);
+            border: 1px dashed rgba(0,240,255,0.3);
             animation: ringSpin 15s linear infinite reverse;
         }
         .outer-ring-3 {
             position: absolute;
             width: 90%; height: 90%;
             border-radius: 50%;
-            border: 1px solid rgba(255, 215, 0, 0.2);
+            border: 1px solid rgba(255,215,0,0.2);
             animation: ringSpin 12s linear infinite;
         }
         @keyframes ringSpin {
@@ -253,7 +226,7 @@
             position: absolute;
             width: 100%; height: 100%;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255,215,0,0.15) 0%, transparent 70%);
             animation: glowPulse 4s ease-in-out infinite;
         }
         @keyframes glowPulse {
@@ -265,10 +238,7 @@
             width: 260px; height: 260px;
             border-radius: 50%;
             background: radial-gradient(circle at 35% 35%, #1a1a2e 0%, #000 60%, #0a0a0a 100%);
-            box-shadow: 
-                inset 0 0 60px rgba(255, 215, 0, 0.1),
-                inset 0 0 20px rgba(0, 240, 255, 0.05),
-                0 0 40px rgba(0, 0, 0, 0.8);
+            box-shadow: inset 0 0 60px rgba(255,215,0,0.1), inset 0 0 20px rgba(0,240,255,0.05), 0 0 40px rgba(0,0,0,0.8);
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -296,7 +266,7 @@
         }
         .orbit-ring {
             position: absolute;
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            border: 1px solid rgba(255,215,0,0.3);
             border-radius: 50%;
             animation: orbitSpin 6s linear infinite;
         }
@@ -311,9 +281,9 @@
             box-shadow: 0 0 10px var(--gold), 0 0 20px var(--gold);
         }
         .orbit-1 { width: 140px; height: 140px; animation-duration: 5s; }
-        .orbit-2 { width: 180px; height: 100px; animation-duration: 7s; animation-direction: reverse; border-color: rgba(0, 240, 255, 0.3); }
+        .orbit-2 { width: 180px; height: 100px; animation-duration: 7s; animation-direction: reverse; border-color: rgba(0,240,255,0.3); }
         .orbit-2::before { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
-        .orbit-3 { width: 100px; height: 180px; animation-duration: 9s; border-color: rgba(255, 215, 0, 0.2); }
+        .orbit-3 { width: 100px; height: 180px; animation-duration: 9s; border-color: rgba(255,215,0,0.2); }
         @keyframes orbitSpin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -323,10 +293,7 @@
             width: 50px; height: 50px;
             border-radius: 50%;
             background: radial-gradient(circle at 30% 30%, var(--gold), var(--gold-dim), #000);
-            box-shadow: 
-                0 0 30px var(--gold),
-                0 0 60px rgba(255, 215, 0, 0.4),
-                0 0 100px rgba(255, 215, 0, 0.2);
+            box-shadow: 0 0 30px var(--gold), 0 0 60px rgba(255,215,0,0.4), 0 0 100px rgba(255,215,0,0.2);
             animation: nucleusPulse 2s ease-in-out infinite;
             z-index: 5;
         }
@@ -349,15 +316,13 @@
             0% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
             100% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
         }
-
-        /* ===== STATUS DISPLAY ===== */
         .status-display {
             display: flex;
             align-items: center;
             gap: 15px;
             font-family: 'Share Tech Mono', monospace;
             font-size: 13px;
-            color: rgba(0, 240, 255, 0.8);
+            color: rgba(0,240,255,0.8);
             letter-spacing: 3px;
             text-transform: uppercase;
         }
@@ -377,8 +342,6 @@
             96% { opacity: 0.5; }
             97% { opacity: 1; }
         }
-
-        /* ===== INPUT SECTION ===== */
         .input-wrapper {
             position: relative;
             width: 550px;
@@ -393,9 +356,7 @@
             border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 8px 8px 8px 20px;
-            box-shadow: 
-                0 8px 32px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
             position: relative;
             overflow: hidden;
         }
@@ -404,7 +365,7 @@
             position: absolute;
             top: 0; left: -100%;
             width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.05), transparent);
+            background: linear-gradient(90deg, transparent, rgba(0,240,255,0.05), transparent);
             animation: inputShine 5s infinite;
         }
         @keyframes inputShine {
@@ -414,8 +375,8 @@
         .mic-btn {
             width: 48px; height: 48px;
             border-radius: 12px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid rgba(255,215,0,0.3);
+            background: rgba(255,215,0,0.08);
             color: var(--gold);
             font-size: 18px;
             cursor: pointer;
@@ -428,19 +389,19 @@
             flex-shrink: 0;
         }
         .mic-btn:hover {
-            background: rgba(255, 215, 0, 0.2);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            background: rgba(255,215,0,0.2);
+            box-shadow: 0 0 20px rgba(255,215,0,0.3);
             transform: scale(1.05);
         }
         .mic-btn.recording {
-            background: rgba(255, 42, 42, 0.2);
+            background: rgba(255,42,42,0.2);
             border-color: var(--red);
             color: var(--red);
             animation: micRecord 1s infinite;
         }
         @keyframes micRecord {
-            0%, 100% { box-shadow: 0 0 10px rgba(255, 42, 42, 0.3); }
-            50% { box-shadow: 0 0 30px rgba(255, 42, 42, 0.6); }
+            0%, 100% { box-shadow: 0 0 10px rgba(255,42,42,0.3); }
+            50% { box-shadow: 0 0 30px rgba(255,42,42,0.6); }
         }
         .text-input {
             flex: 1;
@@ -455,14 +416,14 @@
             z-index: 2;
         }
         .text-input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
+            color: rgba(255,255,255,0.3);
             font-weight: 300;
         }
         .send-btn {
             width: 44px; height: 44px;
             border-radius: 12px;
             border: none;
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(0, 240, 255, 0.05));
+            background: linear-gradient(135deg, rgba(0,240,255,0.2), rgba(0,240,255,0.05));
             color: var(--cyan);
             cursor: pointer;
             transition: all 0.3s;
@@ -473,8 +434,8 @@
             flex-shrink: 0;
         }
         .send-btn:hover {
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(0, 240, 255, 0.1));
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+            background: linear-gradient(135deg, rgba(0,240,255,0.4), rgba(0,240,255,0.1));
+            box-shadow: 0 0 20px rgba(0,240,255,0.3);
             transform: scale(1.05);
         }
         .input-deco {
@@ -485,8 +446,6 @@
             background: linear-gradient(90deg, transparent, var(--cyan), var(--gold), var(--cyan), transparent);
             opacity: 0.3;
         }
-
-        /* ===== RESPONSE TERMINAL ===== */
         .terminal {
             position: fixed;
             top: 80px;
@@ -494,15 +453,15 @@
             transform: translateX(-50%);
             width: 600px;
             max-width: 90vw;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0,0,0,0.85);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 240, 255, 0.15);
+            border: 1px solid rgba(0,240,255,0.15);
             border-radius: 12px;
             padding: 0;
             z-index: 20;
             display: none;
             overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
         }
         .terminal.active { display: block; animation: termSlide 0.4s ease-out; }
         @keyframes termSlide {
@@ -514,11 +473,11 @@
             align-items: center;
             gap: 8px;
             padding: 10px 15px;
-            background: rgba(0, 240, 255, 0.05);
-            border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+            background: rgba(0,240,255,0.05);
+            border-bottom: 1px solid rgba(0,240,255,0.1);
             font-family: 'Share Tech Mono', monospace;
             font-size: 11px;
-            color: rgba(0, 240, 255, 0.6);
+            color: rgba(0,240,255,0.6);
         }
         .term-dot { width: 8px; height: 8px; border-radius: 50%; }
         .term-dot.red { background: var(--red); }
@@ -529,7 +488,7 @@
             font-family: 'Share Tech Mono', monospace;
             font-size: 13px;
             line-height: 1.7;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255,255,255,0.9);
             max-height: 200px;
             overflow-y: auto;
         }
@@ -543,9 +502,9 @@
             margin-right: 8px;
         }
         .term-body .resp-line {
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255,255,255,0.8);
             padding-left: 20px;
-            border-left: 2px solid rgba(0, 240, 255, 0.2);
+            border-left: 2px solid rgba(0,240,255,0.2);
         }
         .cursor-blink {
             display: inline-block;
@@ -559,8 +518,6 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
         }
-
-        /* ===== NETWORKS GRID ===== */
         .networks-section {
             position: fixed;
             bottom: 25px;
@@ -575,7 +532,7 @@
         .networks-label {
             font-family: 'Share Tech Mono', monospace;
             font-size: 10px;
-            color: rgba(0, 240, 255, 0.4);
+            color: rgba(0,240,255,0.4);
             letter-spacing: 4px;
             text-transform: uppercase;
         }
@@ -589,17 +546,17 @@
         .net-btn {
             width: 52px; height: 52px;
             border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.6);
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
             position: relative;
             text-decoration: none;
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(255,255,255,0.6);
             font-size: 20px;
             overflow: hidden;
         }
@@ -615,7 +572,7 @@
         .net-btn:hover {
             transform: translateY(-8px) scale(1.1);
             border-color: currentColor;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px currentColor;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px currentColor;
             color: #fff;
         }
         .net-btn .net-tooltip {
@@ -629,7 +586,7 @@
             opacity: 0;
             transition: all 0.3s;
             color: currentColor;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0,0,0,0.8);
             padding: 3px 8px;
             border-radius: 4px;
             pointer-events: none;
@@ -670,7 +627,6 @@
         .net-btn.telegram:hover { color: #26A5E4; border-color: #26A5E4; }
         .net-btn.reddit:hover { color: #FF4500; border-color: #FF4500; }
         .net-btn.twitch:hover { color: #9146FF; border-color: #9146FF; }
-
         .scan-beam {
             position: fixed;
             top: 0; left: 0;
@@ -686,7 +642,6 @@
             0% { top: -3px; }
             100% { top: 100vh; }
         }
-
         .side-panel {
             position: fixed;
             top: 50%;
@@ -718,11 +673,9 @@
             letter-spacing: 2px;
             margin: 4px 0;
         }
-
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 4px; }
-
+        ::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.3); border-radius: 4px; }
         @media (max-width: 768px) {
             .main-title { font-size: 18px; letter-spacing: 6px; }
             .core-container { width: 220px; height: 220px; }
@@ -733,7 +686,6 @@
             .side-panel { display: none; }
             .net-btn { width: 42px; height: 42px; font-size: 16px; }
         }
-
         .boot-screen {
             position: fixed;
             top: 0; left: 0;
@@ -760,7 +712,7 @@
         .boot-progress {
             width: 300px;
             height: 2px;
-            background: rgba(0, 240, 255, 0.1);
+            background: rgba(0,240,255,0.1);
             margin-top: 30px;
             position: relative;
             overflow: hidden;
@@ -774,17 +726,47 @@
             box-shadow: 0 0 10px var(--cyan);
             transition: width 0.3s;
         }
+        /* Selector de idioma adicional */
+        .lang-selector {
+            position: fixed;
+            bottom: 120px;
+            right: 20px;
+            z-index: 15;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            padding: 8px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--gold);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+        }
+        .lang-selector select {
+            background: #111;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            border-radius: 20px;
+            padding: 4px 8px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .lang-selector label {
+            color: var(--cyan);
+        }
+        @media (max-width: 768px) {
+            .lang-selector { bottom: 100px; right: 10px; padding: 4px 8px; }
+            .lang-selector select { font-size: 10px; }
+        }
     </style>
 </head>
 <body>
-    <!-- Boot Screen -->
     <div class="boot-screen" id="bootScreen">
         <div class="boot-text">INICIANDO SISTEMA J.A.R.V.I.S.</div>
-        <div class="boot-text" style="font-size: 11px; color: var(--gold);">v2.0 — CONECTANDO A APOLOXIA AI</div>
+        <div class="boot-text" style="font-size: 11px; color: var(--gold);">v3.0 — VOZ HUMANA MULTIIDIOMA</div>
         <div class="boot-text" style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 20px;" id="bootLog">Cargando núcleos...</div>
-        <div class="boot-progress">
-            <div class="boot-progress-bar" id="bootBar"></div>
-        </div>
+        <div class="boot-progress"><div class="boot-progress-bar" id="bootBar"></div></div>
     </div>
 
     <canvas id="particleCanvas"></canvas>
@@ -801,52 +783,32 @@
 
     <div class="side-panel left">
         <div class="panel-text">SYS.CORE.01</div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
+        <div class="panel-line"></div><div class="panel-line"></div><div class="panel-line"></div>
         <div class="panel-text">MEM: 64TB</div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
+        <div class="panel-line"></div><div class="panel-line"></div>
         <div class="panel-text">NET: ACTIVE</div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
+        <div class="panel-line"></div><div class="panel-line"></div><div class="panel-line"></div>
         <div class="panel-text">CPU: 99.8%</div>
     </div>
     <div class="side-panel right">
         <div class="panel-text">ENCRYPTION</div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
+        <div class="panel-line"></div><div class="panel-line"></div><div class="panel-line"></div>
         <div class="panel-text">AES-256</div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
+        <div class="panel-line"></div><div class="panel-line"></div>
         <div class="panel-text">FIREWALL: ON</div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
-        <div class="panel-line"></div>
+        <div class="panel-line"></div><div class="panel-line"></div><div class="panel-line"></div>
         <div class="panel-text">UPTIME: 00:00</div>
     </div>
 
     <div class="top-bar">
-        <div class="left-info">
-            <div class="dot"></div>
-            <span>J.A.R.V.I.S. v2.0</span>
-            <span id="clock">00:00:00</span>
-        </div>
-        <div class="right-info">
-            <span>LAT: 40.7128° N</span>
-            <span>LONG: 74.0060° W</span>
-            <span id="uptime">UPTIME: 00:00:00</span>
-        </div>
+        <div class="left-info"><div class="dot"></div><span>J.A.R.V.I.S. v3.0</span><span id="clock">00:00:00</span></div>
+        <div class="right-info"><span>LAT: 40.7128° N</span><span>LONG: 74.0060° W</span><span id="uptime">UPTIME: 00:00:00</span></div>
     </div>
 
     <div class="terminal" id="terminal">
         <div class="term-header">
-            <div class="term-dot red"></div>
-            <div class="term-dot yellow"></div>
-            <div class="term-dot green"></div>
-            <span style="margin-left: 8px;">J.A.R.V.I.S. TERMINAL — conectado a Apoloxia AI</span>
+            <div class="term-dot red"></div><div class="term-dot yellow"></div><div class="term-dot green"></div>
+            <span style="margin-left: 8px;">J.A.R.V.I.S. TERMINAL — voz multilingüe</span>
         </div>
         <div class="term-body" id="termBody"></div>
     </div>
@@ -854,41 +816,27 @@
     <div class="main-container">
         <div class="title-section">
             <div class="main-title">J.A.R.V.I.S.</div>
-            <div class="subtitle">
-                SISTEMA DE ASISTENCIA AVANZADA
-                <span class="version-tag">v2.0</span>
-            </div>
+            <div class="subtitle">SISTEMA DE ASISTENCIA AVANZADA<span class="version-tag">v3.0</span></div>
         </div>
-
         <div class="core-container">
             <div class="core-glow"></div>
-            <div class="outer-ring"></div>
-            <div class="outer-ring-2"></div>
-            <div class="outer-ring-3"></div>
+            <div class="outer-ring"></div><div class="outer-ring-2"></div><div class="outer-ring-3"></div>
             <div class="inner-sphere">
                 <div class="star-field" id="starField"></div>
-                <div class="orbit-ring orbit-1"></div>
-                <div class="orbit-ring orbit-2"></div>
-                <div class="orbit-ring orbit-3"></div>
+                <div class="orbit-ring orbit-1"></div><div class="orbit-ring orbit-2"></div><div class="orbit-ring orbit-3"></div>
                 <div class="nucleus"></div>
             </div>
         </div>
-
         <div class="status-display">
             <div class="status-line"></div>
             <div class="status-text" id="statusText">SISTEMA OPERATIVO</div>
             <div class="status-line"></div>
         </div>
-
         <div class="input-wrapper">
             <div class="input-section">
-                <button class="mic-btn" id="micBtn">
-                    <i class="fas fa-microphone" id="micIcon"></i>
-                </button>
+                <button class="mic-btn" id="micBtn"><i class="fas fa-microphone" id="micIcon"></i></button>
                 <input type="text" class="text-input" id="textInput" placeholder="Comando de voz o texto..." onkeypress="handleKeyPress(event)">
-                <button class="send-btn" onclick="sendMessage()">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+                <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
             <div class="input-deco"></div>
         </div>
@@ -896,8 +844,7 @@
 
     <div class="networks-section">
         <div class="networks-label">Compartir respuesta en:</div>
-        <div class="networks-grid" id="networksGrid">
-            <!-- Los botones se generan dinámicamente para mantener consistencia, pero los dejo estáticos con eventos -->
+        <div class="networks-grid">
             <div class="net-btn twitter" data-network="twitter"><i class="fab fa-x-twitter"></i><div class="net-tooltip">Twitter</div><div class="net-status"></div></div>
             <div class="net-btn weibo" data-network="weibo"><i class="fab fa-weibo"></i><div class="net-tooltip">Weibo</div><div class="net-status"></div></div>
             <div class="net-btn kakao" data-network="kakao"><i class="fas fa-comment"></i><div class="net-tooltip">KakaoTalk</div><div class="net-status"></div></div>
@@ -920,9 +867,29 @@
         </div>
     </div>
 
+    <!-- Selector de idioma de voz -->
+    <div class="lang-selector">
+        <label><i class="fas fa-language"></i> Voz:</label>
+        <select id="voiceLangSelect">
+            <option value="auto">🔁 Auto (detectar idioma)</option>
+            <option value="es-ES">🇪🇸 Español (España)</option>
+            <option value="es-MX">🇲🇽 Español (México)</option>
+            <option value="en-US">🇺🇸 English (US)</option>
+            <option value="en-GB">🇬🇧 English (UK)</option>
+            <option value="fr-FR">🇫🇷 Français</option>
+            <option value="de-DE">🇩🇪 Deutsch</option>
+            <option value="it-IT">🇮🇹 Italiano</option>
+            <option value="pt-PT">🇵🇹 Português</option>
+            <option value="zh-CN">🇨🇳 中文</option>
+            <option value="ja-JP">🇯🇵 日本語</option>
+            <option value="ko-KR">🇰🇷 한국어</option>
+            <option value="ru-RU">🇷🇺 Русский</option>
+        </select>
+    </div>
+
     <script>
-        // ===== CONFIGURACIÓN BACKEND APOLOXIA =====
-        const API_BASE = ''; // misma ruta relativa
+        // ==================== CONFIGURACIÓN BACKEND ====================
+        const API_BASE = '';
         let conversationId = localStorage.getItem('jarvis_conversation_id') || null;
         let userEmail = localStorage.getItem('apoloxia_session_email');
         if (!userEmail) {
@@ -931,73 +898,157 @@
         }
         let userTier = 'gt';
         let currentAgent = 'general';
-        
-        // Variables para almacenar último comando y última respuesta
         let lastCommand = '';
-        let lastResponse = 'J.A.R.V.I.S. conectado a Apoloxia. Todos los sistemas operativos.';
-        
-        // ===== ELEMENTOS DOM =====
-        const terminal = document.getElementById('terminal');
-        const termBody = document.getElementById('termBody');
-        const statusTextSpan = document.getElementById('statusText');
-        const micBtn = document.getElementById('micBtn');
-        const textInput = document.getElementById('textInput');
-        
-        // ===== RECONOCIMIENTO DE VOZ =====
+        let lastResponse = 'J.A.R.V.I.S. v3.0 listo. Voz humana multilingüe activada.';
+
+        // ==================== VOZ MEJORADA (HUMANA) ====================
+        let speechSynth = window.speechSynthesis;
+        let availableVoices = [];
+        let preferredLang = 'auto';
+
+        function loadVoices() {
+            availableVoices = speechSynth.getVoices();
+            availableVoices.sort((a,b) => {
+                let scoreA = a.localService ? 1 : 0;
+                let scoreB = b.localService ? 1 : 0;
+                if (a.name.toLowerCase().includes('neural')) scoreA += 2;
+                if (b.name.toLowerCase().includes('neural')) scoreB += 2;
+                if (a.name.toLowerCase().includes('natural')) scoreA += 1;
+                if (b.name.toLowerCase().includes('natural')) scoreB += 1;
+                return scoreB - scoreA;
+            });
+        }
+        if (speechSynth.onvoiceschanged !== undefined) speechSynth.onvoiceschanged = loadVoices;
+        else loadVoices();
+
+        function getBestVoiceForLang(langCode) {
+            if (!availableVoices.length) loadVoices();
+            let voice = availableVoices.find(v => v.lang === langCode && (v.name.includes('Neural') || v.name.includes('Natural')));
+            if (!voice) voice = availableVoices.find(v => v.lang === langCode);
+            if (!voice && langCode.includes('-')) {
+                let base = langCode.split('-')[0];
+                voice = availableVoices.find(v => v.lang.startsWith(base));
+            }
+            if (!voice && availableVoices.length) voice = availableVoices[0];
+            return voice;
+        }
+
+        function detectLanguageFromText(text) {
+            const samples = {
+                'en': /[a-zA-Z]{4,}/,
+                'es': /[áéíóúñ¿¡]/i,
+                'fr': /[àâçéèêëîïôûùüÿœ]/i,
+                'de': /[äöüß]/i,
+                'it': /[àèéìíîòóùú]/i,
+                'pt': /[ãõáéíóúçâêô]/i,
+                'zh': /[\u4e00-\u9fff]/,
+                'ja': /[\u3040-\u30ff\u3400-\u4dbf]/,
+                'ko': /[\uac00-\ud7af]/,
+                'ru': /[а-яё]/i
+            };
+            for (let [lang, regex] of Object.entries(samples)) {
+                if (regex.test(text)) return lang;
+            }
+            return 'en';
+        }
+
+        function getFullLangCode(baseLang) {
+            const map = { 'es':'es-ES','en':'en-US','fr':'fr-FR','de':'de-DE','it':'it-IT','pt':'pt-PT','zh':'zh-CN','ja':'ja-JP','ko':'ko-KR','ru':'ru-RU' };
+            return map[baseLang] || 'en-US';
+        }
+
+        function speakText(text) {
+            if (!text || text.length===0) return;
+            let detectedLang = detectLanguageFromText(text);
+            let targetLangCode = getFullLangCode(detectedLang);
+            const manualLang = document.getElementById('voiceLangSelect').value;
+            if (manualLang !== 'auto') targetLangCode = manualLang;
+            let voice = getBestVoiceForLang(targetLangCode);
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = voice;
+            utterance.rate = 0.95;
+            utterance.pitch = 1.0;
+            utterance.volume = 1;
+            utterance.lang = targetLangCode;
+            speechSynth.cancel();
+            speechSynth.speak(utterance);
+        }
+
+        // ==================== RECONOCIMIENTO DE VOZ MULTILINGÜE ====================
         let recognition = null;
         let isListening = false;
-        
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+
+        function initRecognition(langCode) {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return null;
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SpeechRecognition();
-            recognition.lang = 'es-ES';
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            
-            recognition.onstart = () => {
+            const recog = new SpeechRecognition();
+            recog.continuous = false;
+            recog.interimResults = false;
+            recog.lang = langCode;
+            recog.onstart = () => {
                 isListening = true;
-                micBtn.classList.add('recording');
+                document.getElementById('micBtn').classList.add('recording');
                 statusTextSpan.textContent = 'ESCUCHANDO...';
                 document.getElementById('micIcon').className = 'fas fa-microphone-lines';
             };
-            recognition.onend = () => {
+            recog.onend = () => {
                 isListening = false;
-                micBtn.classList.remove('recording');
+                document.getElementById('micBtn').classList.remove('recording');
                 statusTextSpan.textContent = 'SISTEMA OPERATIVO';
                 document.getElementById('micIcon').className = 'fas fa-microphone';
             };
-            recognition.onresult = (event) => {
+            recog.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
-                textInput.value = transcript;
+                document.getElementById('textInput').value = transcript;
                 sendMessage();
             };
+            recog.onerror = (event) => {
+                console.error('Speech error:', event.error);
+                showTerminal('Mic error', `Error de reconocimiento: ${event.error}.`);
+                recog.stop();
+            };
+            return recog;
         }
-        
-        function toggleMic() {
-            if (!recognition) {
-                showTerminal('ERROR', 'Reconocimiento de voz no disponible en este navegador.');
-                return;
+
+        function updateRecognitionLang() {
+            const manualLang = document.getElementById('voiceLangSelect').value;
+            if (recognition) {
+                if (manualLang !== 'auto') recognition.lang = manualLang;
+                else recognition.lang = navigator.language || 'es-ES';
             }
+        }
+
+        // Inicializar reconocimiento (por defecto auto)
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            recognition = initRecognition(navigator.language || 'es-ES');
+        }
+
+        document.getElementById('voiceLangSelect').addEventListener('change', () => {
+            updateRecognitionLang();
+            const selected = document.getElementById('voiceLangSelect').value;
+            let msg = selected === 'auto' ? 'Idioma de voz automático (detecta texto)' : `Idioma cambiado a ${selected}`;
+            showTerminal('🗣️ Idioma', msg);
+        });
+
+        function toggleMic() {
+            if (!recognition) { showTerminal('ERROR','Reconocimiento de voz no disponible.'); return; }
             if (isListening) recognition.stop();
             else recognition.start();
         }
-        micBtn.onclick = toggleMic;
-        
-        // ===== FUNCIÓN PRINCIPAL: ENVIAR A APOLOXIA =====
+        document.getElementById('micBtn').onclick = toggleMic;
+
+        // ==================== ENVÍO AL BACKEND ====================
         async function sendMessage() {
-            const message = textInput.value.trim();
+            const message = document.getElementById('textInput').value.trim();
             if (!message) return;
-            
-            textInput.value = '';
+            document.getElementById('textInput').value = '';
             lastCommand = message;
             showTerminal(message, 'Procesando consulta en Apoloxia AI...');
             statusTextSpan.textContent = 'PROCESANDO...';
-            
             if (!conversationId) {
                 conversationId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
                 localStorage.setItem('jarvis_conversation_id', conversationId);
             }
-            
             try {
                 const payload = {
                     user_id: userEmail,
@@ -1009,159 +1060,101 @@
                     use_web_search: true,
                     enable_multi_agent: true
                 };
-                
                 const response = await fetch(`${API_BASE}/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.detail || `Error ${response.status}`);
-                }
-                
+                if (!response.ok) throw new Error(`Error ${response.status}`);
                 const data = await response.json();
                 const aiResponse = data.response || 'Lo siento, no pude procesar tu solicitud.';
                 lastResponse = aiResponse;
                 showTerminal(message, aiResponse);
                 statusTextSpan.textContent = 'SISTEMA OPERATIVO';
-                
-                // Leer en voz alta
-                const utterance = new SpeechSynthesisUtterance(aiResponse);
-                utterance.lang = 'es-ES';
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(utterance);
-                
+                speakText(aiResponse);
             } catch (error) {
-                console.error('Error en API:', error);
-                showTerminal(message, `❌ Error de conexión con el servidor: ${error.message}. Asegúrate de que el backend esté activo.`);
+                console.error(error);
+                showTerminal(message, `❌ Error: ${error.message}. Verifica el backend.`);
                 statusTextSpan.textContent = 'ERROR DE RED';
                 lastResponse = `Error: ${error.message}`;
             }
         }
-        
+
         function showTerminal(command, response) {
             const timestamp = new Date().toLocaleTimeString('es-ES', { hour12: false });
-            termBody.innerHTML = `
+            document.getElementById('termBody').innerHTML = `
                 <div class="cmd-line">[${timestamp}] ${escapeHtml(command)}</div>
                 <div class="resp-line">${escapeHtml(response)}<span class="cursor-blink"></span></div>
             `;
-            terminal.classList.add('active');
-            setTimeout(() => {
-                terminal.classList.remove('active');
-            }, 10000);
+            document.getElementById('terminal').classList.add('active');
+            setTimeout(() => { document.getElementById('terminal').classList.remove('active'); }, 10000);
         }
-        
+
         function escapeHtml(str) {
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            }).replace(/[\n\r]/g, '<br>');
+            return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m).replace(/[\n\r]/g,'<br>');
         }
-        
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') sendMessage();
-        }
-        
-        // ===== FUNCIONES COMPARTIR EN REDES SOCIALES (REALES) =====
+
+        function handleKeyPress(event) { if (event.key === 'Enter') sendMessage(); }
+
+        // ==================== COMPARTIR REDES ====================
         async function shareToNetwork(network) {
-            if (!lastResponse && !lastCommand) {
-                showTerminal('Compartir', 'No hay ningún mensaje reciente para compartir.');
-                return;
-            }
-            const textToShare = lastResponse && lastResponse !== 'J.A.R.V.I.S. conectado a Apoloxia. Todos los sistemas operativos.' 
-                ? lastResponse 
-                : lastCommand;
-            
+            const textToShare = (lastResponse && lastResponse !== lastCommand) ? lastResponse : lastCommand;
+            if (!textToShare) return;
             try {
-                // Llamar al backend para obtener el enlace de compartir
                 const url = `${API_BASE}/share/links?text=${encodeURIComponent(textToShare)}`;
                 const resp = await fetch(url);
-                if (!resp.ok) throw new Error('Error al obtener enlace');
+                if (!resp.ok) throw new Error();
                 const links = await resp.json();
                 let shareUrl = '';
                 switch(network) {
                     case 'twitter': shareUrl = links.twitter; break;
-                    case 'weibo': shareUrl = links.weibo; break;
-                    case 'kakao': shareUrl = links.kakao; break;
-                    case 'wechat': shareUrl = links.wechat; break;
-                    case 'instagram': shareUrl = links.instagram; break;
-                    case 'tiktok': shareUrl = links.tiktok; break;
-                    case 'meta': shareUrl = links.facebook; break; // Meta usa Facebook
                     case 'whatsapp': shareUrl = links.whatsapp; break;
-                    case 'google': shareUrl = `https://www.google.com/search?q=${encodeURIComponent(textToShare)}`; break;
-                    case 'youtube': shareUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(textToShare)}`; break;
-                    case 'spotify': shareUrl = `https://open.spotify.com/search/${encodeURIComponent(textToShare)}`; break;
-                    case 'chatgpt': shareUrl = `https://chat.openai.com/?q=${encodeURIComponent(textToShare)}`; break;
-                    case 'claude': shareUrl = `https://claude.ai/new?q=${encodeURIComponent(textToShare)}`; break;
-                    case 'discord': shareUrl = links.discord; break;
-                    case 'github': shareUrl = `https://github.com/search?q=${encodeURIComponent(textToShare)}`; break;
-                    case 'linkedin': shareUrl = links.linkedin; break;
                     case 'telegram': shareUrl = links.telegram; break;
+                    case 'linkedin': shareUrl = links.linkedin; break;
                     case 'reddit': shareUrl = links.reddit; break;
-                    case 'twitch': shareUrl = `https://www.twitch.tv/search?term=${encodeURIComponent(textToShare)}`; break;
+                    case 'facebook': shareUrl = links.facebook; break;
+                    case 'discord': shareUrl = links.discord; break;
                     default: shareUrl = links.twitter;
                 }
-                if (shareUrl) {
-                    window.open(shareUrl, '_blank');
-                } else {
-                    showTerminal('Compartir', `No se pudo generar enlace para ${network}`);
-                }
-            } catch (err) {
-                console.error(err);
-                showTerminal('Compartir', `Error al compartir: ${err.message}`);
-            }
+                if (shareUrl) window.open(shareUrl, '_blank');
+            } catch(e) { console.error(e); }
         }
-        
-        // Asignar eventos a los botones de redes
+
         document.querySelectorAll('.net-btn').forEach(btn => {
             const network = btn.getAttribute('data-network');
-            if (network) {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    shareToNetwork(network);
-                });
-            }
+            if (network) btn.addEventListener('click', (e) => { e.preventDefault(); shareToNetwork(network); });
         });
-        
-        // ===== CLOCK & UPTIME =====
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').textContent = now.toLocaleTimeString('es-ES', { hour12: false });
-        }
+
+        // ==================== CLOCK, UPTIME, STATUS ====================
+        function updateClock() { document.getElementById('clock').textContent = new Date().toLocaleTimeString('es-ES', { hour12: false }); }
         let uptimeSeconds = 0;
         function updateUptime() {
             uptimeSeconds++;
-            const h = Math.floor(uptimeSeconds / 3600).toString().padStart(2, '0');
-            const m = Math.floor((uptimeSeconds % 3600) / 60).toString().padStart(2, '0');
-            const s = (uptimeSeconds % 60).toString().padStart(2, '0');
+            const h = Math.floor(uptimeSeconds/3600).toString().padStart(2,'0');
+            const m = Math.floor((uptimeSeconds%3600)/60).toString().padStart(2,'0');
+            const s = (uptimeSeconds%60).toString().padStart(2,'0');
             document.getElementById('uptime').textContent = `UPTIME: ${h}:${m}:${s}`;
         }
-        setInterval(updateClock, 1000);
-        setInterval(updateUptime, 1000);
+        setInterval(updateClock,1000);
+        setInterval(updateUptime,1000);
         updateClock();
-        
-        // ===== STATUS ROTATION =====
+
         const statusPhrases = ['SISTEMA OPERATIVO', 'ESPERANDO ÓRDENES', 'CONECTADO A APOLOXIA', 'LISTO PARA ASISTIR', 'REDES ACTIVAS', 'NUCLEO ESTABLE'];
         let statusIndex = 0;
         setInterval(() => {
             if (!isListening) {
-                statusIndex = (statusIndex + 1) % statusPhrases.length;
-                statusTextSpan.textContent = statusPhrases[statusIndex];
+                statusIndex = (statusIndex+1)%statusPhrases.length;
+                document.getElementById('statusText').textContent = statusPhrases[statusIndex];
             }
         }, 4000);
-        
-        // ===== PARTÍCULAS Y ESTRELLAS =====
+
+        // ==================== PARTÍCULAS Y ESTRELLAS ====================
         const canvas = document.getElementById('particleCanvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
         function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
-        
         class Particle {
             constructor() {
                 this.reset();
@@ -1173,61 +1166,58 @@
                 this.speedX = (Math.random() - 0.5) * 0.5;
                 this.speedY = (Math.random() - 0.5) * 0.5;
                 this.opacity = Math.random() * 0.5 + 0.2;
-                this.color = Math.random() > 0.5 ? '0, 240, 255' : '255, 215, 0';
+                this.color = Math.random() > 0.5 ? '0,240,255' : '255,215,0';
             }
             update() {
                 this.x += this.speedX;
                 this.y += this.speedY;
-                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+                if (this.x<0 || this.x>canvas.width || this.y<0 || this.y>canvas.height) this.reset();
             }
             draw() {
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${this.color}, ${this.opacity})`;
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(${this.color},${this.opacity})`;
                 ctx.fill();
             }
         }
-        for (let i = 0; i < 150; i++) particles.push(new Particle());
-        
+        for(let i=0;i<150;i++) particles.push(new Particle());
         function drawConnections() {
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
+            for(let i=0;i<particles.length;i++) {
+                for(let j=i+1;j<particles.length;j++) {
                     const dx = particles[i].x - particles[j].x;
                     const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 120) {
+                    const dist = Math.sqrt(dx*dx+dy*dy);
+                    if(dist<120) {
                         ctx.beginPath();
                         ctx.moveTo(particles[i].x, particles[i].y);
                         ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = `rgba(0, 240, 255, ${0.1 * (1 - dist / 120)})`;
+                        ctx.strokeStyle = `rgba(0,240,255,${0.1*(1-dist/120)})`;
                         ctx.lineWidth = 0.5;
                         ctx.stroke();
                     }
                 }
             }
         }
-        
         function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(p => { p.update(); p.draw(); });
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            particles.forEach(p=>{p.update(); p.draw();});
             drawConnections();
             requestAnimationFrame(animate);
         }
         animate();
-        
-        // Estrellas dentro del núcleo
+
         const starFieldDiv = document.getElementById('starField');
-        for (let i = 0; i < 20; i++) {
+        for(let i=0;i<20;i++) {
             const star = document.createElement('div');
             star.className = 'star-particle';
             star.innerHTML = '<i class="fas fa-star"></i>';
-            star.style.left = Math.random() * 100 + '%';
-            star.style.top = Math.random() * 100 + '%';
-            star.style.animationDelay = Math.random() * 2 + 's';
-            star.style.fontSize = (Math.random() * 6 + 4) + 'px';
+            star.style.left = Math.random()*100+'%';
+            star.style.top = Math.random()*100+'%';
+            star.style.animationDelay = Math.random()*2+'s';
+            star.style.fontSize = (Math.random()*6+4)+'px';
             starFieldDiv.appendChild(star);
         }
-        
+
         // Boot sequence
         const bootLogs = [
             'Inicializando núcleo neural...',
@@ -1235,8 +1225,9 @@
             'Conectando a redes globales...',
             'Sincronizando bases de datos...',
             'Activando interfaz holográfica...',
+            'Cargando voces multilingüe...',
             'Conectando a Apoloxia AI...',
-            'Sistema listo. Bienvenido, señor.'
+            'Sistema listo. Bienvenido.'
         ];
         let bootStep = 0;
         const bootBar = document.getElementById('bootBar');
@@ -1245,27 +1236,20 @@
         function runBoot() {
             if (bootStep < bootLogs.length) {
                 bootLog.textContent = bootLogs[bootStep];
-                bootBar.style.width = ((bootStep + 1) / bootLogs.length * 100) + '%';
+                bootBar.style.width = ((bootStep+1)/bootLogs.length*100)+'%';
                 bootStep++;
-                setTimeout(runBoot, 400);
+                setTimeout(runBoot,400);
             } else {
-                setTimeout(() => bootScreenDiv.classList.add('hidden'), 800);
+                setTimeout(()=> bootScreenDiv.classList.add('hidden'),800);
             }
         }
-        setTimeout(runBoot, 500);
-        
-        // Mensaje de bienvenida de voz
+        setTimeout(runBoot,500);
+
+        // Mensaje de bienvenida con voz humana
         setTimeout(() => {
-            const welcomeMsg = lastResponse;
-            const utterance = new SpeechSynthesisUtterance(welcomeMsg);
-            utterance.lang = 'es-ES';
-            window.speechSynthesis.speak(utterance);
-        }, 3000);
-        
-        // Mostrar mensaje inicial en terminal
-        setTimeout(() => {
+            speakText(lastResponse);
             showTerminal('Inicialización', lastResponse);
-        }, 1000);
+        }, 3000);
     </script>
 </body>
 </html>
