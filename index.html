@@ -14,6 +14,7 @@
             --text-primary: #ffffff;
             --text-secondary: #a0a0a0;
             --text-muted: #333333;
+            --code-color: #6c5ce7;
         }
 
         * {
@@ -360,7 +361,7 @@
             letter-spacing: -0.02em;
         }
 
-        /* Botones de acceso (dos) */
+        /* Botones de acceso (tres) */
         .buttons-container {
             display: flex;
             flex-direction: column;
@@ -403,6 +404,19 @@
             transform: translateY(-4px) scale(1.02);
             box-shadow: 0 15px 40px rgba(212, 175, 55, 0.3);
             background: linear-gradient(135deg, #2a3a4a 0%, #1a2a3a 50%, #2a3a4a 100%);
+        }
+
+        .access-btn.code-btn {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+            border: 1px solid var(--code-color);
+            color: var(--code-color);
+            box-shadow: 0 5px 20px rgba(108, 92, 231, 0.1);
+        }
+
+        .access-btn.code-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(108, 92, 231, 0.3);
+            background: linear-gradient(135deg, #2a2a4e 0%, #1a2a3a 50%, #2a2a4e 100%);
         }
 
         .access-btn:hover {
@@ -538,7 +552,6 @@
                     Acceder al agente de IA Apolo
                 </button>
                 
-                <!-- NUEVO BOTÓN PARA JARVIS (ASISTENTE DE VOZ) -->
                 <button class="access-btn jarvis-btn" onclick="accessJarvis()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
@@ -550,6 +563,15 @@
                         <path d="M8 16 L12 12 L16 16"/>
                     </svg>
                     Asistente de voz J.A.R.V.I.S.
+                </button>
+
+                <!-- NUEVO BOTÓN PARA APOLOXIA CODE (GENERADOR DE CÓDIGO) -->
+                <button class="access-btn code-btn" onclick="accessApoloXiaCode()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 18L22 12 16 6"></path>
+                        <path d="M8 6L2 12 8 18"></path>
+                    </svg>
+                    ApoloXia Code · Generador de código
                 </button>
             </div>
             
@@ -568,7 +590,7 @@
 
     <script>
         // ==========================================
-        // CONEXIÓN CON EL CHAT Y JARVIS
+        // CONEXIÓN CON EL CHAT, JARVIS Y CODE
         // ==========================================
         
         let userEmail = '';
@@ -637,20 +659,26 @@
             interfaceDiv.classList.add('active');
         }
         
-        // Redirige al chat estándar
+        // Redirige al chat estándar (texto)
         function accessAgent() {
             window.location.href = 'chat.html';
         }
         
-        // ✅ Nueva función para acceder al asistente de voz Jarvis
+        // Redirige al asistente de voz Jarvis
         function accessJarvis() {
             window.location.href = 'jarvis.html';
+        }
+
+        // ✅ Nueva función para acceder al generador de código (ApoloXia Code)
+        function accessApoloXiaCode() {
+            window.location.href = 'apoloxia-code.html';
         }
         
         function logout() {
             localStorage.removeItem('apoloxia_session_email');
             localStorage.removeItem('apoloxia_user_email');
-            localStorage.removeItem('jarvis_conversation_id'); // Limpia también ID de Jarvis
+            localStorage.removeItem('jarvis_conversation_id');
+            localStorage.removeItem('code_conversation_id');
             window.location.reload();
         }
         
