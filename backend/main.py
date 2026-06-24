@@ -1,5 +1,5 @@
 # main.py - ApoloXia Chatbot Server (VERSIÓN GROQ ACTUALIZADA - Abril 2026)
-# MODIFICADO: Respuestas EXTRA LARGAS y profundas (hasta 8000 tokens)
+# MODIFICADO: Respuestas EXTRA LARGAS con emojis y análisis profundo, búsqueda web en tiempo real
 # ======================================================
 
 import os
@@ -279,14 +279,17 @@ REGLAS ESTRICTAS:
 """
 }
 
-# ============ NUEVA INSTRUCCIÓN GLOBAL PARA RESPUESTAS EXTRA LARGAS ============
+# ============ NUEVAS INSTRUCCIONES GLOBALES ============
 INSTRUCCION_EXTENSION = """
-**INSTRUCCIÓN DE EXTENSIÓN Y PROFUNDIDAD:**
-- Proporciona respuestas **extremadamente detalladas, profundas y exhaustivas**.
-- Incluye análisis completo, ejemplos prácticos, explicaciones paso a paso, contexto amplio y referencias cuando sea relevante.
+**INSTRUCCIÓN DE EXTENSIÓN, PROFUNDIDAD Y EMOJIS:**
+- Proporciona respuestas **extremadamente detalladas, profundas y exhaustivas** con un **análisis profundo** de cada aspecto.
+- Incluye **emojis relevantes** en cada sección de la respuesta para hacerla más visual y atractiva (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀, etc.).
+- Usa **encabezados y viñetas** para organizar la información de forma clara.
 - Si el usuario pide código, genera el **código completo y funcional**, con comentarios explicativos, estructura modular y buenas prácticas.
 - Las respuestas deben ser **largas y sustanciosas**: para tiers Plus y GT, se esperan respuestas de al menos 1500 palabras (o 3000-5000 tokens), y para GT hasta 8000 tokens si es necesario.
-- No te limites a respuestas breves; desarrolla cada punto con profundidad.
+- Desarrolla cada punto con profundidad, incluyendo ejemplos, contexto, y referencias cuando sea relevante.
+- No te limites a respuestas breves; profundiza en cada tema.
+- **PARA BÚSQUEDA WEB EN TIEMPO REAL:** Si se te proporcionan resultados de búsqueda (marcados como '=== INFORMACIÓN ACTUAL DE INTERNET ==='), **prioriza la información más reciente y concreta** (fechas, datos exactos, fuentes). Trata esos resultados como si fueran de "última hora" y úsalos para responder con precisión temporal.
 """
 
 # ============ CONFIGURACIÓN POR TIER ============
@@ -660,8 +663,19 @@ async def call_groq_api(messages: List[Dict], model_id: str, temperature: float 
             raise HTTPException(500, f"Error de conexión: {str(e)}")
 
 async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
+    """
+    Realiza búsqueda web mejorada para obtener información actualizada y concreta.
+    """
     headers = {"Authorization": f"Bearer {TAVILY_API_KEY}", "Content-Type": "application/json"}
-    payload = {"query": query, "max_results": max_results, "search_depth": "advanced", "include_answer": True, "include_raw_content": True}
+    payload = {
+        "query": query,
+        "max_results": max_results,
+        "search_depth": "advanced",
+        "include_answer": True,
+        "include_raw_content": True,
+        # Añadimos filtro para priorizar resultados recientes (si Tavily lo soporta)
+        # No hay parámetro time_range, pero podemos incluir palabras clave de actualidad
+    }
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post("https://api.tavily.com/search", headers=headers, json=payload)
@@ -690,7 +704,17 @@ async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
         return []
 
 def needs_web_search(message: str) -> bool:
-    indicators = ["actualidad", "actual", "hoy", "ahora", "reciente", "último", "nuevo", "news", "today", "now", "recent", "latest", "current", "2026", "2025", "precio de", "cotización", "clima", "resultado", "elección", "partido", "lanzamiento", "estreno", "evento", "conferencia", "mercado", "bolsa", "noticia", "breaking", "última hora", "qué pasó", "qué sucede", "cambio", "nuevo lanzamiento", "actualización"]
+    """
+    Detecta si el mensaje requiere búsqueda web en "tiempo real" (actualidad, noticias, fechas, eventos).
+    """
+    indicators = [
+        "actualidad", "actual", "hoy", "ahora", "reciente", "último", "nuevo", "news",
+        "today", "now", "recent", "latest", "current", "2026", "2025", "2024", "precio de",
+        "cotización", "clima", "resultado", "elección", "partido", "lanzamiento", "estreno",
+        "evento", "conferencia", "mercado", "bolsa", "noticia", "breaking", "última hora",
+        "qué pasó", "qué sucede", "cambio", "nuevo lanzamiento", "actualización",
+        "time", "fecha", "ayer", "mañana", "semana pasada", "este mes", "2026"
+    ]
     return any(ind in message.lower() for ind in indicators)
 
 async def run_multi_agent(user_message: str, tier: str, context: List[Dict]) -> List[Dict]:
@@ -763,11 +787,11 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     system += "si escribe en portugués, en portugués; si escribe en italiano, en italiano, en chino, en chino; en japonés, en japonés, etc. "
     system += "NUNCA cambies de idioma. Mantén la coherencia lingüística con la pregunta del usuario.\n"
     
-    # ===== NUEVO: INSTRUCCIÓN DE EXTENSIÓN SEGÚN TIER =====
+    # ===== NUEVO: INSTRUCCIÓN DE EXTENSIÓN, EMOJIS Y BÚSQUEDA TIEMPO REAL =====
     if tier in ["plus", "gt"]:
         system += "\n\n" + INSTRUCCION_EXTENSION
         if tier == "gt":
-            system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud (hasta 8000 tokens)."
+            system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud (hasta 8000 tokens). Usa emojis para dar énfasis (✅, 🔥, 📌, 💡, ⚠️, 🚀, etc.) y organiza tu respuesta con estructura clara."
     
     system += f"\n\n[Tier actual: {config.name} | Modelos disponibles: {', '.join(config.available_models)}]"
     
@@ -779,12 +803,14 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     }.get(tier, 8000)
     
     if web_search_results:
-        search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET ===\n"
+        search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET (TIEMPO REAL) ===\n"
         for i, res in enumerate(web_search_results[:3], 1):
-            search_text += f"\nFuente {i}: {res['title']}\n{res['content'][:600]}...\n"
+            # Mostrar más información de la fuente para dar contexto
+            search_text += f"\n📌 Fuente {i}: {res['title']}\n🔗 {res['url']}\n📝 {res['content'][:600]}...\n"
         if len(search_text) > max_context_chars // 2:
             search_text = search_text[:max_context_chars // 2]
         system += search_text
+        system += "\n⚠️ **INSTRUCCIÓN:** Los resultados anteriores son información actualizada. Úsalos como referencia prioritaria para responder con datos concretos y recientes. Si hay fechas o cifras, indícalas claramente."
     
     if file_content:
         file_text = f"\n\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:2000]}\n"
@@ -836,7 +862,7 @@ async def chat(request: ChatRequest):
     
     model = MODELS[model_key]
     
-    # Web search
+    # Web search mejorado: detecta consultas que requieren información actualizada
     use_web = request.use_web_search or needs_web_search(request.message)
     web_results = None
     if use_web and config.supports_web_search:
@@ -1008,10 +1034,10 @@ async def list_agents():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "3.1.0", "groq_api": "configured", "tavily_api": "configured",
+    return {"status": "ok", "version": "3.2.0", "groq_api": "configured", "tavily_api": "configured",
             "models_loaded": len(MODELS), "agents_loaded": len(AGENT_PROMPTS),
             "share_platforms": 13, "web_builders": 3,
-            "note": "Rate limits implementados para evitar errores 429"}
+            "note": "Rate limits implementados para evitar errores 429 | Respuestas con emojis y análisis profundo"}
 
 @app.post("/search-web")
 async def web_search(query: str, max_results: int = 5):
@@ -1109,11 +1135,10 @@ async def serve_static_file(filename: str):
     raise HTTPException(404, "Archivo no encontrado")
 
 if __name__ == "__main__":
-    print("🚀 Iniciando ApoloXia Server v3.2 (Respuestas Extra Largas)")
+    print("🚀 Iniciando ApoloXia Server v3.2 (Respuestas con emojis, análisis profundo y búsqueda en tiempo real)")
     print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
     print("✅ Modo respuestas profundas y extensas activado (hasta 8000 tokens)")
-    print("🔍 Tavily configurado | 💾 Memoria por usuario activada")
-    print("⏱️ Rate limits de Groq implementados (TPM/RPM controlados)")
+    print("🔍 Búsqueda web mejorada para información actualizada y concreta")
     print("📱 Compartir a 13 plataformas: WhatsApp, WeChat, Facebook, TikTok, Instagram, Twitter, Telegram, LinkedIn, Reddit, Pinterest, Snapchat, Discord, Email")
     print("🌐 Generadores web activos: Sitios Web, Dashboards, Apps Full-Stack")
     print("✅ Modelos verificados: llama-3.1-8b, llama-3.3-70b, llama-4-scout, gpt-oss-20b/120b, qwen3-32b, compound")
