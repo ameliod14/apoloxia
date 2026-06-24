@@ -1,4 +1,5 @@
 # main.py - ApoloXia Chatbot Server (VERSIÓN GROQ ACTUALIZADA - Abril 2026)
+# MODIFICADO: Respuestas EXTRA LARGAS y profundas (hasta 8000 tokens)
 # ======================================================
 
 import os
@@ -277,6 +278,16 @@ REGLAS ESTRICTAS:
 - Explica brevemente cómo usarlo al final, pero prioriza el código funcional.
 """
 }
+
+# ============ NUEVA INSTRUCCIÓN GLOBAL PARA RESPUESTAS EXTRA LARGAS ============
+INSTRUCCION_EXTENSION = """
+**INSTRUCCIÓN DE EXTENSIÓN Y PROFUNDIDAD:**
+- Proporciona respuestas **extremadamente detalladas, profundas y exhaustivas**.
+- Incluye análisis completo, ejemplos prácticos, explicaciones paso a paso, contexto amplio y referencias cuando sea relevante.
+- Si el usuario pide código, genera el **código completo y funcional**, con comentarios explicativos, estructura modular y buenas prácticas.
+- Las respuestas deben ser **largas y sustanciosas**: para tiers Plus y GT, se esperan respuestas de al menos 1500 palabras (o 3000-5000 tokens), y para GT hasta 8000 tokens si es necesario.
+- No te limites a respuestas breves; desarrolla cada punto con profundidad.
+"""
 
 # ============ CONFIGURACIÓN POR TIER ============
 @dataclass
@@ -592,26 +603,28 @@ async def send_whatsapp_message(phone_number: str, text: str) -> Dict:
 async def call_groq_api(messages: List[Dict], model_id: str, temperature: float = 0.7, max_tokens: Optional[int] = None) -> str:
     """
     Llama a la API de Groq con manejo de rate limits y fallbacks.
+    MODIFICADO: Sin límite fijo de 4096, permite hasta 8192 tokens.
     """
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
     
-    # Limitar max_tokens para no exceder TPM
-    safe_max_tokens = max_tokens or 1024
-    if safe_max_tokens > 4096:
-        safe_max_tokens = 4096  # Límite seguro para free tier
+    # Usar el max_tokens proporcionado, sin límite fijo de 4096
+    safe_max_tokens = max_tokens if max_tokens is not None else 1024
+    # Por seguridad, limitamos a 8192 para evitar tiempos excesivos (puedes subirlo si tu modelo lo soporta)
+    if safe_max_tokens > 8192:
+        safe_max_tokens = 8192
     
     payload = {
         "model": model_id,
         "messages": messages,
         "temperature": temperature,
         "stream": False,
-        "max_tokens": safe_max_tokens  # SIEMPRE limitar tokens
+        "max_tokens": safe_max_tokens
     }
     
     # Esperar si es necesario para respetar rate limits
     await rate_limiter.wait_if_needed(model_id, messages, safe_max_tokens)
     
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=180.0) as client:  # timeout aumentado para respuestas largas
         try:
             resp = await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -750,32 +763,38 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     system += "si escribe en portugués, en portugués; si escribe en italiano, en italiano, en chino, en chino; en japonés, en japonés, etc. "
     system += "NUNCA cambies de idioma. Mantén la coherencia lingüística con la pregunta del usuario.\n"
     
+    # ===== NUEVO: INSTRUCCIÓN DE EXTENSIÓN SEGÚN TIER =====
+    if tier in ["plus", "gt"]:
+        system += "\n\n" + INSTRUCCION_EXTENSION
+        if tier == "gt":
+            system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud (hasta 8000 tokens)."
+    
     system += f"\n\n[Tier actual: {config.name} | Modelos disponibles: {', '.join(config.available_models)}]"
     
-    # LIMITAR CONTEXTO para no exceder TPM [^8^]
-    # Free tier: 6K TPM, Plus: 12K-30K TPM, GT: 6K-70K TPM
+    # LIMITAR CONTEXTO (aumentado para plus y gt)
     max_context_chars = {
-        "free": 8000,    # ~2K tokens
-        "plus": 15000,   # ~3.7K tokens  
-        "gt": 20000      # ~5K tokens (ajustar según modelo)
+        "free": 8000,
+        "plus": 20000,   # aumentado para mejor contexto
+        "gt": 30000      # aumentado para mejor contexto
     }.get(tier, 8000)
     
     if web_search_results:
         search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET ===\n"
-        for i, res in enumerate(web_search_results[:2], 1):  # SOLO 2 resultados para ahorrar tokens
-            search_text += f"\nFuente {i}: {res['title']}\n{res['content'][:300]}...\n"  # Limitar a 300 chars
-        if len(search_text) > max_context_chars // 3:
-            search_text = search_text[:max_context_chars // 3]
+        for i, res in enumerate(web_search_results[:3], 1):
+            search_text += f"\nFuente {i}: {res['title']}\n{res['content'][:600]}...\n"
+        if len(search_text) > max_context_chars // 2:
+            search_text = search_text[:max_context_chars // 2]
         system += search_text
     
     if file_content:
-        file_text = f"\n\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:1000]}\n"  # Limitar a 1000 chars
+        file_text = f"\n\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:2000]}\n"
         system += file_text
     
     messages = [{"role": "system", "content": system}]
     
-    # Limitar historial para no exceder tokens
-    for msg in history[-5:]:  # SOLO últimos 5 mensajes para free, ajustar según tier
+    # Limitar historial (aumentado para plus y gt)
+    max_history = 10 if tier == "free" else 30 if tier == "plus" else 50
+    for msg in history[-max_history:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
     
     messages.append({"role": "user", "content": user_message})
@@ -835,19 +854,29 @@ async def chat(request: ChatRequest):
     if request.enable_multi_agent and config.supports_multi_agent:
         multi_resp = await run_multi_agent(request.message, tier, messages)
     
-    # Ajustar max_tokens según tier y modelo para no exceder TPM [^8^]
-    tier_max_tokens = {
+    # ===== NUEVA LÓGICA DE TOKENS EXTRA LARGOS =====
+    base_max_tokens = {
         "free": 1024,
-        "plus": 2048,
-        "gt": 4096
+        "plus": 4096,
+        "gt": 8192
     }.get(tier, 1024)
     
-    # No exceder el max_completion del modelo
-    safe_max_tokens = min(tier_max_tokens, model.max_completion)
-    
-    # Para agentes de desarrollo web, permitir respuestas más largas
+    # Para agentes de generación web o desarrollo, permitir el máximo posible
     if request.agent_type in ["generador_sitios_web", "creador_paneles_ventas", "desarrollador_avanzado"]:
-        safe_max_tokens = min(4096, model.max_completion)
+        if tier == "gt":
+            max_tokens_for_agent = 8192
+        elif tier == "plus":
+            max_tokens_for_agent = 4096
+        else:
+            max_tokens_for_agent = 2048
+    else:
+        max_tokens_for_agent = base_max_tokens
+    
+    # No exceder el max_completion del modelo
+    safe_max_tokens = min(max_tokens_for_agent, model.max_completion)
+    # Límite práctico para respuestas largas (evitar tiempos excesivos)
+    if safe_max_tokens > 8192:
+        safe_max_tokens = 8192
     
     temp = 0.7 if tier == "free" else 0.5
     
@@ -1080,8 +1109,9 @@ async def serve_static_file(filename: str):
     raise HTTPException(404, "Archivo no encontrado")
 
 if __name__ == "__main__":
-    print("🚀 Iniciando ApoloXia Server v3.1 (Groq Actualizado Abril 2026)")
+    print("🚀 Iniciando ApoloXia Server v3.2 (Respuestas Extra Largas)")
     print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
+    print("✅ Modo respuestas profundas y extensas activado (hasta 8000 tokens)")
     print("🔍 Tavily configurado | 💾 Memoria por usuario activada")
     print("⏱️ Rate limits de Groq implementados (TPM/RPM controlados)")
     print("📱 Compartir a 13 plataformas: WhatsApp, WeChat, Facebook, TikTok, Instagram, Twitter, Telegram, LinkedIn, Reddit, Pinterest, Snapchat, Discord, Email")
