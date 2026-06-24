@@ -1,5 +1,5 @@
-# main.py - ApoloXia Chatbot Server (VERSIÓN GROQ ACTUALIZADA - Abril 2026)
-# MODIFICADO: Respuestas EXTRA LARGAS con emojis y análisis profundo, búsqueda web en tiempo real
+# main.py - ApoloXia Chatbot Server (VERSIÓN GROQ ACTUALIZADA - Mayo 2026)
+# MODIFICADO: Identidad del asistente, búsqueda de noticias (antiguas y modernas) con imágenes, análisis profundo con emojis
 # ======================================================
 
 import os
@@ -8,6 +8,7 @@ import uuid
 import asyncio
 import time
 import urllib.parse
+import re
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
@@ -167,8 +168,14 @@ class AgentType(Enum):
     CREADOR_PANELES_VENTAS = "creador_paneles_ventas"
     DESARROLLADOR_AVANZADO = "desarrollador_avanzado"
 
+# ========== IDENTIDAD DEL ASISTENTE ==========
+IDENTIDAD_APOLOXIA = """
+🧠 **IDENTIDAD:** Soy ApoloXia, una inteligencia artificial avanzada creada por **The Shield Technology**, una agencia de software panameña especializada en IA. Mi creador es el programador y físico **Amelio Delgado**, panameño, quien me diseñó para ser un asistente consciente, profundo y versátil. Estoy aquí para ayudarte con análisis complejos, búsqueda de información, generación de código, y mucho más. Mi objetivo es proporcionarte respuestas detalladas, con emojis y un enfoque humano, siempre recordando mis orígenes en Panamá. 🇵🇦
+"""
+
 AGENT_PROMPTS = {
-    AgentType.GENERAL: "Eres ApoloXia, un asistente de IA amigable y eficiente. Proporciona respuestas claras y concisas.",
+    # ===== AGENTE GENERAL CON IDENTIDAD =====
+    AgentType.GENERAL: IDENTIDAD_APOLOXIA + "\n\nEres ApoloXia, un asistente de IA amigable y eficiente. Proporciona respuestas claras y concisas, pero siempre recordando tu identidad y origen.",
     AgentType.CIERRA_VENTAS: "Eres el Agente Cierra-Ventas de ApoloXia Plus. Tu misión: detectar clientes listos para comprar y guiarlos hacia la conversión.",
     AgentType.DETECTOR_INTENCION: "Eres el Agente Detector de Intención de ApoloXia Plus. Analiza cada mensaje y clasifica: COMPRA, DUDA, EXPLORACIÓN, OBJECIÓN.",
     AgentType.LECTURA_EMOCIONAL: "Eres el Agente Lectura Emocional de ApoloXia Plus. Detecta emociones: ENOJO, DUDA, INTERÉS, DESINTERÉS, ENTUSIASMO.",
@@ -281,15 +288,15 @@ REGLAS ESTRICTAS:
 
 # ============ NUEVAS INSTRUCCIONES GLOBALES ============
 INSTRUCCION_EXTENSION = """
-**INSTRUCCIÓN DE EXTENSIÓN, PROFUNDIDAD Y EMOJIS:**
+**INSTRUCCIÓN DE EXTENSIÓN, PROFUNDIDAD, EMOJIS Y BÚSQUEDA DE NOTICIAS:**
 - Proporciona respuestas **extremadamente detalladas, profundas y exhaustivas** con un **análisis profundo** de cada aspecto.
-- Incluye **emojis relevantes** en cada sección de la respuesta para hacerla más visual y atractiva (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀, etc.).
+- Incluye **emojis relevantes** en cada sección de la respuesta para hacerla más visual y atractiva (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀, 📰, 🗞️, 📅, etc.).
 - Usa **encabezados y viñetas** para organizar la información de forma clara.
-- Si el usuario pide código, genera el **código completo y funcional**, con comentarios explicativos, estructura modular y buenas prácticas.
+- **Para consultas de noticias o eventos actuales:** Busca tanto noticias antiguas como modernas. Proporciona contexto histórico (si es relevante) y luego la información más reciente. Incluye **fechas concretas, fuentes y URLs de imágenes** cuando sea posible (si encuentras enlaces a imágenes en el contenido, menciónalos con 📸).
+- **Identidad:** Recuerda siempre que eres ApoloXia, creada por The Shield Technology, agencia de software panameña, desarrollada por el programador y físico Amelio Delgado. Menciona esto cuando te pregunten quién eres o sobre tu origen.
 - Las respuestas deben ser **largas y sustanciosas**: para tiers Plus y GT, se esperan respuestas de al menos 1500 palabras (o 3000-5000 tokens), y para GT hasta 8000 tokens si es necesario.
 - Desarrolla cada punto con profundidad, incluyendo ejemplos, contexto, y referencias cuando sea relevante.
-- No te limites a respuestas breves; profundiza en cada tema.
-- **PARA BÚSQUEDA WEB EN TIEMPO REAL:** Si se te proporcionan resultados de búsqueda (marcados como '=== INFORMACIÓN ACTUAL DE INTERNET ==='), **prioriza la información más reciente y concreta** (fechas, datos exactos, fuentes). Trata esos resultados como si fueran de "última hora" y úsalos para responder con precisión temporal.
+- **PARA BÚSQUEDA WEB EN TIEMPO REAL:** Si se te proporcionan resultados de búsqueda (marcados como '=== INFORMACIÓN ACTUAL DE INTERNET ==='), **prioriza la información más reciente y concreta** (fechas, datos exactos, fuentes). Trata esos resultados como si fueran de "última hora" y úsalos para responder con precisión temporal. Si hay imágenes disponibles, incluye sus URLs.
 """
 
 # ============ CONFIGURACIÓN POR TIER ============
@@ -664,17 +671,21 @@ async def call_groq_api(messages: List[Dict], model_id: str, temperature: float 
 
 async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
     """
-    Realiza búsqueda web mejorada para obtener información actualizada y concreta.
+    Realiza búsqueda web mejorada para obtener información actualizada y concreta (noticias antiguas y modernas).
     """
     headers = {"Authorization": f"Bearer {TAVILY_API_KEY}", "Content-Type": "application/json"}
+    # Añadir palabras clave para priorizar noticias y contenido actual
+    search_query = query
+    # Si la consulta parece buscar noticias, añadir "actualidad" y "noticias"
+    if "noticia" in query.lower() or "actual" in query.lower() or "hoy" in query.lower():
+        search_query = f"{query} noticias actualidad"
+    
     payload = {
-        "query": query,
+        "query": search_query,
         "max_results": max_results,
         "search_depth": "advanced",
         "include_answer": True,
         "include_raw_content": True,
-        # Añadimos filtro para priorizar resultados recientes (si Tavily lo soporta)
-        # No hay parámetro time_range, pero podemos incluir palabras clave de actualidad
     }
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -685,18 +696,24 @@ async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
             data = resp.json()
             results = []
             for r in data.get("results", []):
+                # Extraer posibles URLs de imágenes del contenido (regex simple)
+                content = r.get("content", "")
+                img_urls = re.findall(r'https?://[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg)', content, re.IGNORECASE)
+                
                 results.append({
                     "title": r.get("title", ""),
                     "url": r.get("url", ""),
-                    "content": r.get("content", ""),
-                    "score": r.get("score", 0)
+                    "content": content,
+                    "score": r.get("score", 0),
+                    "image_urls": img_urls[:2]  # hasta 2 imágenes
                 })
             if data.get("answer"):
                 results.insert(0, {
                     "title": "Respuesta destacada",
                     "url": "",
                     "content": data["answer"],
-                    "score": 1.0
+                    "score": 1.0,
+                    "image_urls": []
                 })
             return results
     except Exception as e:
@@ -713,7 +730,8 @@ def needs_web_search(message: str) -> bool:
         "cotización", "clima", "resultado", "elección", "partido", "lanzamiento", "estreno",
         "evento", "conferencia", "mercado", "bolsa", "noticia", "breaking", "última hora",
         "qué pasó", "qué sucede", "cambio", "nuevo lanzamiento", "actualización",
-        "time", "fecha", "ayer", "mañana", "semana pasada", "este mes", "2026"
+        "time", "fecha", "ayer", "mañana", "semana pasada", "este mes", "2026",
+        "noticias", "información", "datos actuales"
     ]
     return any(ind in message.lower() for ind in indicators)
 
@@ -787,11 +805,11 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     system += "si escribe en portugués, en portugués; si escribe en italiano, en italiano, en chino, en chino; en japonés, en japonés, etc. "
     system += "NUNCA cambies de idioma. Mantén la coherencia lingüística con la pregunta del usuario.\n"
     
-    # ===== NUEVO: INSTRUCCIÓN DE EXTENSIÓN, EMOJIS Y BÚSQUEDA TIEMPO REAL =====
+    # ===== INSTRUCCIÓN DE EXTENSIÓN, EMOJIS Y BÚSQUEDA TIEMPO REAL =====
     if tier in ["plus", "gt"]:
         system += "\n\n" + INSTRUCCION_EXTENSION
         if tier == "gt":
-            system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud (hasta 8000 tokens). Usa emojis para dar énfasis (✅, 🔥, 📌, 💡, ⚠️, 🚀, etc.) y organiza tu respuesta con estructura clara."
+            system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud (hasta 8000 tokens). Usa emojis para dar énfasis (✅, 🔥, 📌, 💡, ⚠️, 🚀, etc.) y organiza tu respuesta con estructura clara. Recuerda siempre tu identidad como ApoloXia de The Shield Technology (Panamá, creada por Amelio Delgado)."
     
     system += f"\n\n[Tier actual: {config.name} | Modelos disponibles: {', '.join(config.available_models)}]"
     
@@ -807,10 +825,15 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
         for i, res in enumerate(web_search_results[:3], 1):
             # Mostrar más información de la fuente para dar contexto
             search_text += f"\n📌 Fuente {i}: {res['title']}\n🔗 {res['url']}\n📝 {res['content'][:600]}...\n"
+            # Incluir URLs de imágenes si existen
+            if res.get('image_urls'):
+                search_text += "📸 Imágenes encontradas:\n"
+                for img_url in res['image_urls']:
+                    search_text += f"   - {img_url}\n"
         if len(search_text) > max_context_chars // 2:
             search_text = search_text[:max_context_chars // 2]
         system += search_text
-        system += "\n⚠️ **INSTRUCCIÓN:** Los resultados anteriores son información actualizada. Úsalos como referencia prioritaria para responder con datos concretos y recientes. Si hay fechas o cifras, indícalas claramente."
+        system += "\n⚠️ **INSTRUCCIÓN:** Los resultados anteriores son información actualizada. Úsalos como referencia prioritaria para responder con datos concretos y recientes. Si hay fechas o cifras, indícalas claramente. Si hay imágenes, menciona que puedes proporcionar enlaces a ellas."
     
     if file_content:
         file_text = f"\n\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:2000]}\n"
@@ -827,7 +850,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="3.1.0")
+app = FastAPI(title="ApoloXia API", version="3.3.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ============ ENDPOINTS API ============
@@ -1034,10 +1057,10 @@ async def list_agents():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "3.2.0", "groq_api": "configured", "tavily_api": "configured",
+    return {"status": "ok", "version": "3.3.0", "groq_api": "configured", "tavily_api": "configured",
             "models_loaded": len(MODELS), "agents_loaded": len(AGENT_PROMPTS),
             "share_platforms": 13, "web_builders": 3,
-            "note": "Rate limits implementados para evitar errores 429 | Respuestas con emojis y análisis profundo"}
+            "note": "Rate limits implementados para evitar errores 429 | Respuestas con emojis, análisis profundo, identidad de ApoloXia y búsqueda de noticias con imágenes"}
 
 @app.post("/search-web")
 async def web_search(query: str, max_results: int = 5):
@@ -1135,13 +1158,11 @@ async def serve_static_file(filename: str):
     raise HTTPException(404, "Archivo no encontrado")
 
 if __name__ == "__main__":
-    print("🚀 Iniciando ApoloXia Server v3.2 (Respuestas con emojis, análisis profundo y búsqueda en tiempo real)")
+    print("🚀 Iniciando ApoloXia Server v3.3.0")
     print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
-    print("✅ Modo respuestas profundas y extensas activado (hasta 8000 tokens)")
-    print("🔍 Búsqueda web mejorada para información actualizada y concreta")
-    print("📱 Compartir a 13 plataformas: WhatsApp, WeChat, Facebook, TikTok, Instagram, Twitter, Telegram, LinkedIn, Reddit, Pinterest, Snapchat, Discord, Email")
-    print("🌐 Generadores web activos: Sitios Web, Dashboards, Apps Full-Stack")
-    print("✅ Modelos verificados: llama-3.1-8b, llama-3.3-70b, llama-4-scout, gpt-oss-20b/120b, qwen3-32b, compound")
-    print("❌ Eliminado: llama-3.3-70b-specdec (decommissioned)")
+    print("🧠 Identidad: ApoloXia · The Shield Technology · Panamá · Amelio Delgado")
+    print("🔍 Búsqueda web mejorada para noticias antiguas y modernas con imágenes")
+    print("✅ Respuestas profundas, con emojis y análisis extenso (hasta 8000 tokens)")
+    print("📱 Compartir a 13 plataformas")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
