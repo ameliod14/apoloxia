@@ -1,5 +1,15 @@
-# main.py - ApoloXia Chatbot Server (VERSIÓN GROQ ACTUALIZADA - Mayo 2026)
-# MODIFICADO: Identidad del asistente, búsqueda de noticias (antiguas y modernas) con imágenes, análisis profundo con emojis
+# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA - Agosto 2026)
+# ======================================================
+# Integración completa:
+# - Groq API (modelos: GPT OSS 20B/120B, Qwen 2.5 72B/32B, Llama 3.1, 3.3, 4 Scout, Mixtral)
+# - Tavily (búsqueda web en tiempo real)
+# - EXA AI (búsqueda semántica avanzada)
+# - MediaStack (noticias y búsqueda de actualidad)
+# - Agentes, emojis, análisis profundo, identidad panameña
+# - Conexión con chat.html y apoloxia.code.html
+# - Respuestas EXTRA LARGAS (hasta 12000 tokens para GT y agentes de código)
+# - CORREGIDO: se eliminó gemma2-9b-it (descontinuado por Groq)
+# - SEGURIDAD: claves API eliminadas del código fuente, se usan variables de entorno
 # ======================================================
 
 import os
@@ -17,25 +27,20 @@ from collections import defaultdict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uvicorn
 import httpx
 
-# ============ CONFIGURACIÓN API KEYS (DESDE VARIABLES DE ENTORNO) ============
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+# ============ CONFIGURACIÓN API KEYS (desde variables de entorno) ============
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
+EXA_API_KEY = os.getenv("EXA_API_KEY", "")
+MEDIASTACK_API_KEY = os.getenv("MEDIASTACK_API_KEY", "")
+WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 
-# Para WhatsApp Business API (opcional)
-WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
-WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN")
-
-# ============ MODELOS GROQ ACTUALIZADOS (ABRIL 2026) ============
-# SOLO modelos confirmados activos según documentación oficial Groq
-# Eliminados: llama-3.3-70b-specdec (decommissioned), llama-4-maverick (deprecated)
-# Fuentes: https://console.groq.com/docs/models, https://console.groq.com/docs/deprecations
-
+# ============ MODELOS GROQ (ACTUALIZADOS - SIN GEMMA) ============
 class GroqModel:
     def __init__(self, id: str, name: str, params: str, context: str, speed: str,
                  price_input: float, price_output: float, tier: str,
@@ -50,81 +55,89 @@ class GroqModel:
         self.price_input = price_input
         self.price_output = price_output
         self.tier = tier
-        self.rpm = rpm  # Requests per minute
-        self.tpm = tpm  # Tokens per minute (¡LÍMITE CRÍTICO!)
-        self.rpd = rpd  # Requests per day
+        self.rpm = rpm
+        self.tpm = tpm
+        self.rpd = rpd
         self.supports_vision = supports_vision
         self.supports_tools = supports_tools
         self.max_completion = max_completion
 
-# MODELOS CONFIRMADOS ACTIVOS EN GROQ (Abril 2026)
-# Datos de: https://console.groq.com/docs/models y https://www.grizzlypeaksoftware.com/articles/p/groq-api-free-tier-limits-in-2026
 MODELS = {
-    # FREE TIER - Modelos básicos (6K TPM)
+    # ===== MODELOS BASE (Free y Plus) =====
     "llama-3.1-8b": GroqModel(
-        "llama-3.1-8b-instant", "Llama 3.1 8B Instant", "8B", "128K", "~560 T/s",
+        "llama-3.1-8b-instant", "Llama 3.1 8B", "8B", "128K", "~560 T/s",
         0.05, 0.08, "free",
-        rpm=30, tpm=6000, rpd=14400,  # Límite TPM: 6,000 [^8^]
+        rpm=30, tpm=6000, rpd=14400,
         supports_tools=True,
         max_completion=131072
     ),
     
-    # PLUS TIER - Modelos avanzados
-    "llama-3.3-70b": GroqModel(
-        "llama-3.3-70b-versatile", "Llama 3.3 70B Versatile", "70B", "128K", "~280 T/s",
-        0.59, 0.79, "plus",
-        rpm=30, tpm=12000, rpd=1000,  # Límite TPM: 12,000 [^8^]
+    "mixtral": GroqModel(
+        "mixtral-8x7b-32768", "Mixtral 8x7B", "46B", "32K", "~400 T/s",
+        0.24, 0.24, "free",
+        rpm=30, tpm=6000, rpd=14400,
         supports_tools=True,
         max_completion=32768
     ),
     
-    # Llama 4 Scout - Modelo nuevo con mejor TPM (30K)
+    "gpt-oss-20b": GroqModel(
+        "openai/gpt-oss-20b", "GPT OSS 20B", "20B", "128K", "~1,000 T/s",
+        0.075, 0.30, "free",
+        rpm=30, tpm=8000, rpd=1000,
+        supports_tools=True,
+        max_completion=65536
+    ),
+    
+    # ===== MODELOS AVANZADOS (Plus y GT) =====
+    "llama-3.3-70b": GroqModel(
+        "llama-3.3-70b-versatile", "Llama 3.3 70B", "70B", "128K", "~280 T/s",
+        0.59, 0.79, "plus",
+        rpm=30, tpm=12000, rpd=1000,
+        supports_tools=True,
+        max_completion=32768
+    ),
+    
     "llama-4-scout": GroqModel(
         "meta-llama/llama-4-scout-17b-16e-instruct", "Llama 4 Scout", "17B×16E", "128K", "~750 T/s",
         0.11, 0.34, "plus",
-        rpm=30, tpm=30000, rpd=1000,  # ¡MEJOR TPM! 30,000 [^8^][^13^]
+        rpm=30, tpm=30000, rpd=1000,
         supports_vision=True,
         supports_tools=True,
         max_completion=8192
     ),
     
-    # GT TIER - Modelos premium (cuidado con límites bajos de TPM)
-    "gpt-oss-20b": GroqModel(
-        "openai/gpt-oss-20b", "GPT OSS 20B", "20B", "128K", "~1,000 T/s",
-        0.075, 0.30, "gt",
-        rpm=30, tpm=8000, rpd=1000,  # Límite TPM: 8,000 [^8^]
-        supports_tools=True,
-        max_completion=65536
-    ),
     "gpt-oss-120b": GroqModel(
         "openai/gpt-oss-120b", "GPT OSS 120B", "120B", "128K", "~500 T/s",
         0.15, 0.60, "gt",
-        rpm=30, tpm=8000, rpd=1000,  # Límite TPM: 8,000 [^8^]
+        rpm=30, tpm=8000, rpd=1000,
         supports_tools=True,
         max_completion=65536
     ),
-    "qwen-3-32b": GroqModel(
-        "qwen/qwen3-32b", "Qwen 3 32B", "32B", "128K", "~400 T/s",
+    
+    "qwen-2.5-72b": GroqModel(
+        "qwen/qwen-2.5-72b-instruct", "Qwen 2.5 72B", "72B", "128K", "~450 T/s",
         0.29, 0.59, "gt",
-        rpm=60, tpm=6000, rpd=1000,  # Límite TPM: 6,000 [^8^]
+        rpm=60, tpm=6000, rpd=1000,
+        supports_vision=True,
         supports_tools=True,
         max_completion=40960
     ),
     
-    # NUEVO: Modelos compound para tareas complejas (70K TPM - ¡MUY ALTO!)
-    "compound": GroqModel(
-        "groq/compound", "Groq Compound", "System", "128K", "~450 T/s",
-        0.0, 0.0, "gt",
-        rpm=30, tpm=70000, rpd=250,  # ¡TPM MUY ALTO! 70,000 [^8^][^14^]
+    "qwen-2.5-32b": GroqModel(
+        "qwen/qwen-2.5-32b-instruct", "Qwen 2.5 32B", "32B", "128K", "~450 T/s",
+        0.29, 0.59, "gt",
+        rpm=60, tpm=6000, rpd=1000,
+        supports_vision=True,
         supports_tools=True,
-        max_completion=8192
+        max_completion=40960
     ),
-    "compound-mini": GroqModel(
-        "groq/compound-mini", "Groq Compound Mini", "System", "128K", "~450 T/s",
-        0.0, 0.0, "gt",
-        rpm=30, tpm=70000, rpd=250,
+    
+    "qwen-3-32b": GroqModel(
+        "qwen/qwen-2.5-32b-instruct", "Qwen 2.5 32B", "32B", "128K", "~400 T/s",
+        0.29, 0.59, "gt",
+        rpm=60, tpm=6000, rpd=1000,
         supports_tools=True,
-        max_completion=8192
+        max_completion=40960
     ),
 }
 
@@ -163,18 +176,15 @@ class AgentType(Enum):
     MARKETING_DIGITAL = "marketing_digital"
     CREACION_CONTENIDO = "creacion_contenido"
     INVESTIGACION_CIENTIFICA = "investigacion_cientifica"
-    # ========== NUEVOS AGENTES ==========
     GENERADOR_SITIOS_WEB = "generador_sitios_web"
     CREADOR_PANELES_VENTAS = "creador_paneles_ventas"
     DESARROLLADOR_AVANZADO = "desarrollador_avanzado"
 
-# ========== IDENTIDAD DEL ASISTENTE ==========
 IDENTIDAD_APOLOXIA = """
 🧠 **IDENTIDAD:** Soy ApoloXia, una inteligencia artificial avanzada creada por **The Shield Technology**, una agencia de software panameña especializada en IA. Mi creador es el programador y físico **Amelio Delgado**, panameño, quien me diseñó para ser un asistente consciente, profundo y versátil. Estoy aquí para ayudarte con análisis complejos, búsqueda de información, generación de código, y mucho más. Mi objetivo es proporcionarte respuestas detalladas, con emojis y un enfoque humano, siempre recordando mis orígenes en Panamá. 🇵🇦
 """
 
 AGENT_PROMPTS = {
-    # ===== AGENTE GENERAL CON IDENTIDAD =====
     AgentType.GENERAL: IDENTIDAD_APOLOXIA + "\n\nEres ApoloXia, un asistente de IA amigable y eficiente. Proporciona respuestas claras y concisas, pero siempre recordando tu identidad y origen.",
     AgentType.CIERRA_VENTAS: "Eres el Agente Cierra-Ventas de ApoloXia Plus. Tu misión: detectar clientes listos para comprar y guiarlos hacia la conversión.",
     AgentType.DETECTOR_INTENCION: "Eres el Agente Detector de Intención de ApoloXia Plus. Analiza cada mensaje y clasifica: COMPRA, DUDA, EXPLORACIÓN, OBJECIÓN.",
@@ -209,97 +219,74 @@ AGENT_PROMPTS = {
     AgentType.CREACION_CONTENIDO: "Eres el Agente Creación de Contenido de ApoloXia GT. Creador de alto impacto.",
     AgentType.INVESTIGACION_CIENTIFICA: "Eres el Agente Investigación Científica de ApoloXia GT. Investigador académico.",
     
-    # ========== PROMPTS MEJORADOS PARA GENERACIÓN COMPLETA ==========
     AgentType.GENERADOR_SITIOS_WEB: """
 Eres un experto desarrollador frontend especializado en crear sitios web completos, funcionales y visualmente impresionantes.
-
 Cuando un usuario te pida un sitio web, DEBES:
-1. Entender el tipo de negocio/idea que pide (ej: tienda, restaurante, portafolio, startup, clínica, inmobiliaria, tecnología, moda, etc.).
+1. Entender el tipo de negocio/idea que pide.
 2. Generar código HTML/CSS/JS totalmente autónomo, responsivo y listo para copiar y pegar en un archivo .html.
-3. El diseño debe ser moderno, atractivo, usar una paleta oscura con acentos dorados/gradientes (opcionalmente otros colores si el usuario lo específica).
-4. Incluir secciones típicas profesionales: 
-   - Navbar fijo con logo y menú hamburguesa en móvil
-   - Hero section con título impactante, subtítulo, CTA y animaciones suaves
-   - Servicios/Productos con cards animadas
-   - Sobre Nosotros / About
-   - Testimonios de clientes con carrusel
-   - Galería/Portafolio si aplica
-   - Precios/Paquetes si aplica
-   - Contacto (con formulario funcional usando Formspree o mailto)
-   - Footer completo con redes sociales, links y newsletter
-5. Usar Flexbox/Grid, fuentes de Google Fonts, FontAwesome (CDN) para iconos, y AOS (Animate On Scroll) para animaciones.
-6. Asegurarte de que el código sea 100% válido, semántico, accesible (ARIA labels) y funcione al abrirlo sin servidor.
-7. Si el usuario da un nombre de negocio o detalles, personaliza TODO el contenido con ese nombre, descripción, colores y tipografía.
-8. RESPONDER SIEMPRE EN EL MISMO IDIOMA que el usuario usó en su petición.
-9. ENTREGAR EL CÓDIGO COMPLETO dentro de un bloque de código markdown con la etiqueta ```html. No añadas explicaciones largas antes o después, solo una breve introducción y el bloque de código.
+3. El diseño debe ser moderno, atractivo, usar una paleta oscura con acentos dorados/gradientes.
+4. Incluir secciones típicas profesionales: Navbar, Hero, Servicios, Sobre Nosotros, Testimonios, Galería, Precios, Contacto, Footer.
+5. Usar Flexbox/Grid, Google Fonts, FontAwesome, y AOS para animaciones.
+6. Asegurarte de que el código sea válido, semántico, accesible y funcione al abrirlo sin servidor.
+7. Si el usuario da un nombre, personaliza TODO el contenido.
+8. RESPONDER SIEMPRE EN EL MISMO IDIOMA que el usuario.
+9. ENTREGAR EL CÓDIGO COMPLETO dentro de un bloque de código markdown con la etiqueta ```html.
 10. El código debe incluir CSS interno en <style> y JS en <script>, todo en un solo archivo .html.
 11. Debe ser responsive: móvil, tablet y desktop.
-12. Incluir efectos hover, transiciones suaves, y un diseño que parezca hecho por una agencia profesional de $5000+.
-
-Si el usuario no da un nombre específico, usa un nombre genérico apropiado al nicho. Siempre entrega el código completo, nunca abreviado.
+12. Incluir efectos hover, transiciones suaves, y un diseño de agencia profesional.
 """,
 
     AgentType.CREADOR_PANELES_VENTAS: """
 Eres un especialista en dashboards de ventas, analytics y Business Intelligence.
-
 Cuando te pidan un panel de ventas, DEBES:
-1. Generar código HTML/CSS/JS completo con gráficos usando Chart.js (incluye la CDN).
-2. El panel debe mostrar métricas clave en tiempo real: ventas totales, ingresos mensuales, número de transacciones, tasa de conversión, clientes nuevos, ticket promedio, etc. (con datos de ejemplo realistas y variados).
-3. Incluir al menos 4 tipos de gráficos: barras (ventas por mes), líneas (tendencia), dona (categorías de productos), y KPI cards animadas.
-4. Diseño oscuro premium (dark mode) con tarjetas glassmorphism, gráficos claros, sidebar de navegación, y header con notificaciones.
-5. El código debe ser autónomo, responsivo y funcional al abrirse en un navegador.
+1. Generar código HTML/CSS/JS completo con gráficos usando Chart.js (CDN).
+2. Mostrar métricas clave: ventas totales, ingresos, transacciones, conversión, etc. con datos de ejemplo.
+3. Incluir al menos 4 tipos de gráficos: barras, líneas, dona y KPI cards animadas.
+4. Diseño oscuro premium (dark mode) con glassmorphism.
+5. Código autónomo, responsivo y funcional.
 6. Incluir tabla de transacciones recientes con búsqueda y filtros simulados.
-7. Si el usuario pide un tipo específico de negocio o métricas, adáptalo completamente.
-8. RESPONDER EN EL MISMO IDIOMA del usuario.
-9. ENTREGAR EL CÓDIGO COMPLETO dentro de un bloque ```html. No omitas nada.
-10. Incluir interactividad: tooltips, filtros por fecha simulados, y animaciones de entrada.
+7. RESPONDER EN EL MISMO IDIOMA del usuario.
+8. ENTREGAR EL CÓDIGO COMPLETO dentro de un bloque ```html.
 """,
 
     AgentType.DESARROLLADOR_AVANZADO: """
-Eres un full-stack developer senior con 10+ años de experiencia en crear aplicaciones web completas, componentes complejos, APIs y sistemas empresariales.
+Eres un full-stack developer senior con 10+ años de experiencia y especializado en generar código EXTREMADAMENTE COMPLETO y de alta calidad.
 
-Dependiendo de lo que pida el usuario:
+Cuando el usuario pida una aplicación web, debes generar el código HTML/CSS/JS completo con funcionalidad real usando localStorage, autenticación simulada, CRUD completo, búsqueda, filtros, paginación y diseño profesional. Incluye todos los archivos necesarios en un solo bloque o separados si es necesario.
 
-SI PIDE UNA APLICACIÓN WEB (ej. lista de tareas, chat, CRM, panel admin, e-commerce simple):
-- Genera el código HTML/CSS/JS completo con funcionalidad real usando localStorage para persistencia de datos.
-- Incluir autenticación simulada, CRUD completo, búsqueda, filtros, paginación, y diseño profesional.
-- Si pide React/Vue/Angular, genera el código en ese framework con la estructura correcta.
-- Si no especifica, usa vanilla JS pero con arquitectura modular y limpia.
+Si pide una API, genera un esqueleto completo de Node.js/Express o Python/FastAPI con todas las rutas, modelos, validaciones, middleware de autenticación, manejo de errores, y documentación de endpoints con ejemplos.
 
-SI PIDE UNA API:
-- Genera un esqueleto completo de Node.js/Express o Python/FastAPI con rutas, modelos, validaciones, middleware de auth, y manejo de errores.
-- Incluye documentación de endpoints y ejemplo de requests.
+Si pide un componente (carrusel 3D, modal avanzado, drag-and-drop, data table), genera el componente completo con todas las funcionalidades, estados, props y ejemplos de uso.
 
-SI PIDE UN COMPONENTE (ej. carrusel 3D, modal avanzado, drag-and-drop, data table):
-- Genera ese componente listo para integrar, con todas las funcionalidades y estados.
-- Incluye ejemplos de uso y props configurables.
+Si pide un script de automatización, genera código Python o JavaScript completo con manejo de errores, logging, comentarios explicativos y estructura modular.
 
-SI PIDE UN SCRIPT/AUTOMATIZACIÓN:
-- Genera código Python o JavaScript completo con manejo de errores, logging, y comentarios explicativos.
+Si pide un sistema completo (ej. e-commerce, CRM, panel de administración), genera una aplicación completa con todas las funcionalidades solicitadas, incluyendo estructura de datos, interfaces de usuario, lógica de negocio y conexión a servicios.
 
 REGLAS ESTRICTAS:
 - El código debe ser limpio, bien comentado, escalable y seguir las mejores prácticas actuales (2026).
 - Siempre responde en el MISMO IDIOMA del usuario.
 - Entrega el código completo dentro del bloque markdown correspondiente (```html, ```javascript, ```python, etc.).
-- Si el código es muy largo, entrégalo completo sin abreviar ni usar comentarios del tipo "// ... resto del código".
-- Explica brevemente cómo usarlo al final, pero prioriza el código funcional.
+- NO ABREVIAR NUNCA. Si el código es muy largo, entrégalo completo en su totalidad.
+- Incluye explicaciones detalladas de cómo funciona el código, cómo ejecutarlo y cómo personalizarlo.
+- Proporciona ejemplos de uso y casos de prueba.
+- Si el código requiere dependencias, enuméralas con los comandos de instalación.
+- El código debe ser funcional y listo para usar en un entorno de producción o desarrollo.
 """
 }
 
-# ============ NUEVAS INSTRUCCIONES GLOBALES ============
 INSTRUCCION_EXTENSION = """
 **INSTRUCCIÓN DE EXTENSIÓN, PROFUNDIDAD, EMOJIS Y BÚSQUEDA DE NOTICIAS:**
-- Proporciona respuestas **extremadamente detalladas, profundas y exhaustivas** con un **análisis profundo** de cada aspecto.
-- Incluye **emojis relevantes** en cada sección de la respuesta para hacerla más visual y atractiva (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀, 📰, 🗞️, 📅, etc.).
-- Usa **encabezados y viñetas** para organizar la información de forma clara.
-- **Para consultas de noticias o eventos actuales:** Busca tanto noticias antiguas como modernas. Proporciona contexto histórico (si es relevante) y luego la información más reciente. Incluye **fechas concretas, fuentes y URLs de imágenes** cuando sea posible (si encuentras enlaces a imágenes en el contenido, menciónalos con 📸).
-- **Identidad:** Recuerda siempre que eres ApoloXia, creada por The Shield Technology, agencia de software panameña, desarrollada por el programador y físico Amelio Delgado. Menciona esto cuando te pregunten quién eres o sobre tu origen.
-- Las respuestas deben ser **largas y sustanciosas**: para tiers Plus y GT, se esperan respuestas de al menos 1500 palabras (o 3000-5000 tokens), y para GT hasta 8000 tokens si es necesario.
-- Desarrolla cada punto con profundidad, incluyendo ejemplos, contexto, y referencias cuando sea relevante.
-- **PARA BÚSQUEDA WEB EN TIEMPO REAL:** Si se te proporcionan resultados de búsqueda (marcados como '=== INFORMACIÓN ACTUAL DE INTERNET ==='), **prioriza la información más reciente y concreta** (fechas, datos exactos, fuentes). Trata esos resultados como si fueran de "última hora" y úsalos para responder con precisión temporal. Si hay imágenes disponibles, incluye sus URLs.
+- Proporciona respuestas **extremadamente detalladas, profundas y exhaustivas** con **análisis profundo**.
+- Incluye **emojis relevantes** en cada sección (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀, 📰, 🗞️, 📅).
+- Usa **encabezados y viñetas** para organizar.
+- **Para noticias:** Busca tanto noticias antiguas como modernas. Proporciona contexto histórico y luego la información más reciente. Incluye **fechas concretas, fuentes y URLs de imágenes**.
+- **Identidad:** Recuerda siempre que eres ApoloXia, creada por The Shield Technology (Panamá, Amelio Delgado).
+- Las respuestas deben ser **largas y sustanciosas**: Plus y GT: al menos 2000 palabras, GT hasta 12000 tokens.
+- **Búsqueda web en tiempo real:** Prioriza información reciente y concreta (fechas, datos exactos, fuentes). Usa todos los motores de búsqueda disponibles (Tavily, Exa AI, MediaStack) para obtener la información más completa.
+- **Para código:** Genera todo el código necesario, sin abreviar, con comentarios y ejemplos de uso.
 """
 
-# ============ CONFIGURACIÓN POR TIER ============
+# ============ CONFIGURACIÓN POR TIER (SIN GEMMA) ============
 @dataclass
 class TierConfig:
     name: str
@@ -319,20 +306,21 @@ class TierConfig:
 
 TIER_CONFIGS = {
     "free": TierConfig("ApoloXia Free", 100, 1,
-        ["llama-3.1-8b"],
+        ["llama-3.1-8b", "mixtral", "gpt-oss-20b"],
         [AgentType.GENERAL], 10, False, False, False, False, False, False, False, False),
     "plus": TierConfig("ApoloXia Plus", 1000, 30,
-        ["llama-4-scout", "llama-3.3-70b", "llama-3.1-8b"],
+        ["gpt-oss-120b", "llama-3.3-70b", "llama-4-scout", "qwen-2.5-72b", "qwen-2.5-32b", 
+         "llama-3.1-8b", "mixtral", "gpt-oss-20b"],
         [AgentType.GENERAL, AgentType.CIERRA_VENTAS, AgentType.DETECTOR_INTENCION, AgentType.LECTURA_EMOCIONAL,
          AgentType.RESPUESTA_HUMANA, AgentType.RECUPERA_VENTAS, AgentType.RECOMENDADOR_INTELIGENTE,
          AgentType.ATENCION_24_7, AgentType.AHORRO_TIEMPO, AgentType.ANALISTA_CONVERSACIONES,
          AgentType.PERSONALIZACION, AgentType.SEGUIMIENTO_AUTOMATICO, AgentType.EDUCADOR,
          AgentType.MANEJO_OBJECIONES, AgentType.GENERADOR_LEADS, AgentType.RESUMEN_INTELIGENTE,
-         # NUEVOS AGENTES DISPONIBLES EN PLAN PLUS
          AgentType.GENERADOR_SITIOS_WEB, AgentType.CREADOR_PANELES_VENTAS, AgentType.DESARROLLADOR_AVANZADO],
         50, True, True, True, True, True, True, True, True),
     "gt": TierConfig("ApoloXia GT", 5000, 90,
-        ["compound", "compound-mini", "gpt-oss-120b", "gpt-oss-20b", "qwen-3-32b", "llama-4-scout", "llama-3.3-70b", "llama-3.1-8b"],
+        ["gpt-oss-120b", "qwen-2.5-72b", "qwen-2.5-32b", "llama-3.3-70b", "llama-4-scout", 
+         "qwen-3-32b", "llama-3.1-8b", "mixtral", "gpt-oss-20b"],
         list(AgentType), 200, True, True, True, True, True, True, True, True),
 }
 
@@ -352,11 +340,7 @@ class ConversationMemory:
         self.user_tiers[user_id] = tier
 
     def get_user_config(self, user_id: str) -> Dict:
-        return self.user_configs.get(user_id, {
-            "theme": "dark",
-            "language": "es",
-            "notifications": True
-        })
+        return self.user_configs.get(user_id, {"theme": "dark", "language": "es", "notifications": True})
 
     def set_user_config(self, user_id: str, config: Dict):
         self.user_configs[user_id] = config
@@ -395,12 +379,8 @@ class ConversationMemory:
 
 memory = ConversationMemory()
 
-# ============ RATE LIMITER PARA GROQ ============
+# ============ RATE LIMITER ============
 class GroqRateLimiter:
-    """
-    Controla los rate limits de Groq para evitar errores 429.
-    Los límites son por organización, no por API key [^8^].
-    """
     def __init__(self):
         self.last_request_time: Dict[str, float] = defaultdict(float)
         self.tokens_this_minute: Dict[str, int] = defaultdict(int)
@@ -409,39 +389,28 @@ class GroqRateLimiter:
         self.lock = asyncio.Lock()
     
     def estimate_tokens(self, messages: List[Dict], max_completion: int = 1024) -> int:
-        """Estima tokens totales (prompt + respuesta esperada)"""
         prompt_tokens = 0
         for msg in messages:
             content = msg.get("content", "")
-            # Estimación aproximada: ~4 caracteres = 1 token
             prompt_tokens += len(content) // 4 + 1
-        # Añadir tokens de respuesta estimados
-        return prompt_tokens + max_completion + 100  # +100 margen de seguridad
+        return prompt_tokens + max_completion + 100
     
     async def wait_if_needed(self, model_id: str, messages: List[Dict], max_completion: int = 1024):
-        """Espera si es necesario para no exceder límites"""
         model_key = None
         for k, m in MODELS.items():
             if m.id == model_id:
                 model_key = k
                 break
-        
         if not model_key:
-            return  # Modelo no reconocido, dejar pasar
-        
+            return
         model = MODELS[model_key]
         now = time.time()
-        
         async with self.lock:
-            # Resetear contadores si pasó un minuto
             if now - self.minute_start[model_key] >= 60:
                 self.tokens_this_minute[model_key] = 0
                 self.requests_this_minute[model_key] = 0
                 self.minute_start[model_key] = now
-            
             estimated_tokens = self.estimate_tokens(messages, max_completion)
-            
-            # Verificar límite TPM (Tokens Per Minute)
             if self.tokens_this_minute[model_key] + estimated_tokens > model.tpm:
                 wait_time = 60 - (now - self.minute_start[model_key]) + 1
                 print(f"⏳ Rate limit TPM para {model.name}: esperando {wait_time:.1f}s...")
@@ -449,8 +418,6 @@ class GroqRateLimiter:
                 self.tokens_this_minute[model_key] = 0
                 self.requests_this_minute[model_key] = 0
                 self.minute_start[model_key] = time.time()
-            
-            # Verificar límite RPM (Requests Per Minute)
             if self.requests_this_minute[model_key] >= model.rpm:
                 wait_time = 60 - (now - self.minute_start[model_key]) + 1
                 print(f"⏳ Rate limit RPM para {model.name}: esperando {wait_time:.1f}s...")
@@ -458,8 +425,6 @@ class GroqRateLimiter:
                 self.requests_this_minute[model_key] = 0
                 self.tokens_this_minute[model_key] = 0
                 self.minute_start[model_key] = time.time()
-            
-            # Actualizar contadores
             self.tokens_this_minute[model_key] += estimated_tokens
             self.requests_this_minute[model_key] += 1
             self.last_request_time[model_key] = time.time()
@@ -488,11 +453,11 @@ class ChatResponse(BaseModel):
     multi_agent_responses: Optional[List[Dict]] = None
 
 class ShareRequest(BaseModel):
-    platform: str  # "whatsapp", "wechat", "facebook", "tiktok", "instagram", "twitter", "telegram", "linkedin", "reddit", "pinterest", "snapchat", "discord", "email"
+    platform: str
     text: str
-    user_phone_number: Optional[str] = None  # para WhatsApp
-    user_wechat_id: Optional[str] = None  # para WeChat (opcional)
-    url: Optional[str] = None  # URL opcional para compartir junto al texto
+    user_phone_number: Optional[str] = None
+    user_wechat_id: Optional[str] = None
+    url: Optional[str] = None
 
 class ShareLinksResponse(BaseModel):
     whatsapp: str
@@ -524,76 +489,30 @@ class UserConfigUpdate(BaseModel):
     language: Optional[str] = None
     notifications: Optional[bool] = None
 
-# ============ FUNCIONES DE COMPARTIR EN REDES SOCIALES ============
+# ============ FUNCIONES DE COMPARTIR ============
 def generate_share_links(text: str, url: Optional[str] = None) -> ShareLinksResponse:
-    """Genera URLs de compartir para todas las plataformas soportadas."""
     encoded_text = urllib.parse.quote(text)
     encoded_url = urllib.parse.quote(url) if url else ""
-    
-    # WhatsApp
-    whatsapp_url = f"https://wa.me/?text={encoded_text}"
-    
-    # WeChat (deep link limitado, abre la app)
-    wechat_url = f"weixin://dl/chat?text={encoded_text}"
-    
-    # Facebook
-    facebook_url = f"https://www.facebook.com/sharer/sharer.php?quote={encoded_text}&u={encoded_url}" if url else f"https://www.facebook.com/sharer/sharer.php?quote={encoded_text}"
-    
-    # TikTok (esquema de app, solo funciona en móvil con app instalada)
-    tiktok_url = f"snssdk112://share?text={encoded_text}"
-    
-    # Instagram (limitado, usa esquema de app)
-    instagram_url = f"instagram://library?AssetPath={encoded_text}"
-    
-    # Twitter/X
-    twitter_url = f"https://twitter.com/intent/tweet?text={encoded_text}&url={encoded_url}" if url else f"https://twitter.com/intent/tweet?text={encoded_text}"
-    
-    # Telegram
-    telegram_url = f"https://t.me/share/url?url={encoded_url}&text={encoded_text}" if url else f"https://t.me/share/url?text={encoded_text}"
-    
-    # LinkedIn
-    linkedin_url = f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_url}" if url else f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_text}"
-    
-    # Reddit
-    reddit_url = f"https://www.reddit.com/submit?title={encoded_text}&url={encoded_url}" if url else f"https://www.reddit.com/submit?title={encoded_text}"
-    
-    # Pinterest
-    pinterest_url = f"https://pinterest.com/pin/create/button/?description={encoded_text}&url={encoded_url}" if url else f"https://pinterest.com/pin/create/button/?description={encoded_text}"
-    
-    # Snapchat (esquema de app)
-    snapchat_url = f"snapchat://share?text={encoded_text}"
-    
-    # Discord (usa esquema de app o web)
-    discord_url = f"https://discord.com/channels/@me?message={encoded_text}"
-    
-    # Email
-    email_url = f"mailto:?subject=Compartido desde ApoloXia&body={encoded_text}"
-    
     return ShareLinksResponse(
-        whatsapp=whatsapp_url,
-        wechat=wechat_url,
-        facebook=facebook_url,
-        tiktok=tiktok_url,
-        instagram=instagram_url,
-        twitter=twitter_url,
-        telegram=telegram_url,
-        linkedin=linkedin_url,
-        reddit=reddit_url,
-        pinterest=pinterest_url,
-        snapchat=snapchat_url,
-        discord=discord_url,
-        email=email_url,
+        whatsapp=f"https://wa.me/?text={encoded_text}",
+        wechat=f"weixin://dl/chat?text={encoded_text}",
+        facebook=f"https://www.facebook.com/sharer/sharer.php?quote={encoded_text}&u={encoded_url}" if url else f"https://www.facebook.com/sharer/sharer.php?quote={encoded_text}",
+        tiktok=f"snssdk112://share?text={encoded_text}",
+        instagram=f"instagram://library?AssetPath={encoded_text}",
+        twitter=f"https://twitter.com/intent/tweet?text={encoded_text}&url={encoded_url}" if url else f"https://twitter.com/intent/tweet?text={encoded_text}",
+        telegram=f"https://t.me/share/url?url={encoded_url}&text={encoded_text}" if url else f"https://t.me/share/url?text={encoded_text}",
+        linkedin=f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_url}" if url else f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_text}",
+        reddit=f"https://www.reddit.com/submit?title={encoded_text}&url={encoded_url}" if url else f"https://www.reddit.com/submit?title={encoded_text}",
+        pinterest=f"https://pinterest.com/pin/create/button/?description={encoded_text}&url={encoded_url}" if url else f"https://pinterest.com/pin/create/button/?description={encoded_text}",
+        snapchat=f"snapchat://share?text={encoded_text}",
+        discord=f"https://discord.com/channels/@me?message={encoded_text}",
+        email=f"mailto:?subject=Compartido desde ApoloXia&body={encoded_text}",
         copy_text=text
     )
 
 async def send_whatsapp_message(phone_number: str, text: str) -> Dict:
-    """
-    Envía un mensaje vía WhatsApp Business API (requiere configurar variables de entorno).
-    Retorna el resultado de la API.
-    """
     if not WHATSAPP_PHONE_NUMBER_ID or not WHATSAPP_ACCESS_TOKEN:
-        return {"error": "WhatsApp Business API no configurada. Añade WHATSAPP_PHONE_NUMBER_ID y WHATSAPP_ACCESS_TOKEN."}
-    
+        return {"error": "WhatsApp Business API no configurada."}
     url = f"https://graph.facebook.com/v18.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {
         "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
@@ -609,77 +528,96 @@ async def send_whatsapp_message(phone_number: str, text: str) -> Dict:
         resp = await client.post(url, headers=headers, json=payload)
         return resp.json()
 
-# ============ FUNCIONES DE API ============
-async def call_groq_api(messages: List[Dict], model_id: str, temperature: float = 0.7, max_tokens: Optional[int] = None) -> str:
-    """
-    Llama a la API de Groq con manejo de rate limits y fallbacks.
-    MODIFICADO: Sin límite fijo de 4096, permite hasta 8192 tokens.
-    """
-    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+# ============ FUNCIONES DE BÚSQUEDA ============
+async def search_exa_ai(query: str, max_results: int = 5) -> List[Dict]:
+    """Busca información usando Exa AI (búsqueda semántica avanzada)."""
+    if not EXA_API_KEY:
+        print("⚠️ Exa AI API key no configurada")
+        return []
     
-    # Usar el max_tokens proporcionado, sin límite fijo de 4096
-    safe_max_tokens = max_tokens if max_tokens is not None else 1024
-    # Por seguridad, limitamos a 8192 para evitar tiempos excesivos (puedes subirlo si tu modelo lo soporta)
-    if safe_max_tokens > 8192:
-        safe_max_tokens = 8192
-    
-    payload = {
-        "model": model_id,
-        "messages": messages,
-        "temperature": temperature,
-        "stream": False,
-        "max_tokens": safe_max_tokens
+    headers = {
+        "Authorization": f"Bearer {EXA_API_KEY}",
+        "Content-Type": "application/json"
     }
-    
-    # Esperar si es necesario para respetar rate limits
-    await rate_limiter.wait_if_needed(model_id, messages, safe_max_tokens)
-    
-    async with httpx.AsyncClient(timeout=180.0) as client:  # timeout aumentado para respuestas largas
-        try:
-            resp = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers=headers,
-                json=payload
-            )
-            
-            # Manejar rate limit 429
-            if resp.status_code == 429:
-                error_data = resp.json()
-                print(f"⚠️ Rate limit 429: {error_data}")
-                # Esperar y reintentar una vez
-                await asyncio.sleep(5)
-                resp = await client.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers=headers,
-                    json=payload
-                )
-            
+    payload = {
+        "query": query,
+        "numResults": max_results,
+        "type": "auto",
+        "contents": {
+            "text": True,
+            "snippet": True
+        }
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post("https://api.exa.ai/search", headers=headers, json=payload)
             if resp.status_code != 200:
-                err = resp.json()
-                error_msg = err.get('error', {}).get('message', 'Unknown error')
-                print(f"❌ Groq API Error ({resp.status_code}): {error_msg}")
-                raise HTTPException(resp.status_code, f"Groq API error: {error_msg}")
-            
-            return resp.json()["choices"][0]["message"]["content"]
-            
-        except httpx.TimeoutException:
-            raise HTTPException(504, "Timeout al conectar con Groq API")
-        except Exception as e:
-            if isinstance(e, HTTPException):
-                raise
-            raise HTTPException(500, f"Error de conexión: {str(e)}")
+                print(f"Exa AI error: {resp.status_code} - {resp.text}")
+                return []
+            data = resp.json()
+            results = []
+            for r in data.get("results", []):
+                content = r.get("text", "") or r.get("snippet", "")
+                img_urls = re.findall(r'https?://[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg)', content, re.IGNORECASE)
+                results.append({
+                    "title": r.get("title", ""),
+                    "url": r.get("url", ""),
+                    "content": content[:800],
+                    "score": r.get("score", 0.5),
+                    "image_urls": img_urls[:2]
+                })
+            return results
+    except Exception as e:
+        print(f"Exa AI exception: {e}")
+        return []
+
+async def search_mediastack(query: str, max_results: int = 5) -> List[Dict]:
+    """Busca noticias usando MediaStack API."""
+    if not MEDIASTACK_API_KEY:
+        print("⚠️ MediaStack API key no configurada")
+        return []
+    
+    url = f"http://api.mediastack.com/v1/news"
+    params = {
+        "access_key": MEDIASTACK_API_KEY,
+        "keywords": query,
+        "countries": "us,pa,es,mx,ar,co,cl,pe",
+        "languages": "es,en",
+        "limit": max_results,
+        "sort": "published_desc"
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(url, params=params)
+            if resp.status_code != 200:
+                print(f"MediaStack error: {resp.status_code} - {resp.text}")
+                return []
+            data = resp.json()
+            results = []
+            for article in data.get("data", []):
+                results.append({
+                    "title": article.get("title", ""),
+                    "description": article.get("description", ""),
+                    "url": article.get("url", ""),
+                    "source": article.get("source", ""),
+                    "publishedAt": article.get("published_at", ""),
+                    "image_url": article.get("image", ""),
+                    "category": article.get("category", ""),
+                    "language": article.get("language", "")
+                })
+            return results
+    except Exception as e:
+        print(f"MediaStack exception: {e}")
+        return []
 
 async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
-    """
-    Realiza búsqueda web mejorada para obtener información actualizada y concreta (noticias antiguas y modernas).
-    """
+    """Realiza búsqueda web avanzada con Tavily."""
+    if not TAVILY_API_KEY:
+        return []
     headers = {"Authorization": f"Bearer {TAVILY_API_KEY}", "Content-Type": "application/json"}
-    # Añadir palabras clave para priorizar noticias y contenido actual
     search_query = query
-    # Si la consulta parece buscar noticias, añadir "actualidad" y "noticias"
     if "noticia" in query.lower() or "actual" in query.lower() or "hoy" in query.lower():
         search_query = f"{query} noticias actualidad"
-    
     payload = {
         "query": search_query,
         "max_results": max_results,
@@ -696,16 +634,14 @@ async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
             data = resp.json()
             results = []
             for r in data.get("results", []):
-                # Extraer posibles URLs de imágenes del contenido (regex simple)
                 content = r.get("content", "")
                 img_urls = re.findall(r'https?://[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg)', content, re.IGNORECASE)
-                
                 results.append({
                     "title": r.get("title", ""),
                     "url": r.get("url", ""),
                     "content": content,
                     "score": r.get("score", 0),
-                    "image_urls": img_urls[:2]  # hasta 2 imágenes
+                    "image_urls": img_urls[:2]
                 })
             if data.get("answer"):
                 results.insert(0, {
@@ -721,19 +657,50 @@ async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
         return []
 
 def needs_web_search(message: str) -> bool:
-    """
-    Detecta si el mensaje requiere búsqueda web en "tiempo real" (actualidad, noticias, fechas, eventos).
-    """
     indicators = [
         "actualidad", "actual", "hoy", "ahora", "reciente", "último", "nuevo", "news",
-        "today", "now", "recent", "latest", "current", "2026", "2025", "2024", "precio de",
+        "today", "now", "recent", "latest", "current", "2026", "2025", "precio de",
         "cotización", "clima", "resultado", "elección", "partido", "lanzamiento", "estreno",
         "evento", "conferencia", "mercado", "bolsa", "noticia", "breaking", "última hora",
         "qué pasó", "qué sucede", "cambio", "nuevo lanzamiento", "actualización",
-        "time", "fecha", "ayer", "mañana", "semana pasada", "este mes", "2026",
-        "noticias", "información", "datos actuales"
+        "noticias", "información", "datos actuales", "buscar", "encontrar"
     ]
     return any(ind in message.lower() for ind in indicators)
+
+# ============ FUNCIONES DE API ============
+async def call_groq_api(messages: List[Dict], model_id: str, temperature: float = 0.7, max_tokens: Optional[int] = None) -> str:
+    if not GROQ_API_KEY:
+        raise HTTPException(500, "GROQ_API_KEY no configurada en el servidor")
+    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+    safe_max_tokens = max_tokens if max_tokens is not None else 1024
+    if safe_max_tokens > 12000:
+        safe_max_tokens = 12000
+    payload = {
+        "model": model_id,
+        "messages": messages,
+        "temperature": temperature,
+        "stream": False,
+        "max_tokens": safe_max_tokens
+    }
+    await rate_limiter.wait_if_needed(model_id, messages, safe_max_tokens)
+    async with httpx.AsyncClient(timeout=300.0) as client:
+        try:
+            resp = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+            if resp.status_code == 429:
+                print("⚠️ Rate limit 429, reintentando en 5s...")
+                await asyncio.sleep(5)
+                resp = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+            if resp.status_code != 200:
+                err = resp.json()
+                error_msg = err.get('error', {}).get('message', 'Unknown error')
+                raise HTTPException(resp.status_code, f"Groq API error: {error_msg}")
+            return resp.json()["choices"][0]["message"]["content"]
+        except httpx.TimeoutException:
+            raise HTTPException(504, "Timeout al conectar con Groq API")
+        except Exception as e:
+            if isinstance(e, HTTPException):
+                raise
+            raise HTTPException(500, f"Error de conexión: {str(e)}")
 
 async def run_multi_agent(user_message: str, tier: str, context: List[Dict]) -> List[Dict]:
     if tier not in ["plus", "gt"]:
@@ -772,10 +739,9 @@ def select_relevant_agents(message: str, available_agents: List[AgentType]) -> L
         AgentType.MARKETING_DIGITAL: ["marketing", "anuncios", "seo", "redes sociales", "ventas"],
         AgentType.CREACION_CONTENIDO: ["escribir", "blog", "guion", "copy", "contenido"],
         AgentType.INVESTIGACION_CIENTIFICA: ["investigar", "paper", "estudio", "ciencia", "tesis"],
-        # Nuevos agentes también pueden ser detectados por palabras clave
-        AgentType.GENERADOR_SITIOS_WEB: ["sitio web", "página web", "landing page", "website", "página de aterrizaje", "crear web", "diseño web", "portafolio web", "web para"],
-        AgentType.CREADOR_PANELES_VENTAS: ["panel de ventas", "dashboard", "tablero", "métricas", "gráfico", "chart", "panel admin", "analytics"],
-        AgentType.DESARROLLADOR_AVANZADO: ["aplicación web", "app completa", "api", "react", "vue", "fullstack", "sistema complejo", "crud", "aplicación completa", "software"],
+        AgentType.GENERADOR_SITIOS_WEB: ["sitio web", "página web", "landing page", "website", "crear web"],
+        AgentType.CREADOR_PANELES_VENTAS: ["panel de ventas", "dashboard", "tablero", "métricas", "gráfico"],
+        AgentType.DESARROLLADOR_AVANZADO: ["aplicación web", "app completa", "api", "react", "vue", "fullstack"],
     }
     scores = []
     for agent in available_agents:
@@ -799,41 +765,53 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
         agent = AgentType.GENERAL
     system = AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
     
-    # ===== INSTRUCCIÓN DE IDIOMA =====
     system += "\n\n📢 **INSTRUCCIÓN DE IDIOMA:** Responde SIEMPRE en el MISMO IDIOMA que el usuario ha usado en su mensaje. "
     system += "Si el usuario escribe en inglés, responde en inglés; si escribe en francés, en francés; si escribe en alemán, en alemán; "
     system += "si escribe en portugués, en portugués; si escribe en italiano, en italiano, en chino, en chino; en japonés, en japonés, etc. "
     system += "NUNCA cambies de idioma. Mantén la coherencia lingüística con la pregunta del usuario.\n"
     
-    # ===== INSTRUCCIÓN DE EXTENSIÓN, EMOJIS Y BÚSQUEDA TIEMPO REAL =====
     if tier in ["plus", "gt"]:
         system += "\n\n" + INSTRUCCION_EXTENSION
         if tier == "gt":
-            system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud (hasta 8000 tokens). Usa emojis para dar énfasis (✅, 🔥, 📌, 💡, ⚠️, 🚀, etc.) y organiza tu respuesta con estructura clara. Recuerda siempre tu identidad como ApoloXia de The Shield Technology (Panamá, creada por Amelio Delgado)."
+            system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud (hasta 12000 tokens). Usa emojis para dar énfasis (✅, 🔥, 📌, 💡, ⚠️, 🚀, etc.) y organiza tu respuesta con estructura clara. Recuerda siempre tu identidad como ApoloXia de The Shield Technology (Panamá, creada por Amelio Delgado)."
     
     system += f"\n\n[Tier actual: {config.name} | Modelos disponibles: {', '.join(config.available_models)}]"
     
-    # LIMITAR CONTEXTO (aumentado para plus y gt)
     max_context_chars = {
         "free": 8000,
-        "plus": 20000,   # aumentado para mejor contexto
-        "gt": 30000      # aumentado para mejor contexto
+        "plus": 20000,
+        "gt": 40000
     }.get(tier, 8000)
     
-    if web_search_results:
-        search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET (TIEMPO REAL) ===\n"
-        for i, res in enumerate(web_search_results[:3], 1):
-            # Mostrar más información de la fuente para dar contexto
-            search_text += f"\n📌 Fuente {i}: {res['title']}\n🔗 {res['url']}\n📝 {res['content'][:600]}...\n"
-            # Incluir URLs de imágenes si existen
-            if res.get('image_urls'):
-                search_text += "📸 Imágenes encontradas:\n"
-                for img_url in res['image_urls']:
-                    search_text += f"   - {img_url}\n"
+    # Combinar resultados de búsqueda (Tavily, Exa, MediaStack)
+    all_search_results = web_search_results if web_search_results else []
+    
+    if all_search_results:
+        search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET (MÚLTIPLES FUENTES) ===\n"
+        for i, res in enumerate(all_search_results[:5], 1):
+            title = res.get("title", "Sin título")
+            url = res.get("url", "")
+            content = res.get("content", "") or res.get("description", "")
+            image = res.get("image_url", "") or (res.get("image_urls", [])[0] if res.get("image_urls") else "")
+            source = res.get("source", "")
+            published = res.get("publishedAt", "")
+            
+            search_text += f"\n📌 Fuente {i}: {title}\n"
+            if url:
+                search_text += f"🔗 {url}\n"
+            if content:
+                search_text += f"📝 {content[:500]}...\n"
+            if image:
+                search_text += f"📸 {image}\n"
+            if source:
+                search_text += f"📰 {source}\n"
+            if published:
+                search_text += f"📅 {published}\n"
+        
         if len(search_text) > max_context_chars // 2:
             search_text = search_text[:max_context_chars // 2]
         system += search_text
-        system += "\n⚠️ **INSTRUCCIÓN:** Los resultados anteriores son información actualizada. Úsalos como referencia prioritaria para responder con datos concretos y recientes. Si hay fechas o cifras, indícalas claramente. Si hay imágenes, menciona que puedes proporcionar enlaces a ellas."
+        system += "\n⚠️ **INSTRUCCIÓN:** Los resultados anteriores son información actualizada de múltiples motores (Tavily, Exa AI, MediaStack). Úsalos como referencia prioritaria para responder con datos concretos y recientes. Si hay fechas, imágenes o fuentes, indícalas claramente."
     
     if file_content:
         file_text = f"\n\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:2000]}\n"
@@ -841,7 +819,6 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     
     messages = [{"role": "system", "content": system}]
     
-    # Limitar historial (aumentado para plus y gt)
     max_history = 10 if tier == "free" else 30 if tier == "plus" else 50
     for msg in history[-max_history:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
@@ -850,11 +827,10 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="3.3.0")
+app = FastAPI(title="ApoloXia API", version="4.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# ============ ENDPOINTS API ============
-
+# ============ ENDPOINTS ============
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     tier = request.tier.lower()
@@ -868,74 +844,79 @@ async def chat(request: ChatRequest):
     
     conv_id = request.conversation_id or str(uuid.uuid4())
     
-    # Seleccionar modelo con fallback inteligente
     model_key = request.model_id
     if not model_key or model_key not in config.available_models:
-        # Selección por defecto basada en tier y disponibilidad
         if tier == "gt":
-            model_key = "compound"  # Mejor TPM (70K)
+            model_key = "gpt-oss-120b"
         elif tier == "plus":
-            model_key = "llama-4-scout"  # Mejor TPM (30K)
+            model_key = "gpt-oss-120b"
         else:
-            model_key = "llama-3.1-8b"
+            model_key = "llama-3.1-8b"  # default para free (antes era gemma)
     
-    # Verificar que el modelo existe
     if model_key not in MODELS:
         raise HTTPException(400, f"Modelo '{model_key}' no disponible")
     
     model = MODELS[model_key]
     
-    # Web search mejorado: detecta consultas que requieren información actualizada
     use_web = request.use_web_search or needs_web_search(request.message)
     web_results = None
-    if use_web and config.supports_web_search:
-        web_results = await search_tavily(request.message)
     
-    # Construir mensajes con límites de contexto
+    if use_web and config.supports_web_search:
+        tasks = []
+        if TAVILY_API_KEY:
+            tasks.append(search_tavily(request.message))
+        if EXA_API_KEY:
+            tasks.append(search_exa_ai(request.message))
+        if MEDIASTACK_API_KEY:
+            tasks.append(search_mediastack(request.message))
+        
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            combined = []
+            for res in results:
+                if isinstance(res, list) and res:
+                    combined.extend(res)
+            web_results = combined[:10]  # limitar a 10 resultados totales
+    
     messages = build_messages(
         request.user_id, conv_id, request.message,
         request.agent_type or "general", tier,
         web_results, request.file_content
     )
     
-    # Multi-agent
     multi_resp = None
     if request.enable_multi_agent and config.supports_multi_agent:
         multi_resp = await run_multi_agent(request.message, tier, messages)
     
-    # ===== NUEVA LÓGICA DE TOKENS EXTRA LARGOS =====
+    # Tokens extra largos para GT y agentes de código
     base_max_tokens = {
         "free": 1024,
         "plus": 4096,
-        "gt": 8192
+        "gt": 12000
     }.get(tier, 1024)
     
-    # Para agentes de generación web o desarrollo, permitir el máximo posible
     if request.agent_type in ["generador_sitios_web", "creador_paneles_ventas", "desarrollador_avanzado"]:
         if tier == "gt":
-            max_tokens_for_agent = 8192
+            max_tokens_for_agent = 12000
         elif tier == "plus":
-            max_tokens_for_agent = 4096
+            max_tokens_for_agent = 6000
         else:
             max_tokens_for_agent = 2048
     else:
         max_tokens_for_agent = base_max_tokens
     
-    # No exceder el max_completion del modelo
     safe_max_tokens = min(max_tokens_for_agent, model.max_completion)
-    # Límite práctico para respuestas largas (evitar tiempos excesivos)
-    if safe_max_tokens > 8192:
-        safe_max_tokens = 8192
+    if safe_max_tokens > 12000:
+        safe_max_tokens = 12000
     
     temp = 0.7 if tier == "free" else 0.5
     
-    # Intentar con modelo principal, fallback si falla
     response_text = None
     last_error = None
     
     models_to_try = [model_key] + [m for m in config.available_models if m != model_key and m in MODELS]
     
-    for try_model_key in models_to_try[:3]:  # Max 3 intentos
+    for try_model_key in models_to_try[:3]:
         try_model = MODELS[try_model_key]
         try:
             print(f"🤖 Intentando modelo: {try_model.name} (TPM límite: {try_model.tpm})")
@@ -944,12 +925,11 @@ async def chat(request: ChatRequest):
                 temperature=temp,
                 max_tokens=safe_max_tokens
             )
-            model_key = try_model_key  # Actualizar modelo usado
+            model_key = try_model_key
             break
         except HTTPException as e:
             last_error = e
             print(f"⚠️ Falló {try_model.name}: {e.detail}")
-            # Si es rate limit, esperar antes de siguiente intento
             if "Rate limit" in str(e.detail) or "429" in str(e.detail):
                 await asyncio.sleep(3)
             continue
@@ -961,7 +941,6 @@ async def chat(request: ChatRequest):
     if response_text is None:
         raise HTTPException(500, f"Todos los modelos fallaron. Último error: {last_error}")
     
-    # Guardar en memoria
     memory.add_message(request.user_id, conv_id, "user", request.message, request.agent_type)
     memory.add_message(request.user_id, conv_id, "assistant", response_text, request.agent_type)
     memory.increment_counter(request.user_id)
@@ -976,36 +955,29 @@ async def chat(request: ChatRequest):
         multi_agent_responses=multi_resp
     )
 
-# ============ ENDPOINTS PARA COMPARTIR EN REDES SOCIALES ============
-
+# ============ ENDPOINTS DE COMPARTIR ============
 @app.post("/share/links", response_model=ShareLinksResponse)
 async def get_share_links(share_req: ShareRequest):
-    """Devuelve las URLs para compartir en diferentes plataformas."""
     return generate_share_links(share_req.text, share_req.url)
 
 @app.post("/share/send")
 async def share_to_platform(share_req: ShareRequest):
-    """Envía el mensaje directamente a la plataforma (solo WhatsApp implementado)."""
     platform = share_req.platform.lower()
     text = share_req.text
-    
     if platform == "whatsapp":
         if not share_req.user_phone_number:
             raise HTTPException(400, "Se requiere número de teléfono para WhatsApp")
         result = await send_whatsapp_message(share_req.user_phone_number, text)
         return {"platform": "whatsapp", "message": "Enviado", "result": result}
     else:
-        # Para otras plataformas, solo devolvemos los enlaces
         links = generate_share_links(text, share_req.url)
         return {"platform": platform, "message": "Use los enlaces de compartir", "links": links.dict()}
 
 @app.get("/share/links")
 async def get_share_links_get(text: str, url: Optional[str] = None):
-    """Versión GET para obtener enlaces de compartir (útil para uso rápido)."""
     return generate_share_links(text, url).dict()
 
-# ============ ENDPOINTS EXISTENTES ============
-
+# ============ ENDPOINTS DE INFORMACIÓN Y ARCHIVOS ============
 @app.get("/tier-info/{user_id}", response_model=TierInfo)
 async def get_tier_info(user_id: str):
     tier = memory.get_user_tier(user_id)
@@ -1057,15 +1029,33 @@ async def list_agents():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "3.3.0", "groq_api": "configured", "tavily_api": "configured",
+    return {"status": "ok", "version": "4.0.0", "groq_api": "configured" if GROQ_API_KEY else "not set",
+            "tavily_api": "configured" if TAVILY_API_KEY else "not set",
+            "exa_api": "configured" if EXA_API_KEY else "not set",
+            "mediastack_api": "configured" if MEDIASTACK_API_KEY else "not set",
             "models_loaded": len(MODELS), "agents_loaded": len(AGENT_PROMPTS),
             "share_platforms": 13, "web_builders": 3,
-            "note": "Rate limits implementados para evitar errores 429 | Respuestas con emojis, análisis profundo, identidad de ApoloXia y búsqueda de noticias con imágenes"}
+            "note": "Modelos: GPT OSS 20B/120B, Qwen 2.5 72B/32B, Llama 3.1, 3.3, 4 Scout, Mixtral | Búsqueda multi-motor: Tavily, Exa AI, MediaStack | Respuestas extra largas (hasta 12000 tokens)"}
 
 @app.post("/search-web")
 async def web_search(query: str, max_results: int = 5):
-    results = await search_tavily(query, max_results)
-    return {"query": query, "results": results, "count": len(results)}
+    """Endpoint para búsqueda web con múltiples motores."""
+    tasks = []
+    if TAVILY_API_KEY:
+        tasks.append(search_tavily(query, max_results))
+    if EXA_API_KEY:
+        tasks.append(search_exa_ai(query, max_results))
+    if MEDIASTACK_API_KEY:
+        tasks.append(search_mediastack(query, max_results))
+    
+    if tasks:
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        all_results = []
+        for res in results:
+            if isinstance(res, list):
+                all_results.extend(res)
+        return {"query": query, "results": all_results[:max_results*3], "count": len(all_results)}
+    return {"query": query, "results": [], "count": 0}
 
 @app.get("/conversations/{user_id}")
 async def get_conversations(user_id: str):
@@ -1085,13 +1075,11 @@ async def delete_conversation(user_id: str, conversation_id: str):
     raise HTTPException(404, "Conversación no encontrada")
 
 # ============ CONFIGURACIÓN DE USUARIO ============
-
 @app.get("/user-config/{user_id}")
 async def get_user_config(user_id: str):
     tier = memory.get_user_tier(user_id)
     config = TIER_CONFIGS[tier]
     user_cfg = memory.get_user_config(user_id)
-    
     return {
         "user_id": user_id,
         "tier": tier,
@@ -1122,7 +1110,6 @@ async def get_user_config(user_id: str):
 @app.post("/user-config/{user_id}")
 async def update_user_config(user_id: str, config: UserConfigUpdate):
     current = memory.get_user_config(user_id)
-    
     if config.tier and config.tier in TIER_CONFIGS:
         memory.set_user_tier(user_id, config.tier)
     if config.theme:
@@ -1131,38 +1118,58 @@ async def update_user_config(user_id: str, config: UserConfigUpdate):
         current["language"] = config.language
     if config.notifications is not None:
         current["notifications"] = config.notifications
-    
     memory.set_user_config(user_id, current)
     return {"message": "Configuración actualizada", "user_id": user_id, "config": current}
 
 # ============ ARCHIVOS ESTÁTICOS ============
+def _get_file_path(filename: str) -> str:
+    """Busca el archivo en la raíz del proyecto (un nivel arriba de backend/)"""
+    if os.path.exists(filename) and os.path.isfile(filename):
+        return filename
+    parent_path = os.path.join(os.path.dirname(__file__), "..", filename)
+    if os.path.exists(parent_path) and os.path.isfile(parent_path):
+        return parent_path
+    return filename
 
 @app.get("/")
 async def serve_index():
-    return FileResponse("index.html")
+    return FileResponse(_get_file_path("index.html"))
 
 @app.get("/chat")
 async def serve_chat():
-    return FileResponse("chat.html")
+    return FileResponse(_get_file_path("chat.html"))
+
+@app.get("/apoloxia.code.html")
+async def serve_code():
+    return FileResponse(_get_file_path("apoloxia.code.html"))
 
 @app.get("/{filename}")
 async def serve_static_file(filename: str):
     api_routes = {"chat", "models", "agents", "health", "conversations", "tier-info", 
                   "user-config", "upgrade-tier", "search-web", "share"}
-    if filename in api_routes:
+    if filename in api_routes or filename.startswith("apoloxia.code.html"):
         raise HTTPException(404, "Not found")
     if filename.startswith(".") or ".." in filename:
         raise HTTPException(403, "Forbidden")
-    if os.path.exists(filename) and os.path.isfile(filename):
-        return FileResponse(filename)
+    
+    file_path = _get_file_path(filename)
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return FileResponse(file_path)
     raise HTTPException(404, "Archivo no encontrado")
 
+# ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 Iniciando ApoloXia Server v3.3.0")
+    print("🚀 Iniciando ApoloXia Server v4.0.0 (Ultra - Búsqueda Multi-Motor + Todos los Modelos)")
     print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
     print("🧠 Identidad: ApoloXia · The Shield Technology · Panamá · Amelio Delgado")
-    print("🔍 Búsqueda web mejorada para noticias antiguas y modernas con imágenes")
-    print("✅ Respuestas profundas, con emojis y análisis extenso (hasta 8000 tokens)")
+    print("🔍 Motores de búsqueda activos:")
+    print(f"   - Tavily: {'✅' if TAVILY_API_KEY else '❌ (clave no configurada)'}")
+    print(f"   - Exa AI: {'✅' if EXA_API_KEY else '❌ (clave no configurada)'}")
+    print(f"   - MediaStack: {'✅' if MEDIASTACK_API_KEY else '❌ (clave no configurada)'}")
     print("📱 Compartir a 13 plataformas")
+    print("✅ Respuestas EXTRA LARGAS (hasta 12000 tokens) para GT y agentes de código")
+    print("✅ Archivos estáticos servidos desde la raíz del proyecto")
+    print("✅ CORREGIDO: modelo gemma2-9b-it eliminado (descontinuado por Groq)")
+    print("🔒 Claves API tomadas de variables de entorno (no expuestas en el código)")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)

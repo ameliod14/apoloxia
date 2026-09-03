@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ApoloXia Code · Generador IA de código completo</title>
+    <title>ApoloXia Code · IA Programación</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -27,7 +27,7 @@
             width: 100%;
         }
 
-        /* Sidebar estilo ChatGPT */
+        /* ===== SIDEBAR ESTILO CHATGPT ===== */
         .sidebar {
             width: 280px;
             background: #0a0a0a;
@@ -51,7 +51,7 @@
 
         .logo i {
             font-size: 1.8rem;
-            background: linear-gradient(135deg, #10a37f, #1a7f64);
+            background: linear-gradient(135deg, #4f9eff, #3b82f6);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -60,7 +60,7 @@
         .logo h2 {
             font-size: 1.3rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #fff, #10a37f);
+            background: linear-gradient(135deg, #fff, #4f9eff);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -84,7 +84,7 @@
 
         .new-chat-btn:hover {
             background: #2a2a2a;
-            border-color: #10a37f;
+            border-color: #4f9eff;
         }
 
         .sidebar-section {
@@ -120,8 +120,8 @@
         }
 
         .conv-item.active {
-            background: #1f1f1f;
-            color: #10a37f;
+            background: rgba(79, 158, 255, 0.08);
+            color: #4f9eff;
         }
 
         .conv-item i {
@@ -160,14 +160,15 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #10a37f, #1a7f64);
+            background: linear-gradient(135deg, #4f9eff, #3b82f6);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
+            color: #fff;
         }
 
-        /* Main chat area */
+        /* ===== MAIN ===== */
         .main-chat {
             flex: 1;
             display: flex;
@@ -193,7 +194,7 @@
         }
 
         .header-title span {
-            color: #10a37f;
+            color: #4f9eff;
         }
 
         .model-badge {
@@ -202,8 +203,8 @@
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 500;
-            color: #10a37f;
-            border: 1px solid #10a37f30;
+            color: #4f9eff;
+            border: 1px solid rgba(79, 158, 255, 0.3);
         }
 
         /* Messages */
@@ -243,14 +244,14 @@
         }
 
         .message.user .message-avatar {
-            background: #10a37f;
+            background: linear-gradient(135deg, #4f9eff, #3b82f6);
             color: white;
         }
 
         .message.assistant .message-avatar {
             background: #1a1a1a;
-            color: #10a37f;
-            border: 1px solid #10a37f30;
+            color: #4f9eff;
+            border: 1px solid rgba(79, 158, 255, 0.3);
         }
 
         .message-content {
@@ -293,7 +294,7 @@
         }
 
         .code-lang {
-            color: #10a37f;
+            color: #4f9eff;
         }
 
         .copy-btn {
@@ -309,7 +310,7 @@
 
         .copy-btn:hover {
             background: #2a2a2a;
-            color: #10a37f;
+            color: #4f9eff;
         }
 
         .code-block pre {
@@ -345,8 +346,8 @@
         }
 
         .input-box:focus-within {
-            border-color: #10a37f;
-            box-shadow: 0 0 0 2px #10a37f20;
+            border-color: #4f9eff;
+            box-shadow: 0 0 0 2px rgba(79, 158, 255, 0.2);
         }
 
         textarea {
@@ -370,7 +371,7 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: #10a37f;
+            background: linear-gradient(135deg, #4f9eff, #3b82f6);
             border: none;
             color: white;
             cursor: pointer;
@@ -382,8 +383,8 @@
         }
 
         .send-btn:hover {
-            background: #1a7f64;
             transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(79, 158, 255, 0.4);
         }
 
         .send-btn:disabled {
@@ -391,7 +392,7 @@
             cursor: not-allowed;
         }
 
-        /* Panel de controles para lenguaje y tipo de proyecto */
+        /* Controls panel */
         .controls-panel {
             display: flex;
             gap: 12px;
@@ -422,7 +423,7 @@
         .control-group select {
             background: #111;
             border: none;
-            color: #10a37f;
+            color: #4f9eff;
             font-size: 0.75rem;
             font-weight: 500;
             padding: 4px 8px;
@@ -446,7 +447,7 @@
         }
 
         .input-footer span {
-            color: #10a37f;
+            color: #4f9eff;
         }
 
         .typing {
@@ -462,7 +463,7 @@
         .typing-dot {
             width: 8px;
             height: 8px;
-            background: #10a37f;
+            background: #4f9eff;
             border-radius: 50%;
             animation: typing 1.4s infinite;
         }
@@ -488,7 +489,6 @@
             border-radius: 3px;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -557,7 +557,7 @@
                 <button class="menu-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
-                <div class="header-title">ApoloXia <span>Code</span> · Generador IA de código completo</div>
+                <div class="header-title">ApoloXia <span>Code</span> · IA Programación</div>
             </div>
             <div class="model-badge">
                 <i class="fas fa-microchip"></i> Agente adaptativo · Groq GT
@@ -569,7 +569,7 @@
                 <div class="message assistant">
                     <div class="message-avatar"><i class="fas fa-code"></i></div>
                     <div class="message-content">
-                        👨‍💻 Soy <strong>ApoloXia Code</strong>, generador de código potente y completo.<br><br>
+                        👨‍💻 Soy <strong>ApoloXia Code</strong>, tu asistente de programación con IA.<br><br>
                         ✅ Puedo crear:<br>
                         • Sitios web completos (HTML/CSS/JS)<br>
                         • Juegos interactivos (Canvas/JS)<br>
@@ -590,7 +590,7 @@
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
-                <!-- NUEVA SECCIÓN: Selectores de lenguaje y tipo de proyecto (potencia adaptativa) -->
+                <!-- Controles: Lenguaje + Tipo de proyecto -->
                 <div class="controls-panel">
                     <div class="control-group">
                         <label><i class="fas fa-code"></i> Lenguaje</label>
@@ -700,12 +700,10 @@
         const selectedLang = langSelect.value;
         const selectedType = typeSelect.value;
         
-        // Construir prompt enriquecido con las especificaciones del usuario
         let enhancedMessage = userMessage;
         if (selectedLang !== 'auto' || selectedType !== 'auto') {
             enhancedMessage = `[Lenguaje: ${selectedLang !== 'auto' ? selectedLang : 'detectar automáticamente'}] [Tipo: ${selectedType !== 'auto' ? selectedType : 'detectar automáticamente'}] ${userMessage}`;
         }
-        // Añadir instrucción explícita para generar código COMPLETO, LARGO y sin abreviar
         enhancedMessage += `\n\n⚠️ INSTRUCCIÓN ESPECIAL: Genera el código COMPLETO, funcional y listo para usar. No omitas partes. Si el código es muy largo, entrégalo completo sin abreviar. Incluye todas las secciones necesarias.`;
 
         messageInput.value = '';
@@ -721,7 +719,6 @@
         state.isTyping = true;
         updateSendButton();
 
-        // Elegir agente según el tipo seleccionado
         let agentToUse = 'desarrollador_avanzado';
         if (selectedType !== 'auto') {
             agentToUse = getAgentFromType(selectedType);
@@ -732,9 +729,9 @@
                 user_id: userEmail,
                 conversation_id: state.conversationId,
                 message: enhancedMessage,
-                tier: 'gt',           // tier más alto para respuestas largas
+                tier: 'gt',
                 agent_type: agentToUse,
-                model_id: 'compound', // modelo con mayor capacidad de tokens
+                model_id: 'compound',
                 use_web_search: false,
                 enable_multi_agent: true,
                 file_content: null
@@ -911,7 +908,6 @@
         window.location.reload();
     }
 
-    // Inicialización
     document.addEventListener('DOMContentLoaded', () => {
         loadConversations();
         focusInput();

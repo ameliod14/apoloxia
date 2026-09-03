@@ -3,18 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ApoloXia | Bienvenido</title>
+    <title>ApoloXia · Bienvenido</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         
         :root {
             --pure-black: #000000;
-            --accent-gold: #d4af37;
-            --accent-gold-light: #f0d878;
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --border-gray: #2a2a2a;
             --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #333333;
-            --code-color: #6c5ce7;
+            --text-secondary: #b0b0b0;
+            --text-muted: #555555;
+            --accent-blue: #4f9eff;
+            --accent-blue-dark: #3b82f6;
+            --accent-blue-glow: rgba(79, 158, 255, 0.15);
+            --accent-gray: #888888;
+            --accent-gray-light: #aaaaaa;
         }
 
         * {
@@ -56,7 +61,7 @@
         .splash-logo {
             width: 140px;
             height: 140px;
-            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 50%, #4f9eff 100%);
             border-radius: 32px;
             display: flex;
             align-items: center;
@@ -65,11 +70,10 @@
             font-weight: 900;
             color: var(--pure-black);
             box-shadow: 
-                0 0 60px rgba(212, 175, 55, 0.9),
-                0 0 120px rgba(212, 175, 55, 0.7),
-                0 0 180px rgba(212, 175, 55, 0.5),
-                0 0 240px rgba(212, 175, 55, 0.3),
-                inset 0 0 40px rgba(255, 255, 255, 0.5);
+                0 0 60px rgba(79, 158, 255, 0.7),
+                0 0 120px rgba(79, 158, 255, 0.5),
+                0 0 180px rgba(79, 158, 255, 0.3),
+                inset 0 0 40px rgba(255, 255, 255, 0.3);
             animation: megaGlow 2s ease-in-out infinite alternate, float 3s ease-in-out infinite;
             margin-bottom: 2rem;
         }
@@ -77,17 +81,17 @@
         @keyframes megaGlow {
             0% {
                 box-shadow: 
-                    0 0 60px rgba(212, 175, 55, 0.9),
-                    0 0 120px rgba(212, 175, 55, 0.7),
-                    0 0 180px rgba(212, 175, 55, 0.5),
-                    inset 0 0 40px rgba(255, 255, 255, 0.5);
+                    0 0 60px rgba(79, 158, 255, 0.7),
+                    0 0 120px rgba(79, 158, 255, 0.5),
+                    0 0 180px rgba(79, 158, 255, 0.3),
+                    inset 0 0 40px rgba(255, 255, 255, 0.3);
             }
             100% {
                 box-shadow: 
-                    0 0 100px rgba(212, 175, 55, 1),
-                    0 0 200px rgba(212, 175, 55, 0.9),
-                    0 0 300px rgba(212, 175, 55, 0.7),
-                    inset 0 0 60px rgba(255, 255, 255, 0.7);
+                    0 0 100px rgba(79, 158, 255, 0.9),
+                    0 0 200px rgba(79, 158, 255, 0.7),
+                    0 0 300px rgba(79, 158, 255, 0.5),
+                    inset 0 0 60px rgba(255, 255, 255, 0.5);
             }
         }
 
@@ -104,7 +108,7 @@
         }
 
         .splash-title span {
-            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 100%);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -156,7 +160,7 @@
         .login-logo {
             width: 80px;
             height: 80px;
-            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 100%);
             border-radius: 20px;
             display: flex;
             align-items: center;
@@ -166,24 +170,24 @@
             color: var(--pure-black);
             margin: 0 auto 2rem;
             box-shadow: 
-                0 0 40px rgba(212, 175, 55, 0.8),
-                0 0 80px rgba(212, 175, 55, 0.6),
-                inset 0 0 20px rgba(255, 255, 255, 0.4);
+                0 0 40px rgba(79, 158, 255, 0.6),
+                0 0 80px rgba(79, 158, 255, 0.4),
+                inset 0 0 20px rgba(255, 255, 255, 0.3);
             animation: glowPulse 2s ease-in-out infinite alternate;
         }
 
         @keyframes glowPulse {
             0% {
                 box-shadow: 
-                    0 0 40px rgba(212, 175, 55, 0.8),
-                    0 0 80px rgba(212, 175, 55, 0.6),
-                    inset 0 0 20px rgba(255, 255, 255, 0.4);
+                    0 0 40px rgba(79, 158, 255, 0.6),
+                    0 0 80px rgba(79, 158, 255, 0.4),
+                    inset 0 0 20px rgba(255, 255, 255, 0.3);
             }
             100% {
                 box-shadow: 
-                    0 0 70px rgba(212, 175, 55, 1),
-                    0 0 140px rgba(212, 175, 55, 0.9),
-                    inset 0 0 30px rgba(255, 255, 255, 0.6);
+                    0 0 70px rgba(79, 158, 255, 0.8),
+                    0 0 140px rgba(79, 158, 255, 0.6),
+                    inset 0 0 30px rgba(255, 255, 255, 0.5);
             }
         }
 
@@ -211,7 +215,7 @@
             display: block;
             font-size: 0.875rem;
             font-weight: 600;
-            color: var(--accent-gold);
+            color: var(--accent-blue);
             margin-bottom: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
@@ -221,7 +225,7 @@
             width: 100%;
             padding: 1.25rem 1.5rem;
             background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--border-gray);
             border-radius: 16px;
             color: var(--text-primary);
             font-size: 1.1rem;
@@ -231,8 +235,8 @@
         }
 
         .input-group input:focus {
-            border-color: var(--accent-gold);
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 30px rgba(79, 158, 255, 0.2);
             background: rgba(255, 255, 255, 0.08);
         }
 
@@ -243,7 +247,7 @@
         .login-btn {
             width: 100%;
             padding: 1.25rem 1.5rem;
-            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 100%);
             border: none;
             border-radius: 16px;
             color: var(--pure-black);
@@ -260,7 +264,7 @@
 
         .login-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 15px 50px rgba(212, 175, 55, 0.5);
+            box-shadow: 0 15px 50px rgba(79, 158, 255, 0.4);
         }
 
         .login-btn::before {
@@ -270,7 +274,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
             transition: left 0.6s ease;
         }
 
@@ -309,7 +313,7 @@
         .interface-logo {
             width: 100px;
             height: 100px;
-            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
+            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 100%);
             border-radius: 24px;
             display: flex;
             align-items: center;
@@ -319,27 +323,27 @@
             color: var(--pure-black);
             margin: 0 auto 2rem;
             box-shadow: 
-                0 0 50px rgba(212, 175, 55, 0.9),
-                0 0 100px rgba(212, 175, 55, 0.7),
-                0 0 150px rgba(212, 175, 55, 0.5),
-                inset 0 0 30px rgba(255, 255, 255, 0.5);
+                0 0 50px rgba(79, 158, 255, 0.7),
+                0 0 100px rgba(79, 158, 255, 0.5),
+                0 0 150px rgba(79, 158, 255, 0.3),
+                inset 0 0 30px rgba(255, 255, 255, 0.3);
             animation: interfaceGlow 2s ease-in-out infinite alternate;
         }
 
         @keyframes interfaceGlow {
             0% {
                 box-shadow: 
-                    0 0 50px rgba(212, 175, 55, 0.9),
-                    0 0 100px rgba(212, 175, 55, 0.7),
-                    0 0 150px rgba(212, 175, 55, 0.5),
-                    inset 0 0 30px rgba(255, 255, 255, 0.5);
+                    0 0 50px rgba(79, 158, 255, 0.7),
+                    0 0 100px rgba(79, 158, 255, 0.5),
+                    0 0 150px rgba(79, 158, 255, 0.3),
+                    inset 0 0 30px rgba(255, 255, 255, 0.3);
             }
             100% {
                 box-shadow: 
-                    0 0 80px rgba(212, 175, 55, 1),
-                    0 0 160px rgba(212, 175, 55, 0.9),
-                    0 0 240px rgba(212, 175, 55, 0.7),
-                    inset 0 0 50px rgba(255, 255, 255, 0.7);
+                    0 0 80px rgba(79, 158, 255, 0.9),
+                    0 0 160px rgba(79, 158, 255, 0.7),
+                    0 0 240px rgba(79, 158, 255, 0.5),
+                    inset 0 0 50px rgba(255, 255, 255, 0.5);
             }
         }
 
@@ -361,7 +365,7 @@
             letter-spacing: -0.02em;
         }
 
-        /* Botones de acceso (tres) */
+        /* Botones de acceso (dos) */
         .buttons-container {
             display: flex;
             flex-direction: column;
@@ -376,52 +380,49 @@
             justify-content: center;
             gap: 1rem;
             padding: 1.2rem 2.5rem;
-            background: linear-gradient(135deg, #d4af37 0%, #f0d878 50%, #d4af37 100%);
-            border: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border-gray);
             border-radius: 20px;
-            color: var(--pure-black);
+            color: var(--text-secondary);
             font-size: 1.15rem;
-            font-weight: 800;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.3);
             width: 100%;
             max-width: 380px;
+            background: linear-gradient(135deg, #0a0a0a, #141414);
         }
 
-        .access-btn.jarvis-btn {
-            background: linear-gradient(135deg, #1e2a3a 0%, #0f172a 50%, #1e2a3a 100%);
-            border: 1px solid var(--accent-gold);
-            color: var(--accent-gold);
-            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.1);
+        .access-btn.chat-btn {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            box-shadow: 0 5px 20px rgba(79, 158, 255, 0.1);
         }
 
-        .access-btn.jarvis-btn:hover {
+        .access-btn.chat-btn:hover {
             transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 15px 40px rgba(212, 175, 55, 0.3);
-            background: linear-gradient(135deg, #2a3a4a 0%, #1a2a3a 50%, #2a3a4a 100%);
+            box-shadow: 0 15px 40px rgba(79, 158, 255, 0.3);
+            background: linear-gradient(135deg, #1a1a2e, #0a1a2e);
+            border-color: var(--accent-blue);
+            color: #fff;
         }
 
         .access-btn.code-btn {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
-            border: 1px solid var(--code-color);
-            color: var(--code-color);
-            box-shadow: 0 5px 20px rgba(108, 92, 231, 0.1);
+            border-color: var(--accent-gray);
+            color: var(--accent-gray-light);
+            box-shadow: 0 5px 20px rgba(136, 136, 136, 0.1);
         }
 
         .access-btn.code-btn:hover {
             transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 15px 40px rgba(108, 92, 231, 0.3);
-            background: linear-gradient(135deg, #2a2a4e 0%, #1a2a3a 50%, #2a2a4e 100%);
-        }
-
-        .access-btn:hover {
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 25px 70px rgba(212, 175, 55, 0.5);
+            box-shadow: 0 15px 40px rgba(136, 136, 136, 0.3);
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            border-color: var(--accent-gray-light);
+            color: #fff;
         }
 
         .access-btn::before {
@@ -431,7 +432,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
             transition: left 0.6s ease;
         }
 
@@ -443,6 +444,8 @@
             width: 24px;
             height: 24px;
             stroke-width: 2;
+            stroke: currentColor;
+            fill: none;
         }
 
         .logout-btn {
@@ -451,7 +454,7 @@
             gap: 0.5rem;
             padding: 0.75rem 1.5rem;
             background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--border-gray);
             border-radius: 12px;
             color: var(--text-secondary);
             font-size: 0.875rem;
@@ -545,14 +548,15 @@
             <p class="user-name" id="userNameDisplay">Usuario</p>
             
             <div class="buttons-container">
-                <button class="access-btn" onclick="accessAgent()">
+                <!-- Botón para el chat (agente IA) -->
+                <button class="access-btn chat-btn" onclick="accessAgent()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                     </svg>
-                    Acceder al agente de IA Apolo
+                    Agente IA Apolo
                 </button>
 
-                <!-- NUEVO BOTÓN PARA APOLOXIA CODE (GENERADOR DE CÓDIGO) -->
+                <!-- Botón para ApoloXia Code (generador de código) -->
                 <button class="access-btn code-btn" onclick="accessApoloXiaCode()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M16 18L22 12 16 6"></path>
@@ -577,7 +581,7 @@
 
     <script>
         // ==========================================
-        // CONEXIÓN CON EL CHAT, JARVIS Y CODE
+        // CONEXIÓN CON EL CHAT Y CODE
         // ==========================================
         
         let userEmail = '';
@@ -646,21 +650,19 @@
             interfaceDiv.classList.add('active');
         }
         
-        // Redirige al chat estándar (texto)
+        // Redirige al chat estándar (agente IA)
         function accessAgent() {
             window.location.href = 'chat.html';
         }
         
-
-        // ✅ Nueva función para acceder al generador de código (ApoloXia Code)
+        // Redirige al generador de código (ApoloXia Code)
         function accessApoloXiaCode() {
-            window.location.href = 'apoloxia.code.html ';
+            window.location.href = 'apoloxia.code.html';
         }
         
         function logout() {
             localStorage.removeItem('apoloxia_session_email');
             localStorage.removeItem('apoloxia_user_email');
-            localStorage.removeItem('jarvis_conversation_id');
             localStorage.removeItem('code_conversation_id');
             window.location.reload();
         }
