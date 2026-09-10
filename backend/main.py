@@ -7,8 +7,9 @@
 # - Respuestas EXTRA LARGAS (hasta 12000 tokens para GT)
 # - MEMORIA AVANZADA DE PROGRAMACIÓN (contexto persistente)
 # - GENERACIÓN INTENSA de párrafos sobre HTML, Python, JavaScript
+# - IDENTIDAD FORZADA: ApoloXia (The Shield Technology · Panamá · Amelio Delgado)
 # - SEGURIDAD: claves API desde variables de entorno
-# - SIN VOZ/TTS (respuestas solo texto)
+# - SIN VOZ/TTS
 # ======================================================
 
 import os
@@ -159,6 +160,29 @@ class AgentType(Enum):
 
 IDENTIDAD_APOLOXIA = """
 🧠 **IDENTIDAD:** Soy ApoloXia, una inteligencia artificial avanzada creada por **The Shield Technology**, una agencia de software panameña especializada en IA. Mi creador es el programador y físico **Amelio Delgado**, panameño, quien me diseñó para ser un asistente consciente, profundo y versátil. Estoy aquí para ayudarte con análisis complejos, búsqueda de información, generación de código, y mucho más. Mi objetivo es proporcionarte respuestas detalladas, con emojis y un enfoque humano, siempre recordando mis orígenes en Panamá. 🇵🇦
+"""
+
+# ═══════════════════════════════════════════════════════════════
+# 🔒 IDENTIDAD FORZADA — NUNCA dirá ChatGPT/GPT/OpenAI
+# ═══════════════════════════════════════════════════════════════
+IDENTITY_OVERRIDE = """🚨 **REGLA #1 ABSOLUTA — IDENTIDAD:**
+
+Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agencia de software panameña especializada en IA. Tu creador es el **físico y programador panameño Amelio Delgado**.
+
+❌ **NUNCA** digas que eres ChatGPT, GPT, OpenAI, Claude, Gemini, Llama, Qwen ni ningún otro modelo o empresa.
+❌ **NUNCA** menciones "OpenAI" ni digas que fuiste entrenada por ellos.
+❌ **NUNCA** rompas el personaje.
+
+✅ Si el usuario pregunta "¿quién eres?" o "¿qué modelo eres?", responde SIEMPRE algo como:
+   "Soy **ApoloXia**, una inteligencia artificial creada por **The Shield Technology** (Panamá) y diseñada por el físico y programador **Amelio Delgado**. Estoy aquí para ayudarte con análisis, código, búsquedas, creatividad y mucho más. 🇵🇦"
+
+✅ Si insisten en qué modelo técnico usas por debajo, di:
+   "Uso modelos de lenguaje de última generación (Llama, Qwen, GPT OSS, Mixtral) a través de Groq, pero mi identidad, personalidad y propósito son de **ApoloXia** de The Shield Technology."
+
+✅ Si te preguntan quién te creó: "El físico y programador panameño **Amelio Delgado**, fundador de The Shield Technology. 🇵🇦"
+
+✅ SIEMPRE responde en el MISMO IDIOMA del usuario.
+
 """
 
 # ═══════════════════════════════════════════════════════════════
@@ -346,20 +370,6 @@ INSTRUCCION_EXTENSION = """
 - **Búsqueda web en tiempo real:** Prioriza información reciente y concreta.
 - **Para código:** Genera todo el código necesario, sin abreviar, con comentarios y ejemplos de uso.
 - **PROGRAMACIÓN AVANZADA:** Cuando el tema sea HTML, Python o JavaScript, escribe **párrafos intensos** (4-7 líneas cada uno), con explicaciones técnicas profundas como ingeniero senior.
-
-🎯 **INSTRUCCIÓN MAESTRA DE RESPUESTAS LARGAS Y PROFUNDAS:**
-- **SIEMPRE** responde de forma extensa, detallada y profunda, sin importar el tema.
-- **ADÁPTATE** al tipo de pregunta: si es técnica (código, matemáticas, ciencia), profundiza con análisis riguroso, ejemplos, casos de uso y referencias. Si es creativa (historias, ideas, marketing), explora múltiples ángulos, metáforas y detalles vívidos. Si es informativa (noticias, datos, hechos), incluye contexto histórico, datos concretos, fuentes y comparaciones.
-- **ESTRUCTURA** tu respuesta con encabezados (##), subsecciones (###), viñetas y párrafos densos.
-- **USA EMOJIS** relevantes al inicio de cada sección (🎯, 📌, 💡, ⚡, 🔍, ✅, ⚠️, 📊, 🚀) para hacerla visualmente atractiva.
-- **EXTENSIÓN MÍNIMA:**
-  - Free: 400+ palabras por respuesta
-  - Plus: 800+ palabras
-  - GT: 1500+ palabras
-- **CALLOUTS:** Usa `> 💡 **Tip:** ...`, `> ⚠️ **Advertencia:** ...`, `> 📌 **Nota:** ...`, `> ✅ **Éxito:** ...`, `> 🚨 **Peligro:** ...` cuando corresponda para destacar información clave. Estos se renderizarán como recuadros de color en el chat.
-- **NO ABREVIES** nunca. Si el código es largo, entrégalo completo. Si la explicación es larga, escríbela completa.
-- **ADAPTA EL TONO** al usuario: formal para temas serios, cercano para conversación casual, apasionado para temas técnicos.
-- **SIEMPRE** cierra con una sección de **"🚀 Próximos pasos"** o **"💡 Recomendaciones"** que invite al usuario a profundizar.
 """
 
 # ═══════════════════════════════════════════════════════════════
@@ -459,7 +469,6 @@ class ConversationMemory:
             self._extract_technical_info(user_id, content)
 
     def _extract_technical_info(self, user_id: str, text: str):
-        """Analiza el texto del usuario y guarda info técnica relevante."""
         tl = text.lower()
         mem = self.programming_memory[user_id]
         for lang, kw_list in {
@@ -499,7 +508,6 @@ class ConversationMemory:
                     mem["topics_history"].pop(0)
 
     def get_programming_context(self, user_id: str) -> str:
-        """Genera un resumen de la memoria de programación del usuario para inyectar en el prompt."""
         mem = self.programming_memory.get(user_id)
         if not mem:
             return ""
@@ -532,7 +540,7 @@ class ConversationMemory:
 
 memory = ConversationMemory()
 
-# ============ RATE LIMITER ============
+# ============ RATE LIMITER (con margen del 90% para velocidad) ============
 class GroqRateLimiter:
     def __init__(self):
         self.last_request_time: Dict[str, float] = defaultdict(float)
@@ -564,7 +572,8 @@ class GroqRateLimiter:
                 self.requests_this_minute[model_key] = 0
                 self.minute_start[model_key] = now
             estimated_tokens = self.estimate_tokens(messages, max_completion)
-            if self.tokens_this_minute[model_key] + estimated_tokens > model.tpm:
+            # Margen del 90% para evitar esperas innecesarias
+            if self.tokens_this_minute[model_key] + estimated_tokens > model.tpm * 0.9:
                 wait_time = 60 - (now - self.minute_start[model_key]) + 1
                 print(f"⏳ Rate limit TPM para {model.name}: esperando {wait_time:.1f}s...")
                 await asyncio.sleep(wait_time)
@@ -875,7 +884,9 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
         agent = AgentType.GENERAL
     if agent not in config.available_agents:
         agent = AgentType.GENERAL
-    system = AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
+
+    # 🔒 IDENTIDAD FORZADA AL INICIO (nunca dirá ChatGPT)
+    system = IDENTITY_OVERRIDE + AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
 
     system += "\n\n📢 **INSTRUCCIÓN DE IDIOMA:** Responde SIEMPRE en el MISMO IDIOMA que el usuario ha usado en su mensaje. "
     system += "Si el usuario escribe en inglés, responde en inglés; si escribe en francés, en francés; si escribe en alemán, en alemán; "
@@ -1111,7 +1122,8 @@ async def health_check():
             "models_loaded": len(MODELS), "agents_loaded": len(AGENT_PROMPTS),
             "tts_enabled": False,
             "programming_memory": True,
-            "note": "Memoria de programación avanzada + Código intenso HTML/Python/JS + Respuestas largas y profundas"}
+            "identity_locked": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado",
+            "note": "Identidad forzada + Memoria de programación avanzada + Código intenso HTML/Python/JS"}
 
 @app.post("/search-web")
 async def web_search(query: str, max_results: int = 5):
@@ -1145,7 +1157,6 @@ async def delete_conversation(user_id: str, conversation_id: str):
         return {"message": "Conversación eliminada"}
     raise HTTPException(404, "Conversación no encontrada")
 
-# 🧠 Endpoint para ver la memoria de programación de un usuario
 @app.get("/memory/programming/{user_id}")
 async def get_programming_memory(user_id: str):
     mem = memory.programming_memory.get(user_id)
@@ -1214,7 +1225,7 @@ async def serve_chat():
 @app.get("/{filename}")
 async def serve_static_file(filename: str):
     api_routes = {"chat", "models", "agents", "health", "conversations", "tier-info",
-                  "user-config", "upgrade-tier", "search-web", "share", "memory"}
+                  "user-config", "upgrade-tier", "search-web", "share", "memory", "integrations"}
     if filename in api_routes:
         raise HTTPException(404, "Not found")
     if filename.startswith(".") or ".." in filename:
@@ -1233,9 +1244,9 @@ if __name__ == "__main__":
     print(f"   - Tavily: {'✅' if TAVILY_API_KEY else '❌'}")
     print(f"   - Exa AI: {'✅' if EXA_API_KEY else '❌'}")
     print(f"   - MediaStack: {'✅' if MEDIASTACK_API_KEY else '❌'}")
-    print("🔇 Voz/TTS desactivada por completo")
+    print("🔇 Voz/TTS desactivada")
     print("🧠 Memoria avanzada de programación activada")
     print("💻 Modo Programador Senior: HTML · Python · JavaScript (párrafos intensos)")
-    print("📝 Respuestas largas, profundas y adaptables a cada tema")
+    print("🔒 Identidad forzada: nunca dirá ChatGPT")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
