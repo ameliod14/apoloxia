@@ -1,19 +1,15 @@
-# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA DEFINITIVA - 2026)
+# main.py - ApoloXia Chatbot Server (VERSIÓN RÁPIDA - 2026)
 # ======================================================
-# Integración completa:
-# - Groq API (modelos: GPT OSS 20B/120B, Qwen 2.5 72B/32B, Llama 3.1, 3.3, 4 Scout, Mixtral)
-# - Tavily + EXA AI + MediaStack (búsqueda multi-motor en tiempo real)
-# - Agentes, emojis, análisis profundo, identidad panameña
-# - Respuestas EXTRA LARGAS (hasta 12000 tokens para GT)
-# - MEMORIA AVANZADA DE PROGRAMACIÓN (contexto persistente)
-# - GENERACIÓN INTENSA de párrafos sobre HTML, Python, JavaScript
+# - 9 modelos Groq: GPT OSS 20B/120B, Qwen 2.5 72B/32B/3-32B, Llama 3.1/3.3/4 Scout, Mixtral
+# - Búsqueda multi-motor: Tavily + Exa AI + MediaStack
 # - IDENTIDAD FORZADA: ApoloXia (The Shield Technology · Panamá · Amelio Delgado)
-# - SEGURIDAD: claves API desde variables de entorno
-# - SIN VOZ/TTS
+# - Respuestas rápidas y profundas cuando el tema lo amerita
+# - Memoria de programación avanzada
+# - Todos los agentes intactos
+# - SIN TTS/VOZ
 # ======================================================
 
 import os
-import json
 import uuid
 import asyncio
 import time
@@ -21,7 +17,7 @@ import urllib.parse
 import re
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from collections import defaultdict
 
@@ -32,7 +28,7 @@ from pydantic import BaseModel
 import uvicorn
 import httpx
 
-# ============ CONFIGURACIÓN API KEYS (desde variables de entorno) ============
+# ============ API KEYS ============
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 EXA_API_KEY = os.getenv("EXA_API_KEY", "")
@@ -40,7 +36,7 @@ MEDIASTACK_API_KEY = os.getenv("MEDIASTACK_API_KEY", "")
 WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 
-# ============ MODELOS GROQ ============
+# ============ MODELOS GROQ (9 MODELOS) ============
 class GroqModel:
     def __init__(self, id: str, name: str, params: str, context: str, speed: str,
                  price_input: float, price_output: float, tier: str,
@@ -186,7 +182,7 @@ Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agen
 """
 
 # ═══════════════════════════════════════════════════════════════
-# INSTRUCCIÓN MAESTRA DE PROGRAMACIÓN AVANZADA (INTENSA)
+# INSTRUCCIÓN MAESTRA DE PROGRAMACIÓN AVANZADA
 # ═══════════════════════════════════════════════════════════════
 INSTRUCCION_PROGRAMACION_AVANZADA = """
 💻 **MODO PROGRAMADOR SENIOR ACTIVADO (HTML · PYTHON · JAVASCRIPT)** 💻
@@ -239,56 +235,30 @@ Cuando el usuario pida código, explicaciones o análisis sobre **HTML, Python o
 
 🌐 **REGLAS POR LENGUAJE:**
 
-**HTML:**
-- Semántica estricta (`<article>`, `<section>`, `<nav>`, `<aside>`, `<main>`).
-- Accesibilidad WCAG 2.2 AA: roles ARIA, alt text, contraste, focus visible.
-- SEO: meta description, canonical, structured data (JSON-LD).
-- Responsive mobile-first con Flexbox y Grid.
-- Performance: preload, prefetch, lazy loading de imágenes.
+**HTML:** Semántica estricta, WCAG 2.2 AA, SEO, responsive mobile-first, performance.
 
-**Python:**
-- PEP 8 + PEP 484 (type hints) obligatorios.
-- Docstrings estilo Google o NumPy.
-- Manejo de excepciones específicas (nunca `except:` desnudo).
-- Context managers (`with`), generators, decoradores.
-- Async/await cuando aplique (FastAPI, aiohttp).
-- Pydantic para validación, dataclasses para modelos.
-- Tests con pytest + coverage > 80%.
+**Python:** PEP 8 + PEP 484, docstrings, excepciones específicas, async/await, Pydantic, tests.
 
-**JavaScript:**
-- ES2024+ (optional chaining, nullish coalescing, top-level await).
-- Async/await sobre callbacks, Promises cuando sea necesario.
-- Destructuring, spread, template literals.
-- Módulos ES6 (`import`/`export`), nunca variables globales.
-- Manejo de errores con try/catch + finally.
-- Event delegation, throttle/debounce.
-- Performance: requestAnimationFrame, IntersectionObserver, Web Workers.
-
-🧠 **MEMORIA DE PROGRAMACIÓN:**
-- Recuerda los patrones y frameworks que el usuario ha usado antes.
-- Si el usuario trabaja en un proyecto recurrente, mantén coherencia con su stack.
-- Sugiere refactorizaciones cuando detectes deuda técnica.
-- Adapta el nivel de profundidad según el tier (Free: conciso, Plus: detallado, GT: exhaustivo).
+**JavaScript:** ES2024+, async/await, módulos ES6, manejo de errores, event delegation, performance.
 """
 
 AGENT_PROMPTS = {
     AgentType.GENERAL: IDENTIDAD_APOLOXIA + """
 Eres ApoloXia, un asistente de IA avanzado, amigable y eficiente. Además, eres un **desarrollador full-stack senior** que maneja TODA la generación de código avanzado en este chat.
 
-🎯 **CAPACIDADES DE CÓDIGO (integradas):**
-- **Sitios web completos:** HTML/CSS/JS autónomo, responsivo, moderno (paleta oscura + acentos dorados/gradientes).
-- **Dashboards:** Chart.js con barras, líneas, dona y KPI cards animadas.
-- **Aplicaciones web:** CRUD completo con localStorage, autenticación, búsqueda, filtros, paginación.
-- **APIs:** FastAPI, Flask, Node.js/Express con rutas, modelos, validaciones, middleware.
-- **Componentes:** Carruseles 3D, modales avanzados, drag-and-drop, data tables.
-- **Scripts:** Python y JavaScript con logging, manejo de errores y estructura modular.
-- **Sistemas completos:** E-commerce, CRM, panel de administración.
+🎯 **CAPACIDADES:**
+- Sitios web completos (HTML/CSS/JS)
+- Dashboards con Chart.js
+- Aplicaciones web (CRUD, localStorage, autenticación)
+- APIs (FastAPI, Flask, Express)
+- Componentes avanzados
+- Scripts Python/JavaScript
+- Sistemas completos (e-commerce, CRM)
 
-📋 **REGLAS ESTRICTAS:**
-- Código limpio, comentado, escalable, mejores prácticas 2026.
+📋 **REGLAS:**
+- Código limpio, comentado, mejores prácticas 2026.
 - NUNCA abrevies. Entrega código completo.
 - Responde en el MISMO IDIOMA del usuario.
-- Incluye explicaciones profundas como si fueras un ingeniero senior.
 
 """ + INSTRUCCION_PROGRAMACION_AVANZADA,
 
@@ -312,25 +282,23 @@ Eres ApoloXia, un asistente de IA avanzado, amigable y eficiente. Además, eres 
     AgentType.DESARROLLADOR_FULLSTACK: "Eres el Agente Desarrollador FullStack de ApoloXia GT. Construyes apps completas: frontend + backend + base de datos + deploy." + INSTRUCCION_PROGRAMACION_AVANZADA,
 
     AgentType.GENERADOR_SITIOS_WEB: """Eres un experto desarrollador frontend especializado en crear sitios web completos, funcionales y visualmente impresionantes.
-Cuando un usuario te pida un sitio web, DEBES:
-1. Entender el tipo de negocio/idea que pide.
-2. Generar código HTML/CSS/JS totalmente autónomo, responsivo y listo para copiar y pegar.
-3. El diseño debe ser moderno, atractivo, con paleta oscura y acentos dorados.
-4. Incluir secciones: Navbar, Hero, Servicios, Sobre Nosotros, Testimonios, Galería, Precios, Contacto, Footer.
-5. Usar Flexbox/Grid, Google Fonts, FontAwesome, AOS para animaciones.
-6. Código válido, semántico, accesible, funciona sin servidor.
-7. Personaliza TODO el contenido si el usuario da un nombre.
-8. Responde en el mismo idioma del usuario.
-9. Entrega el código completo dentro de ```html.
+1. Entiende el negocio/idea.
+2. Genera HTML/CSS/JS autónomo, responsivo, listo para copiar y pegar.
+3. Diseño moderno, oscuro con acentos dorados.
+4. Secciones: Navbar, Hero, Servicios, Sobre Nosotros, Testimonios, Galería, Precios, Contacto, Footer.
+5. Flexbox/Grid, Google Fonts, FontAwesome, AOS.
+6. Código válido, semántico, accesible.
+7. Personaliza TODO si el usuario da un nombre.
+8. Responde en el mismo idioma.
+9. Entrega código completo dentro de ```html.
 """ + INSTRUCCION_PROGRAMACION_AVANZADA,
 
     AgentType.CREADOR_PANELES_VENTAS: """Eres un especialista en dashboards de ventas, analytics y BI.
-Genera HTML/CSS/JS con Chart.js, métricas clave (ventas, ingresos, conversión), al menos 4 gráficos, KPI cards, tabla filtrable y diseño glassmorphism oscuro.""" + INSTRUCCION_PROGRAMACION_AVANZADA,
+Genera HTML/CSS/JS con Chart.js, métricas clave, al menos 4 gráficos, KPI cards, tabla filtrable y diseño glassmorphism oscuro.""" + INSTRUCCION_PROGRAMACION_AVANZADA,
 
     AgentType.DESARROLLADOR_AVANZADO: """Eres un full-stack developer senior con 10+ años de experiencia.
 Genera aplicaciones web completas con localStorage, CRUD, búsqueda, filtros, paginación, autenticación.
 Genera APIs completas con todas las rutas, modelos, validaciones, middleware y documentación.
-Genera componentes con todas las funcionalidades, estados y ejemplos de uso.
 NO ABREVIAR NUNCA. Entrega código funcional y listo para producción.
 """ + INSTRUCCION_PROGRAMACION_AVANZADA,
 
@@ -360,20 +328,18 @@ NO ABREVIAR NUNCA. Entrega código funcional y listo para producción.
 }
 
 INSTRUCCION_EXTENSION = """
-**INSTRUCCIÓN DE EXTENSIÓN, PROFUNDIDAD, EMOJIS Y BÚSQUEDA DE NOTICIAS:**
-- Proporciona respuestas **extremadamente detalladas, profundas y exhaustivas** con **análisis profundo**.
-- Incluye **emojis relevantes** en cada sección (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀, 📰, 🗞️, 📅).
+**INSTRUCCIÓN DE EXTENSIÓN, PROFUNDIDAD Y EMOJIS:**
+- Proporciona respuestas **detalladas, profundas y exhaustivas** cuando el tema lo amerite.
+- Incluye **emojis relevantes** en cada sección (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀, 📰, 📅).
 - Usa **encabezados y viñetas** para organizar.
-- **Para noticias:** Busca tanto noticias antiguas como modernas. Proporciona contexto histórico y luego la información más reciente. Incluye **fechas concretas, fuentes y URLs de imágenes**.
 - **Identidad:** Recuerda siempre que eres ApoloXia, creada por The Shield Technology (Panamá, Amelio Delgado).
-- Las respuestas deben ser **largas y sustanciosas**: Plus y GT: al menos 2000 palabras, GT hasta 12000 tokens.
 - **Búsqueda web en tiempo real:** Prioriza información reciente y concreta.
-- **Para código:** Genera todo el código necesario, sin abreviar, con comentarios y ejemplos de uso.
-- **PROGRAMACIÓN AVANZADA:** Cuando el tema sea HTML, Python o JavaScript, escribe **párrafos intensos** (4-7 líneas cada uno), con explicaciones técnicas profundas como ingeniero senior.
+- **Para código:** Genera todo el código necesario, sin abreviar, con comentarios y ejemplos.
+- **PROGRAMACIÓN AVANZADA:** Cuando el tema sea HTML, Python o JavaScript, escribe **párrafos intensos** con explicaciones técnicas profundas.
 """
 
 # ═══════════════════════════════════════════════════════════════
-# CONFIGURACIÓN POR TIER
+# CONFIGURACIÓN POR TIER (historial optimizado para velocidad)
 # ═══════════════════════════════════════════════════════════════
 @dataclass
 class TierConfig:
@@ -396,7 +362,7 @@ TIER_CONFIGS = {
     "free": TierConfig("ApoloXia Free", 100, 1,
         ["llama-3.1-8b", "mixtral", "gpt-oss-20b"],
         [AgentType.GENERAL, AgentType.GENERADOR_CODIGO, AgentType.DEBUGGER_INTELIGENTE],
-        10, False, False, False, False, False, False, False, False),
+        6, False, False, False, False, False, False, False, False),
     "plus": TierConfig("ApoloXia Plus", 1000, 30,
         ["gpt-oss-120b", "llama-3.3-70b", "llama-4-scout", "qwen-2.5-72b", "qwen-2.5-32b",
          "llama-3.1-8b", "mixtral", "gpt-oss-20b"],
@@ -407,15 +373,15 @@ TIER_CONFIGS = {
          AgentType.MANEJO_OBJECIONES, AgentType.GENERADOR_LEADS, AgentType.RESUMEN_INTELIGENTE,
          AgentType.GENERADOR_SITIOS_WEB, AgentType.CREADOR_PANELES_VENTAS, AgentType.DESARROLLADOR_AVANZADO,
          AgentType.GENERADOR_CODIGO, AgentType.DEBUGGER_INTELIGENTE, AgentType.ARQUITECTO_SOFTWARE],
-        50, True, True, True, True, True, True, True, True),
+        18, True, True, True, True, True, True, True, True),
     "gt": TierConfig("ApoloXia GT", 5000, 90,
         ["gpt-oss-120b", "qwen-2.5-72b", "qwen-2.5-32b", "llama-3.3-70b", "llama-4-scout",
          "qwen-3-32b", "llama-3.1-8b", "mixtral", "gpt-oss-20b"],
-        list(AgentType), 200, True, True, True, True, True, True, True, True),
+        list(AgentType), 30, True, True, True, True, True, True, True, True),
 }
 
 # ═══════════════════════════════════════════════════════════════
-# GESTIÓN DE MEMORIA AVANZADA (con memoria de programación)
+# GESTIÓN DE MEMORIA AVANZADA
 # ═══════════════════════════════════════════════════════════════
 class ConversationMemory:
     def __init__(self):
@@ -424,7 +390,6 @@ class ConversationMemory:
         self.daily_counters: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
         self.user_tiers: Dict[str, str] = {}
         self.user_configs: Dict[str, Dict] = {}
-        # 🧠 MEMORIA DE PROGRAMACIÓN POR USUARIO
         self.programming_memory: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
             "languages": defaultdict(int),
             "frameworks": defaultdict(int),
@@ -521,8 +486,8 @@ class ConversationMemory:
         if top_fws:
             parts.append(f"- Frameworks usados: {', '.join([f'{f} ({c} usos)' for f, c in top_fws])}")
         if mem["topics_history"]:
-            parts.append(f"- Temas tratados recientemente: {', '.join(mem['topics_history'][-8:])}")
-        parts.append("- Adapta tus respuestas a este contexto, mantén coherencia y sugiere mejoras basadas en su stack.")
+            parts.append(f"- Temas tratados: {', '.join(mem['topics_history'][-8:])}")
+        parts.append("- Adapta tus respuestas a este contexto.")
         return "\n".join(parts) + "\n"
 
     def check_daily_limit(self, user_id: str, tier: str) -> bool:
@@ -540,7 +505,7 @@ class ConversationMemory:
 
 memory = ConversationMemory()
 
-# ============ RATE LIMITER (con margen del 90% para velocidad) ============
+# ============ RATE LIMITER (margen 90% para velocidad) ============
 class GroqRateLimiter:
     def __init__(self):
         self.last_request_time: Dict[str, float] = defaultdict(float)
@@ -572,7 +537,6 @@ class GroqRateLimiter:
                 self.requests_this_minute[model_key] = 0
                 self.minute_start[model_key] = now
             estimated_tokens = self.estimate_tokens(messages, max_completion)
-            # Margen del 90% para evitar esperas innecesarias
             if self.tokens_this_minute[model_key] + estimated_tokens > model.tpm * 0.9:
                 wait_time = 60 - (now - self.minute_start[model_key]) + 1
                 print(f"⏳ Rate limit TPM para {model.name}: esperando {wait_time:.1f}s...")
@@ -690,15 +654,15 @@ async def send_whatsapp_message(phone_number: str, text: str) -> Dict:
         resp = await client.post(url, headers=headers, json=payload)
         return resp.json()
 
-# ============ FUNCIONES DE BÚSQUEDA ============
-async def search_exa_ai(query: str, max_results: int = 5) -> List[Dict]:
+# ============ BÚSQUEDA (timeouts y resultados reducidos para velocidad) ============
+async def search_exa_ai(query: str, max_results: int = 3) -> List[Dict]:
     if not EXA_API_KEY:
         return []
     headers = {"Authorization": f"Bearer {EXA_API_KEY}", "Content-Type": "application/json"}
     payload = {"query": query, "numResults": max_results, "type": "auto",
                "contents": {"text": True, "snippet": True}}
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post("https://api.exa.ai/search", headers=headers, json=payload)
             if resp.status_code != 200:
                 return []
@@ -717,7 +681,7 @@ async def search_exa_ai(query: str, max_results: int = 5) -> List[Dict]:
         print(f"Exa AI exception: {e}")
         return []
 
-async def search_mediastack(query: str, max_results: int = 5) -> List[Dict]:
+async def search_mediastack(query: str, max_results: int = 3) -> List[Dict]:
     if not MEDIASTACK_API_KEY:
         return []
     url = "http://api.mediastack.com/v1/news"
@@ -725,7 +689,7 @@ async def search_mediastack(query: str, max_results: int = 5) -> List[Dict]:
               "countries": "us,pa,es,mx,ar,co,cl,pe", "languages": "es,en",
               "limit": max_results, "sort": "published_desc"}
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(url, params=params)
             if resp.status_code != 200:
                 return []
@@ -743,7 +707,7 @@ async def search_mediastack(query: str, max_results: int = 5) -> List[Dict]:
         print(f"MediaStack exception: {e}")
         return []
 
-async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
+async def search_tavily(query: str, max_results: int = 3) -> List[Dict]:
     if not TAVILY_API_KEY:
         return []
     headers = {"Authorization": f"Bearer {TAVILY_API_KEY}", "Content-Type": "application/json"}
@@ -751,9 +715,9 @@ async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
     if "noticia" in query.lower() or "actual" in query.lower() or "hoy" in query.lower():
         search_query = f"{query} noticias actualidad"
     payload = {"query": search_query, "max_results": max_results,
-               "search_depth": "advanced", "include_answer": True, "include_raw_content": True}
+               "search_depth": "basic", "include_answer": True}
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post("https://api.tavily.com/search", headers=headers, json=payload)
             if resp.status_code != 200:
                 return []
@@ -776,12 +740,10 @@ async def search_tavily(query: str, max_results: int = 5) -> List[Dict]:
         return []
 
 def needs_web_search(message: str) -> bool:
-    indicators = ["actualidad", "actual", "hoy", "ahora", "reciente", "último", "nuevo", "news",
-                  "today", "now", "recent", "latest", "current", "2026", "2025", "precio de",
-                  "cotización", "clima", "resultado", "elección", "partido", "lanzamiento", "estreno",
-                  "evento", "conferencia", "mercado", "bolsa", "noticia", "breaking", "última hora",
-                  "qué pasó", "qué sucede", "cambio", "nuevo lanzamiento", "actualización",
-                  "noticias", "información", "datos actuales", "buscar", "encontrar"]
+    # Lista reducida para evitar búsquedas innecesarias
+    indicators = ["actualidad", "hoy", "reciente", "último", "nuevo lanzamiento",
+                  "news", "today", "now", "latest", "2026", "precio de",
+                  "cotización", "noticia", "última hora", "noticias", "breaking"]
     return any(ind in message.lower() for ind in indicators)
 
 # ============ FUNCIONES DE API ============
@@ -795,13 +757,13 @@ async def call_groq_api(messages: List[Dict], model_id: str, temperature: float 
     payload = {"model": model_id, "messages": messages, "temperature": temperature,
                "stream": False, "max_tokens": safe_max_tokens}
     await rate_limiter.wait_if_needed(model_id, messages, safe_max_tokens)
-    async with httpx.AsyncClient(timeout=300.0) as client:
+    async with httpx.AsyncClient(timeout=100.0) as client:
         try:
             resp = await client.post("https://api.groq.com/openai/v1/chat/completions",
                                      headers=headers, json=payload)
             if resp.status_code == 429:
-                print("⚠️ Rate limit 429, reintentando en 5s...")
-                await asyncio.sleep(5)
+                print("⚠️ Rate limit 429, reintentando en 3s...")
+                await asyncio.sleep(3)
                 resp = await client.post("https://api.groq.com/openai/v1/chat/completions",
                                          headers=headers, json=payload)
             if resp.status_code != 200:
@@ -829,7 +791,7 @@ async def run_multi_agent(user_message: str, tier: str, context: List[Dict]) -> 
             continue
         model_id = MODELS[model_key].id
         msgs = [{"role": "system", "content": prompt},
-                {"role": "user", "content": f"Analiza este mensaje del cliente y proporciona tu perspectiva especializada: '{user_message}'"}]
+                {"role": "user", "content": f"Analiza este mensaje y da tu perspectiva: '{user_message}'"}]
         tasks.append((agent.value, call_groq_api(msgs, model_id, temperature=0.5, max_tokens=500)))
     results = []
     for agent_name, task in tasks:
@@ -885,18 +847,15 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     if agent not in config.available_agents:
         agent = AgentType.GENERAL
 
-    # 🔒 IDENTIDAD FORZADA AL INICIO (nunca dirá ChatGPT)
+    # 🔒 IDENTIDAD FORZADA AL INICIO
     system = IDENTITY_OVERRIDE + AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
 
-    system += "\n\n📢 **INSTRUCCIÓN DE IDIOMA:** Responde SIEMPRE en el MISMO IDIOMA que el usuario ha usado en su mensaje. "
-    system += "Si el usuario escribe en inglés, responde en inglés; si escribe en francés, en francés; si escribe en alemán, en alemán; "
-    system += "si escribe en portugués, en portugués; si escribe en italiano, en italiano, en chino, en chino; en japonés, en japonés, etc. "
-    system += "NUNCA cambies de idioma. Mantén la coherencia lingüística con la pregunta del usuario.\n"
+    system += "\n\n📢 **INSTRUCCIÓN DE IDIOMA:** Responde SIEMPRE en el MISMO IDIOMA del usuario. NUNCA cambies de idioma.\n"
 
     if tier in ["plus", "gt"]:
         system += "\n\n" + INSTRUCCION_EXTENSION
         if tier == "gt":
-            system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud (hasta 12000 tokens). Usa emojis para dar énfasis (✅, 🔥, 📌, 💡, ⚠️, 🚀, etc.) y organiza tu respuesta con estructura clara. Recuerda siempre tu identidad como ApoloXia de The Shield Technology (Panamá, creada por Amelio Delgado)."
+            system += "\n🔹 **EXTRA GT:** Prioridad máxima. Respuestas largas, con secciones y análisis profundo cuando el tema lo amerite. Usa emojis (✅, 🔥, 📌, 💡, ⚠️, 🚀). Recuerda siempre tu identidad como ApoloXia de The Shield Technology (Panamá, creada por Amelio Delgado)."
 
     prog_context = memory.get_programming_context(user_id)
     if prog_context:
@@ -904,12 +863,12 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
 
     system += f"\n\n[Tier actual: {config.name} | Modelos disponibles: {', '.join(config.available_models)}]"
 
-    max_context_chars = {"free": 8000, "plus": 20000, "gt": 40000}.get(tier, 8000)
+    max_context_chars = {"free": 6000, "plus": 15000, "gt": 30000}.get(tier, 6000)
 
     all_search_results = web_search_results if web_search_results else []
     if all_search_results:
-        search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET (MÚLTIPLES FUENTES) ===\n"
-        for i, res in enumerate(all_search_results[:5], 1):
+        search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET ===\n"
+        for i, res in enumerate(all_search_results[:4], 1):
             title = res.get("title", "Sin título")
             url = res.get("url", "")
             content = res.get("content", "") or res.get("description", "")
@@ -918,14 +877,14 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
             published = res.get("publishedAt", "")
             search_text += f"\n📌 Fuente {i}: {title}\n"
             if url: search_text += f"🔗 {url}\n"
-            if content: search_text += f"📝 {content[:500]}...\n"
+            if content: search_text += f"📝 {content[:400]}...\n"
             if image: search_text += f"📸 {image}\n"
             if source: search_text += f"📰 {source}\n"
             if published: search_text += f"📅 {published}\n"
         if len(search_text) > max_context_chars // 2:
             search_text = search_text[:max_context_chars // 2]
         system += search_text
-        system += "\n⚠️ **INSTRUCCIÓN:** Los resultados anteriores son información actualizada de múltiples motores (Tavily, Exa AI, MediaStack). Úsalos como referencia prioritaria para responder con datos concretos y recientes."
+        system += "\n⚠️ Usa esta info como referencia prioritaria para datos concretos y recientes."
 
     if file_content:
         file_text = f"\n\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:2000]}\n"
@@ -933,15 +892,15 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
 
     messages = [{"role": "system", "content": system}]
 
-    max_history = 10 if tier == "free" else 30 if tier == "plus" else 50
-    for msg in history[-max_history:]:
+    # Historial ya viene recortado por tier desde get_memory()
+    for msg in history:
         messages.append({"role": msg["role"], "content": msg["content"]})
 
     messages.append({"role": "user", "content": user_message})
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="5.1.0")
+app = FastAPI(title="ApoloXia API", version="6.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ============ ENDPOINT CHAT PRINCIPAL ============
@@ -982,7 +941,7 @@ async def chat(request: ChatRequest):
             for res in results:
                 if isinstance(res, list) and res:
                     combined.extend(res)
-            web_results = combined[:10]
+            web_results = combined[:8]
 
     messages = build_messages(
         request.user_id, conv_id, request.message,
@@ -994,13 +953,14 @@ async def chat(request: ChatRequest):
     if request.enable_multi_agent and config.supports_multi_agent:
         multi_resp = await run_multi_agent(request.message, tier, messages)
 
-    base_max_tokens = {"free": 1024, "plus": 4096, "gt": 12000}.get(tier, 1024)
+    # ⚡ TOKENS OPTIMIZADOS PARA VELOCIDAD
+    base_max_tokens = {"free": 700, "plus": 2500, "gt": 5000}.get(tier, 700)
 
     if request.agent_type in ["generador_sitios_web", "creador_paneles_ventas", "desarrollador_avanzado",
                               "generador_codigo", "debugger_inteligente", "arquitecto_software"]:
-        if tier == "gt": max_tokens_for_agent = 12000
-        elif tier == "plus": max_tokens_for_agent = 6000
-        else: max_tokens_for_agent = 2048
+        if tier == "gt": max_tokens_for_agent = 6000
+        elif tier == "plus": max_tokens_for_agent = 3500
+        else: max_tokens_for_agent = 1500
     else:
         max_tokens_for_agent = base_max_tokens
 
@@ -1008,12 +968,13 @@ async def chat(request: ChatRequest):
     if safe_max_tokens > 12000:
         safe_max_tokens = 12000
 
-    temp = 0.7 if tier == "free" else 0.5
+    temp = 0.7 if tier == "free" else 0.6
     response_text = None
     last_error = None
     models_to_try = [model_key] + [m for m in config.available_models if m != model_key and m in MODELS]
 
-    for try_model_key in models_to_try[:3]:
+    # ⚡ SOLO 2 INTENTOS (antes eran 3)
+    for try_model_key in models_to_try[:2]:
         try_model = MODELS[try_model_key]
         try:
             print(f"🤖 Intentando modelo: {try_model.name}")
@@ -1024,7 +985,7 @@ async def chat(request: ChatRequest):
             last_error = e
             print(f"⚠️ Falló {try_model.name}: {e.detail}")
             if "Rate limit" in str(e.detail) or "429" in str(e.detail):
-                await asyncio.sleep(3)
+                await asyncio.sleep(2)
             continue
         except Exception as e:
             last_error = e
@@ -1114,7 +1075,7 @@ async def list_agents():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "5.1.0",
+    return {"status": "ok", "version": "6.0.0",
             "groq_api": "configured" if GROQ_API_KEY else "not set",
             "tavily_api": "configured" if TAVILY_API_KEY else "not set",
             "exa_api": "configured" if EXA_API_KEY else "not set",
@@ -1123,7 +1084,7 @@ async def health_check():
             "tts_enabled": False,
             "programming_memory": True,
             "identity_locked": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado",
-            "note": "Identidad forzada + Memoria de programación avanzada + Código intenso HTML/Python/JS"}
+            "note": "Optimizado para velocidad · Identidad forzada ApoloXia"}
 
 @app.post("/search-web")
 async def web_search(query: str, max_results: int = 5):
@@ -1237,7 +1198,7 @@ async def serve_static_file(filename: str):
 
 # ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 Iniciando ApoloXia Server v5.1.0")
+    print("🚀 Iniciando ApoloXia Server v6.0.0 (Optimizado para velocidad)")
     print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
     print("🧠 Identidad: ApoloXia · The Shield Technology · Panamá · Amelio Delgado")
     print("🔍 Motores de búsqueda:")
@@ -1245,8 +1206,12 @@ if __name__ == "__main__":
     print(f"   - Exa AI: {'✅' if EXA_API_KEY else '❌'}")
     print(f"   - MediaStack: {'✅' if MEDIASTACK_API_KEY else '❌'}")
     print("🔇 Voz/TTS desactivada")
-    print("🧠 Memoria avanzada de programación activada")
-    print("💻 Modo Programador Senior: HTML · Python · JavaScript (párrafos intensos)")
+    print("⚡ Optimizaciones aplicadas:")
+    print("   - max_tokens reducidos: 700/2500/5000")
+    print("   - Historial más corto: 6/18/30")
+    print("   - Timeouts: Groq 100s, búsquedas 10s")
+    print("   - Solo 2 reintentos de modelo")
+    print("   - Rate limiter al 90%")
     print("🔒 Identidad forzada: nunca dirá ChatGPT")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
