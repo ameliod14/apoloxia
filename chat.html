@@ -294,6 +294,11 @@
             border-color: var(--accent-blue);
             color: var(--accent-blue);
         }
+        .header-btn.voice-btn.active {
+            background: rgba(34, 197, 94, 0.12);
+            border-color: #22c55e;
+            color: #22c55e;
+        }
 
         /* ===== MESSAGES ===== */
         .messages-container {
@@ -557,10 +562,11 @@
             color: var(--text-muted);
         }
         .badge-web { color: var(--accent-blue); border-color: var(--accent-blue); }
-        .badge-search { color: #10b981; border-color: #10b981; } /* nuevo */
+        .badge-search { color: #10b981; border-color: #10b981; }
         .badge-multi { color: #8b5cf6; border-color: #8b5cf6; }
         .badge-agent { color: var(--accent-gray); }
         .badge-model { color: #22c55e; border-color: #22c55e; }
+        .badge-voice { color: #f59e0b; border-color: #f59e0b; }
 
         .search-engines-badge {
             display: inline-block;
@@ -604,6 +610,11 @@
             background: var(--hover-gray);
             color: var(--text-primary);
             border-color: var(--accent-blue);
+        }
+        .msg-action-btn.playing {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: #22c55e;
+            color: #22c55e;
         }
 
         .share-menu {
@@ -1055,6 +1066,7 @@
             <div class="header-actions">
                 <button class="header-btn" id="webSearchBtn" onclick="toggleWebSearch()">🔍 Web</button>
                 <button class="header-btn" id="multiAgentBtn" onclick="toggleMultiAgent()">🤖 Multi</button>
+                <button class="header-btn voice-btn active" id="voiceBtn" onclick="toggleVoice()">🔊 Voz</button>
                 <button class="header-btn" onclick="document.getElementById('fileInput').click()">📎 Archivo</button>
                 <button class="header-btn" onclick="openSettings()">⚙️</button>
             </div>
@@ -1164,10 +1176,12 @@
         currentAgentId: 'general',
         webSearchEnabled: false,
         multiAgentEnabled: false,
+        voiceEnabled: true,       // 🎙️ NUEVO: voz activada por defecto
         isTyping: false,
         availableModels: [],
         availableAgents: [],
-        uploadedFile: null
+        uploadedFile: null,
+        currentAudio: null        // 🎙️ NUEVO: audio actual reproduciéndose
     };
     let MODELS_CATALOG = {};
 
@@ -1207,7 +1221,6 @@
     function deleteConversationFromLocal(email, convId) {
         const key = getLocalStorageKey(email, convId);
         localStorage.removeItem(key);
-        // Also remove from conversations list
         let convs = getConversationsFromLocal(email);
         convs = convs.filter(c => c.conversation_id !== convId);
         saveConversationsToLocal(email, convs);
@@ -1248,9 +1261,12 @@
         }
         state.userEmail = savedEmail;
         state.userName = savedEmail.split('@')[0];
+        // Restaurar preferencia de voz
+        const savedVoice = localStorage.getItem('apoloxia_voice_enabled');
+        if (savedVoice !== null) state.voiceEnabled = savedVoice === 'true';
+        updateVoiceBtnUI();
         updateUserUI();
 
-        // Cargar conversaciones desde el backend y desde localStorage
         await loadUserConfig();
         await loadConversations();
         renderWelcomeBanner();
@@ -1315,7 +1331,6 @@
 
     // ========== CONVERSACIONES ==========
     async function loadConversations() {
-        // Cargar conversaciones del backend
         let backendConvs = [];
         try {
             const res = await fetch(`${API_BASE_URL}/conversations/${encodeURIComponent(state.userEmail)}`);
@@ -1325,17 +1340,14 @@
             }
         } catch (e) {}
 
-        // Cargar conversaciones de localStorage
         const localConvs = getConversationsFromLocal(state.userEmail);
 
-        // Combinar: priorizar backend (tiene message_count, last_access), pero mantener las de local si no están en backend
         const combined = [...backendConvs];
         localConvs.forEach(lc => {
             if (!combined.find(c => c.conversation_id === lc.conversation_id)) {
                 combined.push(lc);
             }
         });
-        // Ordenar por last_access más reciente
         combined.sort((a, b) => {
             const da = a.last_access ? new Date(a.last_access).getTime() : 0;
             const db = b.last_access ? new Date(b.last_access).getTime() : 0;
@@ -1365,13 +1377,10 @@
 
     async function deleteConversation(convId) {
         if (!confirm('¿Eliminar esta conversación?')) return;
-        // Eliminar del backend
         try {
             await fetch(`${API_BASE_URL}/conversations/${encodeURIComponent(state.userEmail)}/${convId}`, { method: 'DELETE' });
         } catch(e) {}
-        // Eliminar de localStorage
         deleteConversationFromLocal(state.userEmail, convId);
-        // Actualizar estado
         state.conversations = state.conversations.filter(c => c.conversation_id !== convId);
         if (state.conversationId === convId) {
             state.conversationId = null;
@@ -1387,7 +1396,6 @@
         state.conversationId = convId;
         renderConversationList();
         document.getElementById('headerTitle').innerText = `Conversación ${convId.slice(-6)}`;
-        // Cargar mensajes de localStorage
         const messages = getMessagesFromLocal(state.userEmail, convId);
         const wrapper = document.getElementById('messagesWrapper');
         wrapper.innerHTML = '';
@@ -1398,7 +1406,6 @@
                 if (msg.role === 'user') {
                     addMessageToUI('user', msg.content);
                 } else {
-                    // Asumimos que es assistant, pero podríamos tener badges si se guardaron
                     addMessageToUI('assistant', msg.content);
                 }
             });
@@ -1419,15 +1426,12 @@
             state.conversationId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
         }
 
-        // Añadir mensaje del usuario a la UI y guardar localmente
         addMessageToUI('user', escapeHtml(message));
-        // Guardar en localStorage
         let messages = getMessagesFromLocal(state.userEmail, state.conversationId);
         messages.push({ role: 'user', content: message, timestamp: new Date().toISOString() });
         saveMessagesToLocal(state.userEmail, state.conversationId, messages);
-        // Actualizar lista de conversaciones local
         updateConversationListLocal(state.userEmail, state.conversationId, message);
-        await loadConversations(); // refrescar sidebar
+        await loadConversations();
 
         showTypingIndicator();
         state.isTyping = true;
@@ -1443,7 +1447,8 @@
                 model_id: state.currentModelId,
                 use_web_search: state.webSearchEnabled,
                 enable_multi_agent: state.multiAgentEnabled,
-                file_content: state.uploadedFile
+                file_content: state.uploadedFile,
+                enable_voice: state.voiceEnabled   // 🎙️ NUEVO: enviar preferencia de voz
             };
 
             const res = await fetch(`${API_BASE_URL}/chat`, {
@@ -1468,20 +1473,22 @@
             if (data.multi_agent_responses && data.multi_agent_responses.length > 0) {
                 badgesHtml += '<span class="feature-badge badge-multi">🤖 Multi</span>';
             }
+            if (data.audio_base64) {
+                badgesHtml += '<span class="feature-badge badge-voice">🔊 Voz</span>';  // 🎙️ NUEVO
+            }
             badgesHtml += `<span class="feature-badge badge-agent">👤 ${formatAgentName(data.agent_used)}</span>`;
             badgesHtml += `<span class="feature-badge badge-model">🧠 ${data.model_used}</span>`;
 
             const responseContent = data.response || 'Sin respuesta';
-            addAssistantMessage(responseContent, badgesHtml);
+            // 🎙️ NUEVO: pasar el audio al renderizador
+            addAssistantMessage(responseContent, badgesHtml, data.audio_base64, data.audio_mime);
 
-            // Guardar respuesta del asistente en localStorage
             let msgs = getMessagesFromLocal(state.userEmail, state.conversationId);
             msgs.push({ role: 'assistant', content: responseContent, timestamp: new Date().toISOString() });
             saveMessagesToLocal(state.userEmail, state.conversationId, msgs);
 
             state.remainingDaily = data.remaining_daily;
             updateRemainingBadge();
-            // Refrescar conversaciones
             await loadConversations();
         } catch (err) {
             hideTypingIndicator();
@@ -1521,11 +1528,17 @@
         scrollToBottom();
     }
 
-    function addAssistantMessage(markdownContent, badgesHtml = '') {
+    // 🎙️ MODIFICADO: ahora acepta audioBase64 y audioMime
+    function addAssistantMessage(markdownContent, badgesHtml = '', audioBase64 = null, audioMime = 'audio/mpeg') {
         const wrapper = document.getElementById('messagesWrapper');
         const div = document.createElement('div');
         div.className = 'message assistant';
         const msgId = 'msg-' + Date.now();
+        // Guardar audio como atributo data para reproducción posterior
+        if (audioBase64) {
+            div.dataset.audio = audioBase64;
+            div.dataset.audioMime = audioMime;
+        }
 
         div.innerHTML = `
             <div class="message-avatar">⚡</div>
@@ -1535,6 +1548,7 @@
                 <div class="message-meta-row">
                     <span class="message-time">${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
                     <div class="message-actions-bar">
+                        <button class="msg-action-btn" onclick="speakMessage(this)" title="Reproducir voz">🔊</button>
                         <button class="msg-action-btn" onclick="copyMessage('${msgId}')">📋</button>
                         <button class="msg-action-btn" onclick="regenerateLastMessage()">🔄</button>
                         <div style="position:relative;">
@@ -1594,6 +1608,89 @@
 
         mermaid.init(undefined, div.querySelectorAll('.mermaid'));
         scrollToBottom();
+
+        // 🎙️ NUEVO: reproducir audio automáticamente si está disponible y activado
+        if (audioBase64 && state.voiceEnabled) {
+            playAudio(audioBase64, audioMime, div);
+        }
+    }
+
+    // 🎙️ NUEVO: función para reproducir audio
+    function playAudio(audioBase64, audioMime, messageDiv) {
+        try {
+            // Detener cualquier audio previo
+            if (state.currentAudio) {
+                state.currentAudio.pause();
+                state.currentAudio = null;
+            }
+            const audio = new Audio(`data:${audioMime || 'audio/mpeg'};base64,${audioBase64}`);
+            state.currentAudio = audio;
+            const btn = messageDiv?.querySelector('.msg-action-btn');
+            if (btn) btn.classList.add('playing');
+            audio.onended = () => {
+                if (btn) btn.classList.remove('playing');
+                state.currentAudio = null;
+            };
+            audio.onerror = () => {
+                if (btn) btn.classList.remove('playing');
+                state.currentAudio = null;
+            };
+            audio.play().catch(e => {
+                console.warn('Audio bloqueado por el navegador:', e);
+                if (btn) btn.classList.remove('playing');
+                showToast('Haz clic en 🔊 para reproducir la voz', 'info');
+            });
+        } catch (e) {
+            console.warn('Error reproduciendo audio:', e);
+        }
+    }
+
+    // 🎙️ NUEVO: reproducir voz de un mensaje específico (botón manual)
+    function speakMessage(btn) {
+        const messageDiv = btn.closest('.message');
+        if (!messageDiv) return;
+        const audioB64 = messageDiv.dataset.audio;
+        const mime = messageDiv.dataset.audioMime || 'audio/mpeg';
+        if (audioB64) {
+            playAudio(audioB64, mime, messageDiv);
+            return;
+        }
+        // Si no hay audio guardado, generarlo desde el texto
+        const text = messageDiv.querySelector('.message-content')?.innerText || '';
+        if (!text) return;
+        btn.classList.add('playing');
+        fetch(`${API_BASE_URL}/tts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text.substring(0, 3000) })
+        }).then(r => r.json()).then(data => {
+            if (data.audio_base64) {
+                messageDiv.dataset.audio = data.audio_base64;
+                messageDiv.dataset.audioMime = data.mime || 'audio/mpeg';
+                playAudio(data.audio_base64, data.mime || 'audio/mpeg', messageDiv);
+            } else {
+                btn.classList.remove('playing');
+                showToast('No se pudo generar la voz', 'error');
+            }
+        }).catch(() => {
+            btn.classList.remove('playing');
+            showToast('Error generando voz', 'error');
+        });
+    }
+
+    // 🎙️ NUEVO: activar/desactivar voz
+    function toggleVoice() {
+        state.voiceEnabled = !state.voiceEnabled;
+        localStorage.setItem('apoloxia_voice_enabled', state.voiceEnabled);
+        updateVoiceBtnUI();
+        showToast(state.voiceEnabled ? '🔊 Voz activada' : '🔇 Voz desactivada', 'info');
+    }
+
+    function updateVoiceBtnUI() {
+        const btn = document.getElementById('voiceBtn');
+        if (!btn) return;
+        btn.classList.toggle('active', state.voiceEnabled);
+        btn.innerText = state.voiceEnabled ? '🔊 Voz' : '🔇 Voz';
     }
 
     // ========== TYPING ==========
@@ -1737,7 +1834,6 @@
 
     async function clearAllConversations() {
         if (!confirm('¿Borrar todas las conversaciones?')) return;
-        // Borrar todas las conversaciones del backend
         for (let conv of state.conversations) {
             try {
                 await fetch(`${API_BASE_URL}/conversations/${encodeURIComponent(state.userEmail)}/${conv.conversation_id}`, { method: 'DELETE' });
@@ -1778,7 +1874,6 @@
 
     function logout() {
         localStorage.removeItem('apoloxia_session_email');
-        // Optionally clear local messages? We'll keep them for next login.
         window.location.href = 'index.html';
     }
 

@@ -6,566 +6,98 @@
     <title>ApoloXia · Bienvenido</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        
         :root {
-            --pure-black: #000000;
-            --bg-dark: #0a0a0a;
-            --bg-card: #141414;
-            --border-gray: #2a2a2a;
-            --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-            --text-muted: #555555;
-            --accent-blue: #4f9eff;
-            --accent-blue-dark: #3b82f6;
-            --accent-blue-glow: rgba(79, 158, 255, 0.15);
-            --accent-gray: #888888;
-            --accent-gray-light: #aaaaaa;
+            --pure-black: #000000; --bg-dark: #0a0a0a; --bg-card: #141414; --border-gray: #2a2a2a;
+            --text-primary: #ffffff; --text-secondary: #b0b0b0; --text-muted: #555555;
+            --accent-blue: #4f9eff; --accent-blue-dark: #3b82f6; --accent-blue-glow: rgba(79,158,255,0.15);
+            --accent-gray: #888888; --accent-gray-light: #aaaaaa;
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background: var(--pure-black); height: 100vh; overflow: hidden; color: var(--text-primary); }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        .splash-screen { position: fixed; inset: 0; background: var(--pure-black); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.8s ease, transform 0.8s ease; }
+        .splash-screen.hidden { opacity: 0; transform: scale(1.1); pointer-events: none; }
+        .splash-logo { width: 140px; height: 140px; background: linear-gradient(135deg,#4f9eff 0%,#3b82f6 50%,#4f9eff 100%); border-radius: 32px; display: flex; align-items: center; justify-content: center; font-size: 5rem; font-weight: 900; color: var(--pure-black); box-shadow: 0 0 60px rgba(79,158,255,0.7), 0 0 120px rgba(79,158,255,0.5), 0 0 180px rgba(79,158,255,0.3), inset 0 0 40px rgba(255,255,255,0.3); animation: megaGlow 2s ease-in-out infinite alternate, float 3s ease-in-out infinite; margin-bottom: 2rem; }
+        @keyframes megaGlow { 0%{box-shadow:0 0 60px rgba(79,158,255,.7),0 0 120px rgba(79,158,255,.5),0 0 180px rgba(79,158,255,.3),inset 0 0 40px rgba(255,255,255,.3)} 100%{box-shadow:0 0 100px rgba(79,158,255,.9),0 0 200px rgba(79,158,255,.7),0 0 300px rgba(79,158,255,.5),inset 0 0 60px rgba(255,255,255,.5)} }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
+        .splash-title { font-size: 3.5rem; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 0.5rem; }
+        .splash-title span { background: linear-gradient(135deg,#4f9eff 0%,#3b82f6 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .splash-subtitle { font-size: 1rem; color: var(--text-secondary); font-weight: 500; letter-spacing: 0.5em; text-transform: uppercase; animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
 
-        html, body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--pure-black);
-            height: 100vh;
-            overflow: hidden;
-            color: var(--text-primary);
-        }
+        .login-screen { position: fixed; inset: 0; background: var(--pure-black); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 900; opacity: 0; transition: opacity 0.8s ease; }
+        .login-screen.active { display: flex; opacity: 1; }
+        .login-container { width: 100%; max-width: 420px; padding: 2rem; text-align: center; }
+        .login-logo { width: 80px; height: 80px; background: linear-gradient(135deg,#4f9eff 0%,#3b82f6 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 900; color: var(--pure-black); margin: 0 auto 2rem; box-shadow: 0 0 40px rgba(79,158,255,0.6), 0 0 80px rgba(79,158,255,0.4), inset 0 0 20px rgba(255,255,255,0.3); animation: glowPulse 2s ease-in-out infinite alternate; }
+        @keyframes glowPulse { 0%{box-shadow:0 0 40px rgba(79,158,255,.6),0 0 80px rgba(79,158,255,.4),inset 0 0 20px rgba(255,255,255,.3)} 100%{box-shadow:0 0 70px rgba(79,158,255,.8),0 0 140px rgba(79,158,255,.6),inset 0 0 30px rgba(255,255,255,.5)} }
+        .login-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .login-subtitle { font-size: 0.9375rem; color: var(--text-secondary); margin-bottom: 2.5rem; font-weight: 500; }
+        .input-group { position: relative; margin-bottom: 1.5rem; text-align: left; }
+        .input-group label { display: block; font-size: 0.875rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; }
+        .input-group input { width: 100%; padding: 1.25rem 1.5rem; background: rgba(255,255,255,0.05); border: 2px solid var(--border-gray); border-radius: 16px; color: var(--text-primary); font-size: 1.1rem; font-family: inherit; outline: none; transition: all 0.3s ease; }
+        .input-group input:focus { border-color: var(--accent-blue); box-shadow: 0 0 30px rgba(79,158,255,0.2); background: rgba(255,255,255,0.08); }
+        .input-group input::placeholder { color: var(--text-muted); }
+        .login-btn { width: 100%; padding: 1.25rem 1.5rem; background: linear-gradient(135deg,#4f9eff 0%,#3b82f6 100%); border: none; border-radius: 16px; color: var(--pure-black); font-size: 1.1rem; font-weight: 800; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1rem; position: relative; overflow: hidden; }
+        .login-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 50px rgba(79,158,255,0.4); }
+        .login-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition: left 0.6s ease; }
+        .login-btn:hover::before { left: 100%; }
 
-        /* ===== SPLASH SCREEN ===== */
-        .splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--pure-black);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-
-        .splash-screen.hidden {
-            opacity: 0;
-            transform: scale(1.1);
-            pointer-events: none;
-        }
-
-        .splash-logo {
-            width: 140px;
-            height: 140px;
-            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 50%, #4f9eff 100%);
-            border-radius: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 5rem;
-            font-weight: 900;
-            color: var(--pure-black);
-            box-shadow: 
-                0 0 60px rgba(79, 158, 255, 0.7),
-                0 0 120px rgba(79, 158, 255, 0.5),
-                0 0 180px rgba(79, 158, 255, 0.3),
-                inset 0 0 40px rgba(255, 255, 255, 0.3);
-            animation: megaGlow 2s ease-in-out infinite alternate, float 3s ease-in-out infinite;
-            margin-bottom: 2rem;
-        }
-
-        @keyframes megaGlow {
-            0% {
-                box-shadow: 
-                    0 0 60px rgba(79, 158, 255, 0.7),
-                    0 0 120px rgba(79, 158, 255, 0.5),
-                    0 0 180px rgba(79, 158, 255, 0.3),
-                    inset 0 0 40px rgba(255, 255, 255, 0.3);
-            }
-            100% {
-                box-shadow: 
-                    0 0 100px rgba(79, 158, 255, 0.9),
-                    0 0 200px rgba(79, 158, 255, 0.7),
-                    0 0 300px rgba(79, 158, 255, 0.5),
-                    inset 0 0 60px rgba(255, 255, 255, 0.5);
-            }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .splash-title {
-            font-size: 3.5rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            margin-bottom: 0.5rem;
-        }
-
-        .splash-title span {
-            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .splash-subtitle {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-            letter-spacing: 0.5em;
-            text-transform: uppercase;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 1; }
-        }
-
-        /* ===== LOGIN SCREEN ===== */
-        .login-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--pure-black);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 900;
-            opacity: 0;
-            transition: opacity 0.8s ease;
-        }
-
-        .login-screen.active {
-            display: flex;
-            opacity: 1;
-        }
-
-        .login-container {
-            width: 100%;
-            max-width: 420px;
-            padding: 2rem;
-            text-align: center;
-        }
-
-        .login-logo {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: var(--pure-black);
-            margin: 0 auto 2rem;
-            box-shadow: 
-                0 0 40px rgba(79, 158, 255, 0.6),
-                0 0 80px rgba(79, 158, 255, 0.4),
-                inset 0 0 20px rgba(255, 255, 255, 0.3);
-            animation: glowPulse 2s ease-in-out infinite alternate;
-        }
-
-        @keyframes glowPulse {
-            0% {
-                box-shadow: 
-                    0 0 40px rgba(79, 158, 255, 0.6),
-                    0 0 80px rgba(79, 158, 255, 0.4),
-                    inset 0 0 20px rgba(255, 255, 255, 0.3);
-            }
-            100% {
-                box-shadow: 
-                    0 0 70px rgba(79, 158, 255, 0.8),
-                    0 0 140px rgba(79, 158, 255, 0.6),
-                    inset 0 0 30px rgba(255, 255, 255, 0.5);
-            }
-        }
-
-        .login-title {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.02em;
-        }
-
-        .login-subtitle {
-            font-size: 0.9375rem;
-            color: var(--text-secondary);
-            margin-bottom: 2.5rem;
-            font-weight: 500;
-        }
-
-        .input-group {
-            position: relative;
-            margin-bottom: 1.5rem;
-            text-align: left;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--accent-blue);
-            margin-bottom: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 1.25rem 1.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid var(--border-gray);
-            border-radius: 16px;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            font-family: inherit;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        .input-group input:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 30px rgba(79, 158, 255, 0.2);
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .input-group input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 1.25rem 1.5rem;
-            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 100%);
-            border: none;
-            border-radius: 16px;
-            color: var(--pure-black);
-            font-size: 1.1rem;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-top: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 50px rgba(79, 158, 255, 0.4);
-        }
-
-        .login-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.6s ease;
-        }
-
-        .login-btn:hover::before {
-            left: 100%;
-        }
-
-        /* ===== INTERFACE SCREEN ===== */
-        .interface-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--pure-black);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 800;
-            opacity: 0;
-            transition: opacity 0.8s ease;
-        }
-
-        .interface-screen.active {
-            display: flex;
-            opacity: 1;
-        }
-
-        .interface-content {
-            text-align: center;
-            padding: 2rem;
-            max-width: 700px;
-        }
-
-        .interface-logo {
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(135deg, #4f9eff 0%, #3b82f6 100%);
-            border-radius: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            font-weight: 900;
-            color: var(--pure-black);
-            margin: 0 auto 2rem;
-            box-shadow: 
-                0 0 50px rgba(79, 158, 255, 0.7),
-                0 0 100px rgba(79, 158, 255, 0.5),
-                0 0 150px rgba(79, 158, 255, 0.3),
-                inset 0 0 30px rgba(255, 255, 255, 0.3);
-            animation: interfaceGlow 2s ease-in-out infinite alternate;
-        }
-
-        @keyframes interfaceGlow {
-            0% {
-                box-shadow: 
-                    0 0 50px rgba(79, 158, 255, 0.7),
-                    0 0 100px rgba(79, 158, 255, 0.5),
-                    0 0 150px rgba(79, 158, 255, 0.3),
-                    inset 0 0 30px rgba(255, 255, 255, 0.3);
-            }
-            100% {
-                box-shadow: 
-                    0 0 80px rgba(79, 158, 255, 0.9),
-                    0 0 160px rgba(79, 158, 255, 0.7),
-                    0 0 240px rgba(79, 158, 255, 0.5),
-                    inset 0 0 50px rgba(255, 255, 255, 0.5);
-            }
-        }
-
-        .welcome-message {
-            font-size: 1.5rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-
-        .user-name {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: 3rem;
-            word-break: break-all;
-            letter-spacing: -0.02em;
-        }
-
-        /* Botones de acceso (dos) */
-        .buttons-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1.2rem;
-            align-items: center;
-            margin-bottom: 3rem;
-        }
-
-        .access-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            padding: 1.2rem 2.5rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border-gray);
-            border-radius: 20px;
-            color: var(--text-secondary);
-            font-size: 1.15rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-            max-width: 380px;
-            background: linear-gradient(135deg, #0a0a0a, #141414);
-        }
-
-        .access-btn.chat-btn {
-            border-color: var(--accent-blue);
-            color: var(--accent-blue);
-            box-shadow: 0 5px 20px rgba(79, 158, 255, 0.1);
-        }
-
-        .access-btn.chat-btn:hover {
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 15px 40px rgba(79, 158, 255, 0.3);
-            background: linear-gradient(135deg, #1a1a2e, #0a1a2e);
-            border-color: var(--accent-blue);
-            color: #fff;
-        }
-
-        .access-btn.code-btn {
-            border-color: var(--accent-gray);
-            color: var(--accent-gray-light);
-            box-shadow: 0 5px 20px rgba(136, 136, 136, 0.1);
-        }
-
-        .access-btn.code-btn:hover {
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 15px 40px rgba(136, 136, 136, 0.3);
-            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
-            border-color: var(--accent-gray-light);
-            color: #fff;
-        }
-
-        .access-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            transition: left 0.6s ease;
-        }
-
-        .access-btn:hover::before {
-            left: 100%;
-        }
-
-        .access-btn svg {
-            width: 24px;
-            height: 24px;
-            stroke-width: 2;
-            stroke: currentColor;
-            fill: none;
-        }
-
-        .logout-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: transparent;
-            border: 1px solid var(--border-gray);
-            border-radius: 12px;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 0rem;
-        }
-
-        .logout-btn:hover {
-            border-color: #ef4444;
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .copyright {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            margin-top: 1.5rem;
-        }
-
-        @media (max-width: 480px) {
-            .splash-logo {
-                width: 110px;
-                height: 110px;
-                font-size: 4rem;
-            }
-            
-            .splash-title {
-                font-size: 2.5rem;
-            }
-            
-            .login-container {
-                padding: 1.5rem;
-            }
-            
-            .user-name {
-                font-size: 1.8rem;
-            }
-            
-            .access-btn {
-                padding: 1rem 1.8rem;
-                font-size: 1rem;
-                max-width: 300px;
-            }
-        }
+        .interface-screen { position: fixed; inset: 0; background: var(--pure-black); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 800; opacity: 0; transition: opacity 0.8s ease; }
+        .interface-screen.active { display: flex; opacity: 1; }
+        .interface-content { text-align: center; padding: 2rem; max-width: 700px; }
+        .interface-logo { width: 100px; height: 100px; background: linear-gradient(135deg,#4f9eff 0%,#3b82f6 100%); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 900; color: var(--pure-black); margin: 0 auto 2rem; box-shadow: 0 0 50px rgba(79,158,255,0.7), 0 0 100px rgba(79,158,255,0.5), 0 0 150px rgba(79,158,255,0.3), inset 0 0 30px rgba(255,255,255,0.3); animation: interfaceGlow 2s ease-in-out infinite alternate; }
+        @keyframes interfaceGlow { 0%{box-shadow:0 0 50px rgba(79,158,255,.7),0 0 100px rgba(79,158,255,.5),0 0 150px rgba(79,158,255,.3),inset 0 0 30px rgba(255,255,255,.3)} 100%{box-shadow:0 0 80px rgba(79,158,255,.9),0 0 160px rgba(79,158,255,.7),0 0 240px rgba(79,158,255,.5),inset 0 0 50px rgba(255,255,255,.5)} }
+        .welcome-message { font-size: 1.5rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; }
+        .user-name { font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 3rem; word-break: break-all; }
+        .buttons-container { display: flex; flex-direction: column; gap: 1.2rem; align-items: center; margin-bottom: 3rem; }
+        .access-btn { display: inline-flex; align-items: center; justify-content: center; gap: 1rem; padding: 1.2rem 2.5rem; background: var(--bg-card); border: 1px solid var(--border-gray); border-radius: 20px; color: var(--text-secondary); font-size: 1.15rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.05em; position: relative; overflow: hidden; width: 100%; max-width: 380px; background: linear-gradient(135deg,#0a0a0a,#141414); }
+        .access-btn.chat-btn { border-color: var(--accent-blue); color: var(--accent-blue); box-shadow: 0 5px 20px rgba(79,158,255,0.1); }
+        .access-btn.chat-btn:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 15px 40px rgba(79,158,255,0.3); background: linear-gradient(135deg,#1a1a2e,#0a1a2e); border-color: var(--accent-blue); color: #fff; }
+        .access-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); transition: left 0.6s ease; }
+        .access-btn:hover::before { left: 100%; }
+        .access-btn svg { width: 24px; height: 24px; stroke-width: 2; stroke: currentColor; fill: none; }
+        .logout-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: transparent; border: 1px solid var(--border-gray); border-radius: 12px; color: var(--text-secondary); font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .logout-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.1); }
+        .copyright { font-size: 0.875rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1.5rem; }
+        @media (max-width: 480px) { .splash-logo{width:110px;height:110px;font-size:4rem} .splash-title{font-size:2.5rem} .login-container{padding:1.5rem} .user-name{font-size:1.8rem} .access-btn{padding:1rem 1.8rem;font-size:1rem;max-width:300px} }
     </style>
 </head>
 <body>
-    <!-- SPLASH SCREEN -->
     <div class="splash-screen" id="splashScreen">
         <div class="splash-logo">A</div>
         <h1 class="splash-title">Apolo<span>Xia</span></h1>
         <p class="splash-subtitle">Premium</p>
     </div>
 
-    <!-- LOGIN SCREEN -->
     <div class="login-screen" id="loginScreen">
         <div class="login-container">
             <div class="login-logo">A</div>
             <h2 class="login-title">Acceso</h2>
             <p class="login-subtitle">Ingresa tu correo para continuar</p>
-            
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="input-group">
                     <label for="email">Correo electrónico</label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        placeholder="nombre@correo.com" 
-                        required
-                        autocomplete="email"
-                    >
+                    <input type="email" id="email" name="email" placeholder="nombre@correo.com" required autocomplete="email">
                 </div>
-                
-                <button type="submit" class="login-btn">
-                    Ingresar →
-                </button>
+                <button type="submit" class="login-btn">Ingresar →</button>
             </form>
         </div>
     </div>
 
-    <!-- INTERFACE SCREEN -->
     <div class="interface-screen" id="interfaceScreen">
         <div class="interface-content">
             <div class="interface-logo">A</div>
             <p class="welcome-message">Bienvenido</p>
             <p class="user-name" id="userNameDisplay">Usuario</p>
-            
             <div class="buttons-container">
-                <!-- Botón para el chat (agente IA) -->
+                <!-- ÚNICO BOTÓN: Agente IA Apolo (todo integrado) -->
                 <button class="access-btn chat-btn" onclick="accessAgent()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                     </svg>
                     Agente IA Apolo
                 </button>
-
-                <!-- Botón para ApoloXia Code (generador de código) -->
-                <button class="access-btn code-btn" onclick="accessApoloXiaCode()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M16 18L22 12 16 6"></path>
-                        <path d="M8 6L2 12 8 18"></path>
-                    </svg>
-                    ApoloXia Code · Generador de código
-                </button>
             </div>
-            
             <button class="logout-btn" onclick="logout()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -574,18 +106,12 @@
                 </svg>
                 Cerrar sesión
             </button>
-            
             <p class="copyright">Derechos reservados — Panamá 2026</p>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // CONEXIÓN CON EL CHAT Y CODE
-        // ==========================================
-        
         let userEmail = '';
-        
         document.addEventListener('DOMContentLoaded', () => {
             const savedEmail = localStorage.getItem('apoloxia_session_email');
             if (savedEmail) {
@@ -593,84 +119,51 @@
                 document.getElementById('splashScreen').style.display = 'none';
                 showInterface(savedEmail);
             } else {
-                setTimeout(() => {
-                    showLoginScreen();
-                }, 3000);
+                setTimeout(() => { showLoginScreen(); }, 3000);
             }
         });
-        
         function showLoginScreen() {
             const splash = document.getElementById('splashScreen');
             const login = document.getElementById('loginScreen');
-            
             splash.classList.add('hidden');
-            
             setTimeout(() => {
                 splash.style.display = 'none';
                 login.style.display = 'flex';
                 void login.offsetWidth;
                 login.classList.add('active');
-                
-                setTimeout(() => {
-                    document.getElementById('email').focus();
-                }, 100);
+                setTimeout(() => { document.getElementById('email').focus(); }, 100);
             }, 800);
         }
-        
         function handleLogin(event) {
             event.preventDefault();
-            
             const emailInput = document.getElementById('email');
             userEmail = emailInput.value.trim().toLowerCase();
-            
             if (userEmail && userEmail.includes('@')) {
                 localStorage.setItem('apoloxia_session_email', userEmail);
-                
                 const login = document.getElementById('loginScreen');
                 login.classList.remove('active');
-                
-                setTimeout(() => {
-                    login.style.display = 'none';
-                    showInterface(userEmail);
-                }, 800);
+                setTimeout(() => { login.style.display = 'none'; showInterface(userEmail); }, 800);
             } else {
                 alert('Por favor ingresa un email válido');
             }
         }
-        
         function showInterface(email) {
             const interfaceDiv = document.getElementById('interfaceScreen');
             const userNameDisplay = document.getElementById('userNameDisplay');
-            
-            const userName = email.split('@')[0];
-            userNameDisplay.textContent = userName;
-            
+            userNameDisplay.textContent = email.split('@')[0];
             interfaceDiv.style.display = 'flex';
             void interfaceDiv.offsetWidth;
             interfaceDiv.classList.add('active');
         }
-        
-        // Redirige al chat estándar (agente IA)
-        function accessAgent() {
-            window.location.href = 'chat.html';
-        }
-        
-        // Redirige al generador de código (ApoloXia Code)
-        function accessApoloXiaCode() {
-            window.location.href = 'apoloxia.code.html';
-        }
-        
+        function accessAgent() { window.location.href = 'chat.html'; }
         function logout() {
             localStorage.removeItem('apoloxia_session_email');
             localStorage.removeItem('apoloxia_user_email');
             localStorage.removeItem('code_conversation_id');
             window.location.reload();
         }
-        
         document.getElementById('email').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleLogin(e);
-            }
+            if (e.key === 'Enter') handleLogin(e);
         });
     </script>
 </body>
