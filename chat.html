@@ -294,11 +294,6 @@
             border-color: var(--accent-blue);
             color: var(--accent-blue);
         }
-        .header-btn.voice-btn.active {
-            background: rgba(34, 197, 94, 0.12);
-            border-color: #22c55e;
-            color: #22c55e;
-        }
 
         /* ===== MESSAGES ===== */
         .messages-container {
@@ -456,7 +451,7 @@
         }
 
         /* ═══════════════════════════════════════════
-           MENSAJES ENRIQUECIDOS (mejorados)
+           MENSAJES ENRIQUECIDOS
            ═══════════════════════════════════════════ */
         .message.assistant .message-content h1,
         .message.assistant .message-content h2,
@@ -481,7 +476,6 @@
             letter-spacing: 0.1px;
             text-align: left;
         }
-        /* Primer párrafo ligeramente más grande */
         .message.assistant .message-content > p:first-of-type {
             font-size: 1rem;
             color: #d8d8d8;
@@ -584,10 +578,6 @@
 
         /* ═══════════════════════════════════════════
            CALLOUTS (RECUADROS ESPECIALES)
-           Se generan automáticamente desde:
-           > 💡 **Tip:** ...
-           > [!TIP] ...
-           **📌 Nota:** ...
            ═══════════════════════════════════════════ */
         .callout {
             display: flex;
@@ -624,7 +614,6 @@
         }
         .callout-content p:last-child { margin-bottom: 0; }
 
-        /* Variantes */
         .callout.tip {
             background: rgba(79, 158, 255, 0.07);
             border-left-color: #4f9eff;
@@ -763,7 +752,6 @@
         .badge-multi { color: #8b5cf6; border-color: #8b5cf6; }
         .badge-agent { color: var(--accent-gray); }
         .badge-model { color: #22c55e; border-color: #22c55e; }
-        .badge-voice { color: #f59e0b; border-color: #f59e0b; }
 
         .search-engines-badge {
             display: inline-block;
@@ -807,11 +795,6 @@
             background: var(--hover-gray);
             color: var(--text-primary);
             border-color: var(--accent-blue);
-        }
-        .msg-action-btn.playing {
-            background: rgba(34, 197, 94, 0.15);
-            border-color: #22c55e;
-            color: #22c55e;
         }
 
         .share-menu {
@@ -1268,7 +1251,6 @@
             <div class="header-actions">
                 <button class="header-btn" id="webSearchBtn" onclick="toggleWebSearch()">🔍 Web</button>
                 <button class="header-btn" id="multiAgentBtn" onclick="toggleMultiAgent()">🤖 Multi</button>
-                <button class="header-btn voice-btn active" id="voiceBtn" onclick="toggleVoice()">🔊 Voz</button>
                 <button class="header-btn" onclick="document.getElementById('fileInput').click()">📎 Archivo</button>
                 <button class="header-btn" onclick="openSettings()">⚙️</button>
             </div>
@@ -1378,12 +1360,10 @@
         currentAgentId: 'general',
         webSearchEnabled: false,
         multiAgentEnabled: false,
-        voiceEnabled: true,
         isTyping: false,
         availableModels: [],
         availableAgents: [],
-        uploadedFile: null,
-        currentAudio: null
+        uploadedFile: null
     };
     let MODELS_CATALOG = {};
 
@@ -1428,7 +1408,6 @@
 
     // ═══════════════════════════════════════════════════════
     // 🎨 POST-PROCESADOR DE MARKDOWN
-    // Detecta patrones y los convierte en callouts/recuadros
     // ═══════════════════════════════════════════════════════
     const CALLOUT_TYPES = {
         "tip": { icon: "💡", label: "TIP", cls: "tip" },
@@ -1455,7 +1434,6 @@
         "check": { icon: "✅", label: "CHECK", cls: "success" }
     };
 
-    // Emoji map para callouts genéricos
     const EMOJI_TO_TYPE = {
         "💡": "tip", "📌": "note", "⚡": "important", "⚠️": "warning",
         "🚨": "danger", "❌": "error", "✅": "success", "ℹ️": "info",
@@ -1463,13 +1441,10 @@
     };
 
     function processCallouts(container) {
-        // 1. Detectar blockquotes con emoji/patrón tipo callout
         container.querySelectorAll('blockquote').forEach(bq => {
             const text = bq.textContent.trim();
-            // Buscar patrón: [emoji] [PALABRA]: texto   o   [!TIP] texto
             let type = null, title = null, body = null;
 
-            // Patrón GitHub: > [!TIP]
             const ghMatch = text.match(/^\[!(\w+)\]\s*([\s\S]*)$/);
             if (ghMatch) {
                 const key = ghMatch[1].toLowerCase();
@@ -1480,25 +1455,22 @@
                 }
             }
 
-            // Patrón: emoji + **Label:** texto
             if (!type) {
                 const emojiMatch = text.match(/^([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+)\s*\*\*([^*]+?):?\*\*\s*([\s\S]*)$/u);
                 if (emojiMatch) {
                     const emoji = emojiMatch[1].trim();
                     const label = emojiMatch[2].trim().toUpperCase();
                     body = emojiMatch[3];
-                    // Buscar tipo por emoji o por label
                     if (EMOJI_TO_TYPE[emoji]) type = EMOJI_TO_TYPE[emoji];
                     else {
                         const lblLower = label.toLowerCase().replace(/[^a-záéíóúñ]/g, '');
                         if (CALLOUT_TYPES[lblLower]) type = CALLOUT_TYPES[lblLower].cls;
                     }
                     title = label;
-                    if (!type) type = "note"; // por defecto
+                    if (!type) type = "note";
                 }
             }
 
-            // Patrón: **Label:** texto (sin emoji)
             if (!type) {
                 const boldMatch = text.match(/^\*\*([^*]+?):\*\*\s*([\s\S]*)$/);
                 if (boldMatch) {
@@ -1527,10 +1499,8 @@
             }
         });
 
-        // 2. Detectar párrafos que empiezan con **Label:** y convertirlos a callout (solo si el label coincide)
         container.querySelectorAll('p').forEach(p => {
             const html = p.innerHTML.trim();
-            // Excluir si ya está dentro de callout o code
             if (p.closest('.callout') || p.closest('pre') || p.closest('.code-block')) return;
             const match = html.match(/^([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+)?\s*<strong>([^<]+?):?<\/strong>\s*([\s\S]*)$/u);
             if (match) {
@@ -1540,7 +1510,6 @@
                 let type = null;
                 if (emoji && EMOJI_TO_TYPE[emoji]) type = EMOJI_TO_TYPE[emoji];
                 else if (CALLOUT_TYPES[labelLower]) type = CALLOUT_TYPES[labelLower].cls;
-                // Solo convertir a callout si es un tipo reconocido Y el label es "de tipo callout"
                 if (type && label.length < 25 && !/^\s*$/.test(match[3])) {
                     const icon = emoji || CALLOUT_TYPES[Object.keys(CALLOUT_TYPES).find(k => CALLOUT_TYPES[k].cls === type)]?.icon || "💡";
                     const callout = document.createElement('div');
@@ -1557,11 +1526,8 @@
             }
         });
 
-        // 3. Aumentar tamaño de emojis al inicio de párrafos o secciones
         container.querySelectorAll('p, li, h1, h2, h3, h4').forEach(el => {
-            // Envolver emojis en <span class="emoji-big">
             let html = el.innerHTML;
-            // Solo procesar si tiene emojis y no es code
             if (el.closest('pre') || el.closest('.code-block') || el.closest('.callout-icon')) return;
             html = html.replace(/([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F02F}]+)/gu, '<span class="emoji-big">$1</span>');
             if (html !== el.innerHTML) el.innerHTML = html;
@@ -1584,9 +1550,6 @@
         }
         state.userEmail = savedEmail;
         state.userName = savedEmail.split('@')[0];
-        const savedVoice = localStorage.getItem('apoloxia_voice_enabled');
-        if (savedVoice !== null) state.voiceEnabled = savedVoice === 'true';
-        updateVoiceBtnUI();
         updateUserUI();
 
         await loadUserConfig();
@@ -1758,8 +1721,7 @@
                 model_id: state.currentModelId,
                 use_web_search: state.webSearchEnabled,
                 enable_multi_agent: state.multiAgentEnabled,
-                file_content: state.uploadedFile,
-                enable_voice: state.voiceEnabled
+                file_content: state.uploadedFile
             };
 
             const res = await fetch(`${API_BASE_URL}/chat`, {
@@ -1784,14 +1746,11 @@
             if (data.multi_agent_responses && data.multi_agent_responses.length > 0) {
                 badgesHtml += '<span class="feature-badge badge-multi">🤖 Multi</span>';
             }
-            if (data.audio_base64) {
-                badgesHtml += '<span class="feature-badge badge-voice">🔊 Voz</span>';
-            }
             badgesHtml += `<span class="feature-badge badge-agent">👤 ${formatAgentName(data.agent_used)}</span>`;
             badgesHtml += `<span class="feature-badge badge-model">🧠 ${data.model_used}</span>`;
 
             const responseContent = data.response || 'Sin respuesta';
-            addAssistantMessage(responseContent, badgesHtml, data.audio_base64, data.audio_mime);
+            addAssistantMessage(responseContent, badgesHtml);
 
             let msgs = getMessagesFromLocal(state.userEmail, state.conversationId);
             msgs.push({ role: 'assistant', content: responseContent, timestamp: new Date().toISOString() });
@@ -1838,15 +1797,11 @@
         scrollToBottom();
     }
 
-    function addAssistantMessage(markdownContent, badgesHtml = '', audioBase64 = null, audioMime = 'audio/mpeg') {
+    function addAssistantMessage(markdownContent, badgesHtml = '') {
         const wrapper = document.getElementById('messagesWrapper');
         const div = document.createElement('div');
         div.className = 'message assistant';
         const msgId = 'msg-' + Date.now();
-        if (audioBase64) {
-            div.dataset.audio = audioBase64;
-            div.dataset.audioMime = audioMime;
-        }
 
         div.innerHTML = `
             <div class="message-avatar">⚡</div>
@@ -1856,7 +1811,6 @@
                 <div class="message-meta-row">
                     <span class="message-time">${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
                     <div class="message-actions-bar">
-                        <button class="msg-action-btn" onclick="speakMessage(this)" title="Reproducir voz">🔊</button>
                         <button class="msg-action-btn" onclick="copyMessage('${msgId}')">📋</button>
                         <button class="msg-action-btn" onclick="regenerateLastMessage()">🔄</button>
                         <div style="position:relative;">
@@ -1876,11 +1830,9 @@
         wrapper.appendChild(div);
 
         const contentEl = div.querySelector(`#${msgId}`);
-        // Configurar marked para tablas y saltos de línea
         const htmlContent = marked.parse(markdownContent, { breaks: true, gfm: true });
         contentEl.innerHTML = htmlContent;
 
-        // Procesar bloques de código
         contentEl.querySelectorAll('pre code').forEach((block) => {
             const pre = block.parentElement;
             const lang = block.className.replace('language-', '') || 'text';
@@ -1894,7 +1846,6 @@
             pre.classList.add('code-block');
         });
 
-        // Mermaid
         contentEl.querySelectorAll('.language-mermaid, .mermaid').forEach((el) => {
             const container = document.createElement('div');
             container.className = 'mermaid-container';
@@ -1905,7 +1856,6 @@
             el.parentNode.replaceWith(container);
         });
 
-        // KaTeX
         if (typeof renderMathInElement !== 'undefined') {
             renderMathInElement(contentEl, {
                 delimiters: [
@@ -1918,75 +1868,10 @@
             });
         }
 
-        // 🎨 POST-PROCESAR CALLOUTS Y EMOJIS
         processCallouts(contentEl);
 
         mermaid.init(undefined, div.querySelectorAll('.mermaid'));
         scrollToBottom();
-
-        if (audioBase64 && state.voiceEnabled) {
-            playAudio(audioBase64, audioMime, div);
-        }
-    }
-
-    // ========== AUDIO ==========
-    function playAudio(audioBase64, audioMime, messageDiv) {
-        try {
-            if (state.currentAudio) { state.currentAudio.pause(); state.currentAudio = null; }
-            const audio = new Audio(`data:${audioMime || 'audio/mpeg'};base64,${audioBase64}`);
-            state.currentAudio = audio;
-            const btn = messageDiv?.querySelector('.msg-action-btn');
-            if (btn) btn.classList.add('playing');
-            audio.onended = () => { if (btn) btn.classList.remove('playing'); state.currentAudio = null; };
-            audio.onerror = () => { if (btn) btn.classList.remove('playing'); state.currentAudio = null; };
-            audio.play().catch(e => {
-                console.warn('Audio bloqueado por el navegador:', e);
-                if (btn) btn.classList.remove('playing');
-                showToast('Haz clic en 🔊 para reproducir la voz', 'info');
-            });
-        } catch (e) { console.warn('Error reproduciendo audio:', e); }
-    }
-
-    function speakMessage(btn) {
-        const messageDiv = btn.closest('.message');
-        if (!messageDiv) return;
-        const audioB64 = messageDiv.dataset.audio;
-        const mime = messageDiv.dataset.audioMime || 'audio/mpeg';
-        if (audioB64) { playAudio(audioB64, mime, messageDiv); return; }
-        const text = messageDiv.querySelector('.message-content')?.innerText || '';
-        if (!text) return;
-        btn.classList.add('playing');
-        fetch(`${API_BASE_URL}/tts`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text.substring(0, 3000) })
-        }).then(r => r.json()).then(data => {
-            if (data.audio_base64) {
-                messageDiv.dataset.audio = data.audio_base64;
-                messageDiv.dataset.audioMime = data.mime || 'audio/mpeg';
-                playAudio(data.audio_base64, data.mime || 'audio/mpeg', messageDiv);
-            } else {
-                btn.classList.remove('playing');
-                showToast('No se pudo generar la voz', 'error');
-            }
-        }).catch(() => {
-            btn.classList.remove('playing');
-            showToast('Error generando voz', 'error');
-        });
-    }
-
-    function toggleVoice() {
-        state.voiceEnabled = !state.voiceEnabled;
-        localStorage.setItem('apoloxia_voice_enabled', state.voiceEnabled);
-        updateVoiceBtnUI();
-        showToast(state.voiceEnabled ? '🔊 Voz activada' : '🔇 Voz desactivada', 'info');
-    }
-
-    function updateVoiceBtnUI() {
-        const btn = document.getElementById('voiceBtn');
-        if (!btn) return;
-        btn.classList.toggle('active', state.voiceEnabled);
-        btn.innerText = state.voiceEnabled ? '🔊 Voz' : '🔇 Voz';
     }
 
     // ========== TYPING ==========

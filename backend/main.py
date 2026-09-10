@@ -5,10 +5,10 @@
 # - Tavily + EXA AI + MediaStack (búsqueda multi-motor en tiempo real)
 # - Agentes, emojis, análisis profundo, identidad panameña
 # - Respuestas EXTRA LARGAS (hasta 12000 tokens para GT)
-# - VOZ HUMANA (Edge TTS) por cada respuesta
 # - MEMORIA AVANZADA DE PROGRAMACIÓN (contexto persistente)
 # - GENERACIÓN INTENSA de párrafos sobre HTML, Python, JavaScript
 # - SEGURIDAD: claves API desde variables de entorno
+# - SIN VOZ/TTS (respuestas solo texto)
 # ======================================================
 
 import os
@@ -18,8 +18,6 @@ import asyncio
 import time
 import urllib.parse
 import re
-import base64
-import subprocess
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field
@@ -348,6 +346,20 @@ INSTRUCCION_EXTENSION = """
 - **Búsqueda web en tiempo real:** Prioriza información reciente y concreta.
 - **Para código:** Genera todo el código necesario, sin abreviar, con comentarios y ejemplos de uso.
 - **PROGRAMACIÓN AVANZADA:** Cuando el tema sea HTML, Python o JavaScript, escribe **párrafos intensos** (4-7 líneas cada uno), con explicaciones técnicas profundas como ingeniero senior.
+
+🎯 **INSTRUCCIÓN MAESTRA DE RESPUESTAS LARGAS Y PROFUNDAS:**
+- **SIEMPRE** responde de forma extensa, detallada y profunda, sin importar el tema.
+- **ADÁPTATE** al tipo de pregunta: si es técnica (código, matemáticas, ciencia), profundiza con análisis riguroso, ejemplos, casos de uso y referencias. Si es creativa (historias, ideas, marketing), explora múltiples ángulos, metáforas y detalles vívidos. Si es informativa (noticias, datos, hechos), incluye contexto histórico, datos concretos, fuentes y comparaciones.
+- **ESTRUCTURA** tu respuesta con encabezados (##), subsecciones (###), viñetas y párrafos densos.
+- **USA EMOJIS** relevantes al inicio de cada sección (🎯, 📌, 💡, ⚡, 🔍, ✅, ⚠️, 📊, 🚀) para hacerla visualmente atractiva.
+- **EXTENSIÓN MÍNIMA:**
+  - Free: 400+ palabras por respuesta
+  - Plus: 800+ palabras
+  - GT: 1500+ palabras
+- **CALLOUTS:** Usa `> 💡 **Tip:** ...`, `> ⚠️ **Advertencia:** ...`, `> 📌 **Nota:** ...`, `> ✅ **Éxito:** ...`, `> 🚨 **Peligro:** ...` cuando corresponda para destacar información clave. Estos se renderizarán como recuadros de color en el chat.
+- **NO ABREVIES** nunca. Si el código es largo, entrégalo completo. Si la explicación es larga, escríbela completa.
+- **ADAPTA EL TONO** al usuario: formal para temas serios, cercano para conversación casual, apasionado para temas técnicos.
+- **SIEMPRE** cierra con una sección de **"🚀 Próximos pasos"** o **"💡 Recomendaciones"** que invite al usuario a profundizar.
 """
 
 # ═══════════════════════════════════════════════════════════════
@@ -404,13 +416,13 @@ class ConversationMemory:
         self.user_configs: Dict[str, Dict] = {}
         # 🧠 MEMORIA DE PROGRAMACIÓN POR USUARIO
         self.programming_memory: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
-            "languages": defaultdict(int),      # {"python": 5, "javascript": 3, "html": 2}
-            "frameworks": defaultdict(int),     # {"fastapi": 3, "react": 2}
-            "patterns_used": [],                # últimos patrones aplicados
-            "code_snippets": [],                # últimos snippets generados (limitado)
-            "topics_history": [],               # temas técnicos tratados
-            "preferred_style": "senior",        # senior / intermedio / principiante
-            "last_project": None,               # último proyecto mencionado
+            "languages": defaultdict(int),
+            "frameworks": defaultdict(int),
+            "patterns_used": [],
+            "code_snippets": [],
+            "topics_history": [],
+            "preferred_style": "senior",
+            "last_project": None,
         })
 
     def get_user_tier(self, user_id: str) -> str:
@@ -443,7 +455,6 @@ class ConversationMemory:
             "role": role, "content": content, "timestamp": datetime.now().isoformat(), "agent_type": agent_type
         })
         self.last_access[user_id][conversation_id] = datetime.now()
-        # 🔍 Extraer info técnica del mensaje para memoria de programación
         if role == "user":
             self._extract_technical_info(user_id, content)
 
@@ -451,7 +462,6 @@ class ConversationMemory:
         """Analiza el texto del usuario y guarda info técnica relevante."""
         tl = text.lower()
         mem = self.programming_memory[user_id]
-        # Detectar lenguajes
         for lang, kw_list in {
             "python": ["python", "django", "flask", "fastapi", "pandas", "numpy", "asyncio", "py "],
             "javascript": ["javascript", "js ", "node", "react", "vue", "svelte", "next.js", "express"],
@@ -466,7 +476,6 @@ class ConversationMemory:
         }.items():
             if any(kw in tl for kw in kw_list):
                 mem["languages"][lang] += 1
-        # Detectar frameworks
         for fw, kw_list in {
             "react": ["react", "jsx", "hooks", "usestate"],
             "nextjs": ["next.js", "nextjs", "app router"],
@@ -481,7 +490,6 @@ class ConversationMemory:
         }.items():
             if any(kw in tl for kw in kw_list):
                 mem["frameworks"][fw] += 1
-        # Guardar temas técnicos (últimos 20)
         for topic_kw in ["api", "base de datos", "autenticación", "jwt", "oauth", "websocket",
                          "microservicio", "docker", "kubernetes", "ci/cd", "test", "unit test",
                          "deploy", "render", "vercel", "aws", "cloud"]:
@@ -587,7 +595,6 @@ class ChatRequest(BaseModel):
     use_web_search: bool = False
     file_content: Optional[str] = None
     enable_multi_agent: bool = False
-    enable_voice: bool = True  # 🎙️ Nueva opción: generar voz por respuesta
 
 class ChatResponse(BaseModel):
     response: str
@@ -597,14 +604,6 @@ class ChatResponse(BaseModel):
     web_search_used: bool = False
     search_results: Optional[List[Dict]] = None
     multi_agent_responses: Optional[List[Dict]] = None
-    voice_suggestion: Optional[str] = "es-MX-JorgeNeural"
-    audio_base64: Optional[str] = None   # 🎙️ Audio en base64 si enable_voice=True
-    audio_mime: Optional[str] = "audio/mpeg"
-
-class TTSRequest(BaseModel):
-    text: str
-    voice: Optional[str] = "es-MX-JorgeNeural"
-    language: Optional[str] = "es"
 
 class ShareRequest(BaseModel):
     platform: str
@@ -681,58 +680,6 @@ async def send_whatsapp_message(phone_number: str, text: str) -> Dict:
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
         return resp.json()
-
-# ═══════════════════════════════════════════════════════════════
-# 🎙️ FUNCIÓN DE VOZ HUMANA (Edge TTS - Voces neuronales naturales)
-# ═══════════════════════════════════════════════════════════════
-async def generate_voice(text: str, voice: str = "es-MX-JorgeNeural") -> Optional[str]:
-    """Genera audio con voz humana (no robótica) usando Edge TTS. Retorna base64 o None."""
-    text = (text or "").strip()
-    if not text:
-        return None
-    # Limpiar el texto: quitar bloques de código, markdown y caracteres raros
-    clean = re.sub(r'```[\s\S]*?```', ' [bloque de código omitido] ', text)
-    clean = re.sub(r'`[^`]+`', '', clean)
-    clean = re.sub(r'[#*_>\[\]()]', '', clean)
-    clean = re.sub(r'https?://\S+', '', clean)
-    clean = re.sub(r'\s+', ' ', clean).strip()
-    if len(clean) > 3000:
-        clean = clean[:3000]
-    if not clean:
-        return None
-    try:
-        out_file = os.path.join(os.environ.get("TEMP", "/tmp"), f"apoloxia_tts_{uuid.uuid4().hex}.mp3")
-        cmd = ["edge-tts", "--voice", voice, "--text", clean, "--write-media", out_file,
-               "--rate=+8%", "--pitch=+0Hz"]
-        proc = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-        _, stderr = await proc.communicate()
-        if proc.returncode != 0:
-            print(f"⚠️ TTS error: {stderr.decode(errors='ignore')[:200]}")
-            return None
-        with open(out_file, "rb") as f:
-            audio_bytes = f.read()
-        try:
-            os.remove(out_file)
-        except Exception:
-            pass
-        return base64.b64encode(audio_bytes).decode("utf-8")
-    except FileNotFoundError:
-        print("⚠️ edge-tts no está instalado. Agrega 'edge-tts' a requirements.txt")
-        return None
-    except Exception as e:
-        print(f"⚠️ Error generando audio: {e}")
-        return None
-
-def detect_voice_for_text(text: str) -> str:
-    """Detecta si el texto está en inglés o español y retorna la voz adecuada (masculina, natural)."""
-    english_words = [" the ", " and ", " is ", " are ", " you ", " your ", " this ", " what ", "how ", " why ", "hello", "hi "]
-    text_lower = " " + text.lower() + " "
-    english_score = sum(1 for w in english_words if w in text_lower)
-    if english_score >= 2:
-        return "en-US-GuyNeural"   # Voz masculina natural en inglés
-    return "es-MX-JorgeNeural"     # Voz masculina natural en español
 
 # ============ FUNCIONES DE BÚSQUEDA ============
 async def search_exa_ai(query: str, max_results: int = 5) -> List[Dict]:
@@ -940,7 +887,6 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
         if tier == "gt":
             system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud (hasta 12000 tokens). Usa emojis para dar énfasis (✅, 🔥, 📌, 💡, ⚠️, 🚀, etc.) y organiza tu respuesta con estructura clara. Recuerda siempre tu identidad como ApoloXia de The Shield Technology (Panamá, creada por Amelio Delgado)."
 
-    # 🧠 Inyectar memoria de programación avanzada
     prog_context = memory.get_programming_context(user_id)
     if prog_context:
         system += "\n" + prog_context
@@ -984,7 +930,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="5.0.0")
+app = FastAPI(title="ApoloXia API", version="5.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ============ ENDPOINT CHAT PRINCIPAL ============
@@ -1081,13 +1027,6 @@ async def chat(request: ChatRequest):
     memory.add_message(request.user_id, conv_id, "assistant", response_text, request.agent_type)
     memory.increment_counter(request.user_id)
 
-    # 🎙️ Generar voz humana automáticamente si está habilitado
-    audio_b64 = None
-    detected_voice = detect_voice_for_text(request.message + " " + response_text[:200])
-    if request.enable_voice and tier in ["plus", "gt"]:  # Voz solo para Plus y GT (ahorra recursos)
-        print(f"🎙️ Generando voz con {detected_voice}...")
-        audio_b64 = await generate_voice(response_text, detected_voice)
-
     return ChatResponse(
         response=response_text,
         agent_used=request.agent_type or "general",
@@ -1095,43 +1034,8 @@ async def chat(request: ChatRequest):
         remaining_daily=memory.get_remaining(request.user_id, tier),
         web_search_used=bool(web_results),
         search_results=web_results,
-        multi_agent_responses=multi_resp,
-        voice_suggestion=detected_voice,
-        audio_base64=audio_b64,
-        audio_mime="audio/mpeg"
+        multi_agent_responses=multi_resp
     )
-
-# ═══════════════════════════════════════════════════════════════
-# 🎙️ ENDPOINTS DE VOZ
-# ═══════════════════════════════════════════════════════════════
-@app.post("/tts")
-async def text_to_speech(req: TTSRequest):
-    """Convierte texto en audio con voz humana (Edge TTS)."""
-    if not req.text.strip():
-        raise HTTPException(400, "El texto no puede estar vacío")
-    voice = req.voice or detect_voice_for_text(req.text)
-    audio_b64 = await generate_voice(req.text, voice)
-    if not audio_b64:
-        raise HTTPException(500, "Error generando audio (verifica que edge-tts esté instalado)")
-    return {"audio_base64": audio_b64, "mime": "audio/mpeg", "voice": voice}
-
-@app.get("/tts/voices")
-async def list_tts_voices():
-    """Lista de voces humanas disponibles (masculinas y femeninas, español e inglés)."""
-    return {
-        "voices": [
-            {"id": "es-MX-JorgeNeural", "name": "Jorge (México, masculino)", "gender": "male", "lang": "es-MX"},
-            {"id": "es-ES-AlvaroNeural", "name": "Álvaro (España, masculino)", "gender": "male", "lang": "es-ES"},
-            {"id": "es-AR-TomasNeural", "name": "Tomás (Argentina, masculino)", "gender": "male", "lang": "es-AR"},
-            {"id": "es-CO-GonzaloNeural", "name": "Gonzalo (Colombia, masculino)", "gender": "male", "lang": "es-CO"},
-            {"id": "es-MX-DaliaNeural", "name": "Dalia (México, femenino)", "gender": "female", "lang": "es-MX"},
-            {"id": "es-ES-ElviraNeural", "name": "Elvira (España, femenino)", "gender": "female", "lang": "es-ES"},
-            {"id": "en-US-GuyNeural", "name": "Guy (USA, masculino)", "gender": "male", "lang": "en-US"},
-            {"id": "en-US-EricNeural", "name": "Eric (USA, masculino)", "gender": "male", "lang": "en-US"},
-            {"id": "en-US-JennyNeural", "name": "Jenny (USA, femenino)", "gender": "female", "lang": "en-US"},
-            {"id": "en-GB-RyanNeural", "name": "Ryan (UK, masculino)", "gender": "male", "lang": "en-GB"},
-        ]
-    }
 
 # ============ ENDPOINTS DE COMPARTIR ============
 @app.post("/share/links", response_model=ShareLinksResponse)
@@ -1199,15 +1103,15 @@ async def list_agents():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "5.0.0",
+    return {"status": "ok", "version": "5.1.0",
             "groq_api": "configured" if GROQ_API_KEY else "not set",
             "tavily_api": "configured" if TAVILY_API_KEY else "not set",
             "exa_api": "configured" if EXA_API_KEY else "not set",
             "mediastack_api": "configured" if MEDIASTACK_API_KEY else "not set",
             "models_loaded": len(MODELS), "agents_loaded": len(AGENT_PROMPTS),
-            "tts_enabled": True, "voice_engine": "edge-tts",
+            "tts_enabled": False,
             "programming_memory": True,
-            "note": "Voz humana (Edge TTS) + Memoria de programación avanzada + Código intenso HTML/Python/JS"}
+            "note": "Memoria de programación avanzada + Código intenso HTML/Python/JS + Respuestas largas y profundas"}
 
 @app.post("/search-web")
 async def web_search(query: str, max_results: int = 5):
@@ -1310,7 +1214,7 @@ async def serve_chat():
 @app.get("/{filename}")
 async def serve_static_file(filename: str):
     api_routes = {"chat", "models", "agents", "health", "conversations", "tier-info",
-                  "user-config", "upgrade-tier", "search-web", "share", "tts", "memory", "integrations"}
+                  "user-config", "upgrade-tier", "search-web", "share", "memory"}
     if filename in api_routes:
         raise HTTPException(404, "Not found")
     if filename.startswith(".") or ".." in filename:
@@ -1322,15 +1226,16 @@ async def serve_static_file(filename: str):
 
 # ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 Iniciando ApoloXia Server v5.0.0 (Ultra Definitiva)")
+    print("🚀 Iniciando ApoloXia Server v5.1.0")
     print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
     print("🧠 Identidad: ApoloXia · The Shield Technology · Panamá · Amelio Delgado")
     print("🔍 Motores de búsqueda:")
     print(f"   - Tavily: {'✅' if TAVILY_API_KEY else '❌'}")
     print(f"   - Exa AI: {'✅' if EXA_API_KEY else '❌'}")
     print(f"   - MediaStack: {'✅' if MEDIASTACK_API_KEY else '❌'}")
-    print("🎙️ Voz humana (Edge TTS) activada - voces neuronales no robóticas")
+    print("🔇 Voz/TTS desactivada por completo")
     print("🧠 Memoria avanzada de programación activada")
     print("💻 Modo Programador Senior: HTML · Python · JavaScript (párrafos intensos)")
+    print("📝 Respuestas largas, profundas y adaptables a cada tema")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
