@@ -455,39 +455,236 @@
             max-width: 100%;
         }
 
-        /* Mensajes enriquecidos */
+        /* ═══════════════════════════════════════════
+           MENSAJES ENRIQUECIDOS (mejorados)
+           ═══════════════════════════════════════════ */
         .message.assistant .message-content h1,
         .message.assistant .message-content h2,
-        .message.assistant .message-content h3 {
-            margin: 20px 0 10px 0;
+        .message.assistant .message-content h3,
+        .message.assistant .message-content h4 {
+            margin: 24px 0 12px 0;
             font-weight: 700;
             color: var(--text-primary);
+            line-height: 1.3;
         }
-        .message.assistant .message-content h1 { font-size: 1.4rem; border-bottom: 1px solid var(--border-light); padding-bottom: 6px; }
-        .message.assistant .message-content h2 { font-size: 1.2rem; color: var(--accent-blue); }
-        .message.assistant .message-content h3 { font-size: 1.05rem; color: var(--text-secondary); }
+        .message.assistant .message-content h1 { font-size: 1.5rem; border-bottom: 2px solid var(--border-light); padding-bottom: 8px; }
+        .message.assistant .message-content h2 { font-size: 1.25rem; color: var(--accent-blue); }
+        .message.assistant .message-content h3 { font-size: 1.1rem; color: #d0d0d0; }
+        .message.assistant .message-content h4 { font-size: 1rem; color: #c0c0c0; }
 
-        .message.assistant .message-content p { margin-bottom: 12px; }
-        .message.assistant .message-content ul, .message.assistant .message-content ol {
-            margin: 8px 0 8px 20px;
-            color: var(--text-secondary);
+        /* PÁRRAFOS LARGOS: más espacio y mejor lectura */
+        .message.assistant .message-content p {
+            margin-bottom: 16px;
+            line-height: 1.8;
+            color: #c8c8c8;
+            font-size: 0.96rem;
+            letter-spacing: 0.1px;
+            text-align: left;
         }
-        .message.assistant .message-content li { margin-bottom: 6px; }
-        .message.assistant .message-content strong { color: var(--text-primary); }
+        /* Primer párrafo ligeramente más grande */
+        .message.assistant .message-content > p:first-of-type {
+            font-size: 1rem;
+            color: #d8d8d8;
+        }
+
+        /* EMOJIS MÁS GRANDES Y VISIBLES */
+        .message.assistant .message-content .emoji-big,
+        .emoji-big {
+            font-size: 1.3em;
+            vertical-align: -3px;
+            display: inline-block;
+            line-height: 1;
+        }
+
+        .message.assistant .message-content ul, .message.assistant .message-content ol {
+            margin: 12px 0 16px 24px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+        .message.assistant .message-content li {
+            margin-bottom: 8px;
+            padding-left: 4px;
+        }
+        .message.assistant .message-content li::marker { color: var(--accent-blue); }
+
+        .message.assistant .message-content strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .message.assistant .message-content em {
+            color: #d0d0d0;
+            font-style: italic;
+        }
+        .message.assistant .message-content mark {
+            background: rgba(245, 179, 66, 0.2);
+            color: #f5b342;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .message.assistant .message-content a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(79, 158, 255, 0.5);
+            transition: all 0.2s;
+        }
+        .message.assistant .message-content a:hover {
+            color: #fff;
+            border-bottom-style: solid;
+            border-bottom-color: var(--accent-blue);
+        }
+
+        /* Blockquote clásico (por si no aplica callout) */
         .message.assistant .message-content blockquote {
             border-left: 3px solid var(--accent-blue);
-            padding: 8px 16px;
-            margin: 12px 0;
+            padding: 12px 18px;
+            margin: 16px 0;
             background: rgba(79,158,255,0.06);
-            border-radius: 0 8px 8px 0;
+            border-radius: 0 10px 10px 0;
             color: var(--text-secondary);
+            font-style: italic;
         }
 
+        /* Separadores hr con estilo */
+        .message.assistant .message-content hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+            margin: 24px 0;
+        }
+
+        /* TABLAS markdown con estilo premium */
+        .message.assistant .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.88rem;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-light);
+        }
+        .message.assistant .message-content thead {
+            background: var(--bg-secondary);
+        }
+        .message.assistant .message-content th {
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--accent-blue);
+        }
+        .message.assistant .message-content td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-secondary);
+        }
+        .message.assistant .message-content tr:last-child td { border-bottom: none; }
+        .message.assistant .message-content tr:hover td { background: rgba(79,158,255,0.04); }
+
+        /* ═══════════════════════════════════════════
+           CALLOUTS (RECUADROS ESPECIALES)
+           Se generan automáticamente desde:
+           > 💡 **Tip:** ...
+           > [!TIP] ...
+           **📌 Nota:** ...
+           ═══════════════════════════════════════════ */
+        .callout {
+            display: flex;
+            gap: 12px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin: 16px 0;
+            border-left: 4px solid;
+            position: relative;
+            animation: calloutIn 0.35s ease;
+        }
+        @keyframes calloutIn {
+            from { opacity: 0; transform: translateX(-6px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .callout-icon {
+            font-size: 1.4rem;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .callout-body { flex: 1; min-width: 0; }
+        .callout-title {
+            font-weight: 800;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 6px;
+        }
+        .callout-content {
+            color: #d0d0d0;
+            font-size: 0.94rem;
+            line-height: 1.7;
+        }
+        .callout-content p:last-child { margin-bottom: 0; }
+
+        /* Variantes */
+        .callout.tip {
+            background: rgba(79, 158, 255, 0.07);
+            border-left-color: #4f9eff;
+        }
+        .callout.tip .callout-title { color: #4f9eff; }
+
+        .callout.success, .callout.check {
+            background: rgba(34, 197, 94, 0.07);
+            border-left-color: #22c55e;
+        }
+        .callout.success .callout-title,
+        .callout.check .callout-title { color: #22c55e; }
+
+        .callout.warning, .callout.alert {
+            background: rgba(245, 179, 66, 0.08);
+            border-left-color: #f5b342;
+        }
+        .callout.warning .callout-title,
+        .callout.alert .callout-title { color: #f5b342; }
+
+        .callout.danger, .callout.error {
+            background: rgba(239, 68, 68, 0.08);
+            border-left-color: #ef4444;
+        }
+        .callout.danger .callout-title,
+        .callout.error .callout-title { color: #ef4444; }
+
+        .callout.note, .callout.info {
+            background: rgba(139, 92, 246, 0.07);
+            border-left-color: #8b5cf6;
+        }
+        .callout.note .callout-title,
+        .callout.info .callout-title { color: #8b5cf6; }
+
+        .callout.important {
+            background: rgba(236, 72, 153, 0.07);
+            border-left-color: #ec4899;
+        }
+        .callout.important .callout-title { color: #ec4899; }
+
+        .callout.question {
+            background: rgba(14, 165, 233, 0.07);
+            border-left-color: #0ea5e9;
+        }
+        .callout.question .callout-title { color: #0ea5e9; }
+
+        .callout.quote {
+            background: rgba(255, 255, 255, 0.03);
+            border-left-color: var(--accent-gray);
+        }
+        .callout.quote .callout-title { color: var(--accent-gray); }
+
+        /* ═══════════════════════════════════════════
+           CÓDIGO
+           ═══════════════════════════════════════════ */
         .code-block {
             background: var(--bg-sidebar);
             border: 1px solid var(--border-light);
             border-radius: 12px;
-            margin: 12px 0;
+            margin: 16px 0;
             overflow: hidden;
         }
 
@@ -522,7 +719,7 @@
             overflow-x: auto;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
-            line-height: 1.6;
+            line-height: 1.65;
             color: var(--text-primary);
         }
 
@@ -531,14 +728,14 @@
             border: 1px solid var(--border-light);
             border-radius: 12px;
             padding: 16px;
-            margin: 12px 0;
+            margin: 16px 0;
             text-align: center;
             overflow: auto;
         }
 
         .katex-display {
-            margin: 12px 0;
-            padding: 12px;
+            margin: 16px 0;
+            padding: 14px;
             background: var(--bg-sidebar);
             border-radius: 8px;
             border: 1px solid var(--border-light);
@@ -1018,6 +1215,11 @@
             .welcome-title { font-size: 1.6rem; }
             .quick-actions { grid-template-columns: 1fr; }
             .header-actions { display: none; }
+            .callout { padding: 12px 14px; }
+            .callout-icon { font-size: 1.2rem; }
+            .message.assistant .message-content table { font-size: 0.8rem; }
+            .message.assistant .message-content th,
+            .message.assistant .message-content td { padding: 8px 10px; }
         }
     </style>
 </head>
@@ -1176,56 +1378,40 @@
         currentAgentId: 'general',
         webSearchEnabled: false,
         multiAgentEnabled: false,
-        voiceEnabled: true,       // 🎙️ NUEVO: voz activada por defecto
+        voiceEnabled: true,
         isTyping: false,
         availableModels: [],
         availableAgents: [],
         uploadedFile: null,
-        currentAudio: null        // 🎙️ NUEVO: audio actual reproduciéndose
+        currentAudio: null
     };
     let MODELS_CATALOG = {};
 
     // ========== FUNCIONES DE ALMACENAMIENTO LOCAL ==========
-    function getLocalStorageKey(email, convId) {
-        return `apoloxia_messages_${email}_${convId}`;
-    }
-
-    function getConversationsKey(email) {
-        return `apoloxia_conversations_${email}`;
-    }
-
+    function getLocalStorageKey(email, convId) { return `apoloxia_messages_${email}_${convId}`; }
+    function getConversationsKey(email) { return `apoloxia_conversations_${email}`; }
     function saveMessagesToLocal(email, convId, messages) {
         if (!convId) return;
-        const key = getLocalStorageKey(email, convId);
-        localStorage.setItem(key, JSON.stringify(messages));
+        localStorage.setItem(getLocalStorageKey(email, convId), JSON.stringify(messages));
     }
-
     function getMessagesFromLocal(email, convId) {
         if (!convId) return [];
-        const key = getLocalStorageKey(email, convId);
-        const data = localStorage.getItem(key);
+        const data = localStorage.getItem(getLocalStorageKey(email, convId));
         return data ? JSON.parse(data) : [];
     }
-
     function saveConversationsToLocal(email, conversations) {
-        const key = getConversationsKey(email);
-        localStorage.setItem(key, JSON.stringify(conversations));
+        localStorage.setItem(getConversationsKey(email), JSON.stringify(conversations));
     }
-
     function getConversationsFromLocal(email) {
-        const key = getConversationsKey(email);
-        const data = localStorage.getItem(key);
+        const data = localStorage.getItem(getConversationsKey(email));
         return data ? JSON.parse(data) : [];
     }
-
     function deleteConversationFromLocal(email, convId) {
-        const key = getLocalStorageKey(email, convId);
-        localStorage.removeItem(key);
+        localStorage.removeItem(getLocalStorageKey(email, convId));
         let convs = getConversationsFromLocal(email);
         convs = convs.filter(c => c.conversation_id !== convId);
         saveConversationsToLocal(email, convs);
     }
-
     function updateConversationListLocal(email, convId, lastMessage) {
         let convs = getConversationsFromLocal(email);
         const existing = convs.find(c => c.conversation_id === convId);
@@ -1234,15 +1420,152 @@
             existing.last_access = now;
             existing.last_message = lastMessage;
         } else {
-            convs.push({
-                conversation_id: convId,
-                last_access: now,
-                last_message: lastMessage,
-                message_count: 0
-            });
+            convs.push({ conversation_id: convId, last_access: now, last_message: lastMessage, message_count: 0 });
         }
         saveConversationsToLocal(email, convs);
         return convs;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // 🎨 POST-PROCESADOR DE MARKDOWN
+    // Detecta patrones y los convierte en callouts/recuadros
+    // ═══════════════════════════════════════════════════════
+    const CALLOUT_TYPES = {
+        "tip": { icon: "💡", label: "TIP", cls: "tip" },
+        "consejo": { icon: "💡", label: "CONSEJO", cls: "tip" },
+        "nota": { icon: "📌", label: "NOTA", cls: "note" },
+        "note": { icon: "📌", label: "NOTE", cls: "note" },
+        "importante": { icon: "⚡", label: "IMPORTANTE", cls: "important" },
+        "important": { icon: "⚡", label: "IMPORTANT", cls: "important" },
+        "advertencia": { icon: "⚠️", label: "ADVERTENCIA", cls: "warning" },
+        "warning": { icon: "⚠️", label: "WARNING", cls: "warning" },
+        "peligro": { icon: "🚨", label: "PELIGRO", cls: "danger" },
+        "danger": { icon: "🚨", label: "DANGER", cls: "danger" },
+        "error": { icon: "❌", label: "ERROR", cls: "error" },
+        "éxito": { icon: "✅", label: "ÉXITO", cls: "success" },
+        "exito": { icon: "✅", label: "ÉXITO", cls: "success" },
+        "success": { icon: "✅", label: "SUCCESS", cls: "success" },
+        "info": { icon: "ℹ️", label: "INFO", cls: "info" },
+        "información": { icon: "ℹ️", label: "INFO", cls: "info" },
+        "pregunta": { icon: "❓", label: "PREGUNTA", cls: "question" },
+        "question": { icon: "❓", label: "QUESTION", cls: "question" },
+        "cita": { icon: "💬", label: "CITA", cls: "quote" },
+        "quote": { icon: "💬", label: "QUOTE", cls: "quote" },
+        "alerta": { icon: "⚠️", label: "ALERTA", cls: "warning" },
+        "check": { icon: "✅", label: "CHECK", cls: "success" }
+    };
+
+    // Emoji map para callouts genéricos
+    const EMOJI_TO_TYPE = {
+        "💡": "tip", "📌": "note", "⚡": "important", "⚠️": "warning",
+        "🚨": "danger", "❌": "error", "✅": "success", "ℹ️": "info",
+        "❓": "question", "💬": "quote", "🔔": "warning", "🎯": "important"
+    };
+
+    function processCallouts(container) {
+        // 1. Detectar blockquotes con emoji/patrón tipo callout
+        container.querySelectorAll('blockquote').forEach(bq => {
+            const text = bq.textContent.trim();
+            // Buscar patrón: [emoji] [PALABRA]: texto   o   [!TIP] texto
+            let type = null, title = null, body = null;
+
+            // Patrón GitHub: > [!TIP]
+            const ghMatch = text.match(/^\[!(\w+)\]\s*([\s\S]*)$/);
+            if (ghMatch) {
+                const key = ghMatch[1].toLowerCase();
+                if (CALLOUT_TYPES[key]) {
+                    type = CALLOUT_TYPES[key].cls;
+                    title = CALLOUT_TYPES[key].label;
+                    body = ghMatch[2];
+                }
+            }
+
+            // Patrón: emoji + **Label:** texto
+            if (!type) {
+                const emojiMatch = text.match(/^([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+)\s*\*\*([^*]+?):?\*\*\s*([\s\S]*)$/u);
+                if (emojiMatch) {
+                    const emoji = emojiMatch[1].trim();
+                    const label = emojiMatch[2].trim().toUpperCase();
+                    body = emojiMatch[3];
+                    // Buscar tipo por emoji o por label
+                    if (EMOJI_TO_TYPE[emoji]) type = EMOJI_TO_TYPE[emoji];
+                    else {
+                        const lblLower = label.toLowerCase().replace(/[^a-záéíóúñ]/g, '');
+                        if (CALLOUT_TYPES[lblLower]) type = CALLOUT_TYPES[lblLower].cls;
+                    }
+                    title = label;
+                    if (!type) type = "note"; // por defecto
+                }
+            }
+
+            // Patrón: **Label:** texto (sin emoji)
+            if (!type) {
+                const boldMatch = text.match(/^\*\*([^*]+?):\*\*\s*([\s\S]*)$/);
+                if (boldMatch) {
+                    const label = boldMatch[1].trim();
+                    const lblLower = label.toLowerCase().replace(/[^a-záéíóúñ]/g, '');
+                    if (CALLOUT_TYPES[lblLower]) {
+                        type = CALLOUT_TYPES[lblLower].cls;
+                        title = CALLOUT_TYPES[lblLower].label;
+                        body = boldMatch[2];
+                    }
+                }
+            }
+
+            if (type) {
+                const icon = CALLOUT_TYPES[Object.keys(CALLOUT_TYPES).find(k => CALLOUT_TYPES[k].cls === type)]?.icon || "💡";
+                const callout = document.createElement('div');
+                callout.className = `callout ${type}`;
+                callout.innerHTML = `
+                    <div class="callout-icon">${icon}</div>
+                    <div class="callout-body">
+                        <div class="callout-title">${escapeHtml(title)}</div>
+                        <div class="callout-content">${marked.parseInline(body)}</div>
+                    </div>
+                `;
+                bq.parentNode.replaceWith(callout);
+            }
+        });
+
+        // 2. Detectar párrafos que empiezan con **Label:** y convertirlos a callout (solo si el label coincide)
+        container.querySelectorAll('p').forEach(p => {
+            const html = p.innerHTML.trim();
+            // Excluir si ya está dentro de callout o code
+            if (p.closest('.callout') || p.closest('pre') || p.closest('.code-block')) return;
+            const match = html.match(/^([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+)?\s*<strong>([^<]+?):?<\/strong>\s*([\s\S]*)$/u);
+            if (match) {
+                const emoji = (match[1] || '').trim();
+                const label = match[2].trim();
+                const labelLower = label.toLowerCase().replace(/[^a-záéíóúñ]/g, '');
+                let type = null;
+                if (emoji && EMOJI_TO_TYPE[emoji]) type = EMOJI_TO_TYPE[emoji];
+                else if (CALLOUT_TYPES[labelLower]) type = CALLOUT_TYPES[labelLower].cls;
+                // Solo convertir a callout si es un tipo reconocido Y el label es "de tipo callout"
+                if (type && label.length < 25 && !/^\s*$/.test(match[3])) {
+                    const icon = emoji || CALLOUT_TYPES[Object.keys(CALLOUT_TYPES).find(k => CALLOUT_TYPES[k].cls === type)]?.icon || "💡";
+                    const callout = document.createElement('div');
+                    callout.className = `callout ${type}`;
+                    callout.innerHTML = `
+                        <div class="callout-icon">${icon}</div>
+                        <div class="callout-body">
+                            <div class="callout-title">${escapeHtml(label)}</div>
+                            <div class="callout-content">${match[3]}</div>
+                        </div>
+                    `;
+                    p.parentNode.replaceWith(callout);
+                }
+            }
+        });
+
+        // 3. Aumentar tamaño de emojis al inicio de párrafos o secciones
+        container.querySelectorAll('p, li, h1, h2, h3, h4').forEach(el => {
+            // Envolver emojis en <span class="emoji-big">
+            let html = el.innerHTML;
+            // Solo procesar si tiene emojis y no es code
+            if (el.closest('pre') || el.closest('.code-block') || el.closest('.callout-icon')) return;
+            html = html.replace(/([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F02F}]+)/gu, '<span class="emoji-big">$1</span>');
+            if (html !== el.innerHTML) el.innerHTML = html;
+        });
     }
 
     // ========== INICIO ==========
@@ -1261,7 +1584,6 @@
         }
         state.userEmail = savedEmail;
         state.userName = savedEmail.split('@')[0];
-        // Restaurar preferencia de voz
         const savedVoice = localStorage.getItem('apoloxia_voice_enabled');
         if (savedVoice !== null) state.voiceEnabled = savedVoice === 'true';
         updateVoiceBtnUI();
@@ -1321,11 +1643,8 @@
         state.currentModelId = 'gpt-oss-20b';
         state.currentAgentId = 'general';
         applyConfig({
-            tier: 'free',
-            remaining_daily: 100,
-            max_daily_responses: 100,
-            available_models: state.availableModels,
-            available_agents: state.availableAgents
+            tier: 'free', remaining_daily: 100, max_daily_responses: 100,
+            available_models: state.availableModels, available_agents: state.availableAgents
         });
     }
 
@@ -1341,12 +1660,9 @@
         } catch (e) {}
 
         const localConvs = getConversationsFromLocal(state.userEmail);
-
         const combined = [...backendConvs];
         localConvs.forEach(lc => {
-            if (!combined.find(c => c.conversation_id === lc.conversation_id)) {
-                combined.push(lc);
-            }
+            if (!combined.find(c => c.conversation_id === lc.conversation_id)) combined.push(lc);
         });
         combined.sort((a, b) => {
             const da = a.last_access ? new Date(a.last_access).getTime() : 0;
@@ -1377,9 +1693,7 @@
 
     async function deleteConversation(convId) {
         if (!confirm('¿Eliminar esta conversación?')) return;
-        try {
-            await fetch(`${API_BASE_URL}/conversations/${encodeURIComponent(state.userEmail)}/${convId}`, { method: 'DELETE' });
-        } catch(e) {}
+        try { await fetch(`${API_BASE_URL}/conversations/${encodeURIComponent(state.userEmail)}/${convId}`, { method: 'DELETE' }); } catch(e) {}
         deleteConversationFromLocal(state.userEmail, convId);
         state.conversations = state.conversations.filter(c => c.conversation_id !== convId);
         if (state.conversationId === convId) {
@@ -1403,11 +1717,8 @@
             addMessageToUI('assistant', 'Has retomado esta conversación. Puedes seguir preguntando. 🚀');
         } else {
             messages.forEach(msg => {
-                if (msg.role === 'user') {
-                    addMessageToUI('user', msg.content);
-                } else {
-                    addMessageToUI('assistant', msg.content);
-                }
+                if (msg.role === 'user') addMessageToUI('user', msg.content);
+                else addMessageToUI('assistant', msg.content);
             });
         }
         focusInput();
@@ -1448,7 +1759,7 @@
                 use_web_search: state.webSearchEnabled,
                 enable_multi_agent: state.multiAgentEnabled,
                 file_content: state.uploadedFile,
-                enable_voice: state.voiceEnabled   // 🎙️ NUEVO: enviar preferencia de voz
+                enable_voice: state.voiceEnabled
             };
 
             const res = await fetch(`${API_BASE_URL}/chat`, {
@@ -1474,13 +1785,12 @@
                 badgesHtml += '<span class="feature-badge badge-multi">🤖 Multi</span>';
             }
             if (data.audio_base64) {
-                badgesHtml += '<span class="feature-badge badge-voice">🔊 Voz</span>';  // 🎙️ NUEVO
+                badgesHtml += '<span class="feature-badge badge-voice">🔊 Voz</span>';
             }
             badgesHtml += `<span class="feature-badge badge-agent">👤 ${formatAgentName(data.agent_used)}</span>`;
             badgesHtml += `<span class="feature-badge badge-model">🧠 ${data.model_used}</span>`;
 
             const responseContent = data.response || 'Sin respuesta';
-            // 🎙️ NUEVO: pasar el audio al renderizador
             addAssistantMessage(responseContent, badgesHtml, data.audio_base64, data.audio_mime);
 
             let msgs = getMessagesFromLocal(state.userEmail, state.conversationId);
@@ -1528,13 +1838,11 @@
         scrollToBottom();
     }
 
-    // 🎙️ MODIFICADO: ahora acepta audioBase64 y audioMime
     function addAssistantMessage(markdownContent, badgesHtml = '', audioBase64 = null, audioMime = 'audio/mpeg') {
         const wrapper = document.getElementById('messagesWrapper');
         const div = document.createElement('div');
         div.className = 'message assistant';
         const msgId = 'msg-' + Date.now();
-        // Guardar audio como atributo data para reproducción posterior
         if (audioBase64) {
             div.dataset.audio = audioBase64;
             div.dataset.audioMime = audioMime;
@@ -1568,9 +1876,11 @@
         wrapper.appendChild(div);
 
         const contentEl = div.querySelector(`#${msgId}`);
-        const htmlContent = marked.parse(markdownContent);
+        // Configurar marked para tablas y saltos de línea
+        const htmlContent = marked.parse(markdownContent, { breaks: true, gfm: true });
         contentEl.innerHTML = htmlContent;
 
+        // Procesar bloques de código
         contentEl.querySelectorAll('pre code').forEach((block) => {
             const pre = block.parentElement;
             const lang = block.className.replace('language-', '') || 'text';
@@ -1584,6 +1894,7 @@
             pre.classList.add('code-block');
         });
 
+        // Mermaid
         contentEl.querySelectorAll('.language-mermaid, .mermaid').forEach((el) => {
             const container = document.createElement('div');
             container.className = 'mermaid-container';
@@ -1594,6 +1905,7 @@
             el.parentNode.replaceWith(container);
         });
 
+        // KaTeX
         if (typeof renderMathInElement !== 'undefined') {
             renderMathInElement(contentEl, {
                 delimiters: [
@@ -1606,56 +1918,41 @@
             });
         }
 
+        // 🎨 POST-PROCESAR CALLOUTS Y EMOJIS
+        processCallouts(contentEl);
+
         mermaid.init(undefined, div.querySelectorAll('.mermaid'));
         scrollToBottom();
 
-        // 🎙️ NUEVO: reproducir audio automáticamente si está disponible y activado
         if (audioBase64 && state.voiceEnabled) {
             playAudio(audioBase64, audioMime, div);
         }
     }
 
-    // 🎙️ NUEVO: función para reproducir audio
+    // ========== AUDIO ==========
     function playAudio(audioBase64, audioMime, messageDiv) {
         try {
-            // Detener cualquier audio previo
-            if (state.currentAudio) {
-                state.currentAudio.pause();
-                state.currentAudio = null;
-            }
+            if (state.currentAudio) { state.currentAudio.pause(); state.currentAudio = null; }
             const audio = new Audio(`data:${audioMime || 'audio/mpeg'};base64,${audioBase64}`);
             state.currentAudio = audio;
             const btn = messageDiv?.querySelector('.msg-action-btn');
             if (btn) btn.classList.add('playing');
-            audio.onended = () => {
-                if (btn) btn.classList.remove('playing');
-                state.currentAudio = null;
-            };
-            audio.onerror = () => {
-                if (btn) btn.classList.remove('playing');
-                state.currentAudio = null;
-            };
+            audio.onended = () => { if (btn) btn.classList.remove('playing'); state.currentAudio = null; };
+            audio.onerror = () => { if (btn) btn.classList.remove('playing'); state.currentAudio = null; };
             audio.play().catch(e => {
                 console.warn('Audio bloqueado por el navegador:', e);
                 if (btn) btn.classList.remove('playing');
                 showToast('Haz clic en 🔊 para reproducir la voz', 'info');
             });
-        } catch (e) {
-            console.warn('Error reproduciendo audio:', e);
-        }
+        } catch (e) { console.warn('Error reproduciendo audio:', e); }
     }
 
-    // 🎙️ NUEVO: reproducir voz de un mensaje específico (botón manual)
     function speakMessage(btn) {
         const messageDiv = btn.closest('.message');
         if (!messageDiv) return;
         const audioB64 = messageDiv.dataset.audio;
         const mime = messageDiv.dataset.audioMime || 'audio/mpeg';
-        if (audioB64) {
-            playAudio(audioB64, mime, messageDiv);
-            return;
-        }
-        // Si no hay audio guardado, generarlo desde el texto
+        if (audioB64) { playAudio(audioB64, mime, messageDiv); return; }
         const text = messageDiv.querySelector('.message-content')?.innerText || '';
         if (!text) return;
         btn.classList.add('playing');
@@ -1678,7 +1975,6 @@
         });
     }
 
-    // 🎙️ NUEVO: activar/desactivar voz
     function toggleVoice() {
         state.voiceEnabled = !state.voiceEnabled;
         localStorage.setItem('apoloxia_voice_enabled', state.voiceEnabled);
@@ -1835,9 +2131,7 @@
     async function clearAllConversations() {
         if (!confirm('¿Borrar todas las conversaciones?')) return;
         for (let conv of state.conversations) {
-            try {
-                await fetch(`${API_BASE_URL}/conversations/${encodeURIComponent(state.userEmail)}/${conv.conversation_id}`, { method: 'DELETE' });
-            } catch(e) {}
+            try { await fetch(`${API_BASE_URL}/conversations/${encodeURIComponent(state.userEmail)}/${conv.conversation_id}`, { method: 'DELETE' }); } catch(e) {}
             deleteConversationFromLocal(state.userEmail, conv.conversation_id);
         }
         state.conversations = [];
@@ -1846,49 +2140,35 @@
         showToast('Todas las conversaciones borradas', 'success');
     }
 
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-    }
-
-    function openSettings() {
-        document.getElementById('settingsOverlay').classList.add('show');
-    }
-
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+    function openSettings() { document.getElementById('settingsOverlay').classList.add('show'); }
     function closeSettings(e) {
         if (!e || e.target === document.getElementById('settingsOverlay')) {
             document.getElementById('settingsOverlay').classList.remove('show');
         }
     }
-
     function toggleWebSearch() {
         state.webSearchEnabled = !state.webSearchEnabled;
         document.getElementById('webSearchBtn').classList.toggle('active');
         showToast(state.webSearchEnabled ? '🔍 Búsqueda web activada (Tavily, Exa, MediaStack)' : 'Búsqueda web desactivada', 'info');
     }
-
     function toggleMultiAgent() {
         state.multiAgentEnabled = !state.multiAgentEnabled;
         document.getElementById('multiAgentBtn').classList.toggle('active');
         showToast(state.multiAgentEnabled ? '🤖 Multi-agente activado' : 'Multi-agente desactivado', 'info');
     }
-
     function logout() {
         localStorage.removeItem('apoloxia_session_email');
         window.location.href = 'index.html';
     }
-
     function handleKeyDown(e) {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     }
-
     function autoResize(textarea) {
         textarea.style.height = 'auto';
         textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
     }
-
-    function focusInput() {
-        document.getElementById('messageInput').focus();
-    }
+    function focusInput() { document.getElementById('messageInput').focus(); }
 
     function showToast(msg, type) {
         const container = document.getElementById('toastContainer');
@@ -1912,16 +2192,11 @@
 
     function formatAgentName(agentId) {
         const names = {
-            general: 'General',
-            generador_sitios_web: 'Generador Sitios Web',
-            creador_paneles_ventas: 'Creador Dashboards',
-            desarrollador_avanzado: 'Dev Avanzado',
-            generador_codigo: 'Generador Código',
-            debugger_inteligente: 'Debugger',
-            arquitecto_software: 'Arquitecto',
-            analista_datos: 'Analista Datos',
-            investigacion_cientifica: 'Investigación',
-            finanzas_inversion: 'Finanzas',
+            general: 'General', generador_sitios_web: 'Generador Sitios Web',
+            creador_paneles_ventas: 'Creador Dashboards', desarrollador_avanzado: 'Dev Avanzado',
+            generador_codigo: 'Generador Código', debugger_inteligente: 'Debugger',
+            arquitecto_software: 'Arquitecto', analista_datos: 'Analista Datos',
+            investigacion_cientifica: 'Investigación', finanzas_inversion: 'Finanzas',
             educacion_avanzada: 'Educación'
         };
         return names[agentId] || agentId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -1959,16 +2234,11 @@
 
     function getAgentDesc(agentId) {
         const descs = {
-            general: 'Asistente general',
-            generador_sitios_web: 'Genera sitios web completos',
-            creador_paneles_ventas: 'Dashboards y gráficos',
-            desarrollador_avanzado: 'Apps completas, APIs',
-            generador_codigo: 'Código limpio y documentado',
-            debugger_inteligente: 'Detección y corrección de bugs',
-            arquitecto_software: 'Diseño de sistemas escalables',
-            analista_datos: 'Insights y visualización',
-            investigacion_cientifica: 'Investigación académica',
-            finanzas_inversion: 'Análisis financiero'
+            general: 'Asistente general', generador_sitios_web: 'Genera sitios web completos',
+            creador_paneles_ventas: 'Dashboards y gráficos', desarrollador_avanzado: 'Apps completas, APIs',
+            generador_codigo: 'Código limpio y documentado', debugger_inteligente: 'Detección y corrección de bugs',
+            arquitecto_software: 'Diseño de sistemas escalables', analista_datos: 'Insights y visualización',
+            investigacion_cientifica: 'Investigación académica', finanzas_inversion: 'Análisis financiero'
         };
         return descs[agentId] || 'Agente especializado';
     }
@@ -2013,12 +2283,10 @@
         document.getElementById('modelDropdown').classList.toggle('show');
         document.getElementById('agentDropdown').classList.remove('show');
     }
-
     function toggleAgentSelector() {
         document.getElementById('agentDropdown').classList.toggle('show');
         document.getElementById('modelDropdown').classList.remove('show');
     }
-
     function selectModel(modelId) {
         state.currentModelId = modelId;
         document.getElementById('currentModel').innerText = MODELS_CATALOG[modelId]?.name || modelId;
@@ -2026,7 +2294,6 @@
         toggleModelSelector();
         showToast(`Modelo: ${MODELS_CATALOG[modelId]?.name || modelId}`, 'info');
     }
-
     function selectAgent(agentId) {
         state.currentAgentId = agentId;
         document.getElementById('currentAgent').innerText = formatAgentName(agentId);
