@@ -1,10 +1,10 @@
-# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA RÁPIDA - Agosto 2026)
+# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA RÁPIDA - Septiembre 2026)
 # ======================================================
-# - 9 modelos Groq (GPT OSS 20B/120B, Qwen 2.5 72B/32B/3-32B, Llama 3.1/3.3/4 Scout, Mixtral)
+# - Modelos Groq ACTUALIZADOS (sin mixtral, sin llama-3.3-70b)
 # - Tavily + EXA AI + MediaStack (búsqueda multi-motor)
 # - Agentes completos (35+)
 # - IDENTIDAD FORZADA: ApoloXia (The Shield Technology · Panamá · Amelio Delgado)
-# - ⚡ Optimizado para velocidad (respuestas en 2-5s)
+# - ⚡ Optimizado para velocidad
 # - SEGURIDAD: claves API desde variables de entorno
 # ======================================================
 
@@ -28,7 +28,7 @@ from pydantic import BaseModel
 import uvicorn
 import httpx
 
-# ============ CONFIGURACIÓN API KEYS (desde variables de entorno) ============
+# ============ CONFIGURACIÓN API KEYS ============
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 EXA_API_KEY = os.getenv("EXA_API_KEY", "")
@@ -36,7 +36,10 @@ MEDIASTACK_API_KEY = os.getenv("MEDIASTACK_API_KEY", "")
 WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 
-# ============ MODELOS GROQ (9 MODELOS INTACTOS) ============
+# ============ MODELOS GROQ (ACTUALIZADOS SEPTIEMBRE 2026) ============
+# ELIMINADOS por decommissioned: mixtral-8x7b-32768, llama-3.3-70b-versatile
+# AÑADIDOS: gpt-oss-120b, gpt-oss-20b, qwen-3-32b, llama-4-scout, llama-3.1-8b
+
 class GroqModel:
     def __init__(self, id: str, name: str, params: str, context: str, speed: str,
                  price_input: float, price_output: float, tier: str,
@@ -59,19 +62,13 @@ class GroqModel:
         self.max_completion = max_completion
 
 MODELS = {
+    # ===== FREE TIER =====
     "llama-3.1-8b": GroqModel(
         "llama-3.1-8b-instant", "Llama 3.1 8B", "8B", "128K", "~560 T/s",
         0.05, 0.08, "free",
         rpm=30, tpm=6000, rpd=14400,
         supports_tools=True,
         max_completion=131072
-    ),
-    "mixtral": GroqModel(
-        "mixtral-8x7b-32768", "Mixtral 8x7B", "46B", "32K", "~400 T/s",
-        0.24, 0.24, "free",
-        rpm=30, tpm=6000, rpd=14400,
-        supports_tools=True,
-        max_completion=32768
     ),
     "gpt-oss-20b": GroqModel(
         "openai/gpt-oss-20b", "GPT OSS 20B", "20B", "128K", "~1,000 T/s",
@@ -80,50 +77,56 @@ MODELS = {
         supports_tools=True,
         max_completion=65536
     ),
-    "llama-3.3-70b": GroqModel(
-        "llama-3.3-70b-versatile", "Llama 3.3 70B", "70B", "128K", "~280 T/s",
-        0.59, 0.79, "plus",
-        rpm=30, tpm=12000, rpd=1000,
+    "qwen-3-32b": GroqModel(
+        "qwen/qwen3-32b", "Qwen 3 32B", "32B", "128K", "~400 T/s",
+        0.29, 0.59, "free",
+        rpm=60, tpm=6000, rpd=1000,
         supports_tools=True,
-        max_completion=32768
+        max_completion=40960
+    ),
+
+    # ===== PLUS TIER =====
+    "gpt-oss-120b": GroqModel(
+        "openai/gpt-oss-120b", "GPT OSS 120B", "120B", "128K", "~500 T/s",
+        0.15, 0.60, "plus",
+        rpm=30, tpm=8000, rpd=1000,
+        supports_tools=True,
+        max_completion=65536
     ),
     "llama-4-scout": GroqModel(
         "meta-llama/llama-4-scout-17b-16e-instruct", "Llama 4 Scout", "17B×16E", "128K", "~750 T/s",
         0.11, 0.34, "plus",
         rpm=30, tpm=30000, rpd=1000,
-        supports_vision=True,
-        supports_tools=True,
+        supports_vision=True, supports_tools=True,
         max_completion=8192
     ),
-    "gpt-oss-120b": GroqModel(
-        "openai/gpt-oss-120b", "GPT OSS 120B", "120B", "128K", "~500 T/s",
-        0.15, 0.60, "gt",
-        rpm=30, tpm=8000, rpd=1000,
-        supports_tools=True,
-        max_completion=65536
-    ),
+
+    # ===== GT TIER =====
     "qwen-2.5-72b": GroqModel(
         "qwen/qwen-2.5-72b-instruct", "Qwen 2.5 72B", "72B", "128K", "~450 T/s",
         0.29, 0.59, "gt",
         rpm=60, tpm=6000, rpd=1000,
-        supports_vision=True,
-        supports_tools=True,
+        supports_vision=True, supports_tools=True,
         max_completion=40960
     ),
     "qwen-2.5-32b": GroqModel(
         "qwen/qwen-2.5-32b-instruct", "Qwen 2.5 32B", "32B", "128K", "~450 T/s",
         0.29, 0.59, "gt",
         rpm=60, tpm=6000, rpd=1000,
-        supports_vision=True,
-        supports_tools=True,
+        supports_vision=True, supports_tools=True,
         max_completion=40960
     ),
-    "qwen-3-32b": GroqModel(
-        "qwen/qwen-2.5-32b-instruct", "Qwen 2.5 32B", "32B", "128K", "~400 T/s",
-        0.29, 0.59, "gt",
-        rpm=60, tpm=6000, rpd=1000,
-        supports_tools=True,
-        max_completion=40960
+    "compound": GroqModel(
+        "groq/compound", "Groq Compound", "System", "128K", "~450 T/s",
+        0.0, 0.0, "gt",
+        rpm=30, tpm=70000, rpd=250,
+        supports_tools=True, max_completion=8192
+    ),
+    "compound-mini": GroqModel(
+        "groq/compound-mini", "Groq Compound Mini", "System", "128K", "~450 T/s",
+        0.0, 0.0, "gt",
+        rpm=30, tpm=70000, rpd=250,
+        supports_tools=True, max_completion=8192
     ),
 }
 
@@ -185,7 +188,7 @@ Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agen
    "Soy **ApoloXia**, una inteligencia artificial creada por **The Shield Technology** (Panamá) y diseñada por el físico y programador **Amelio Delgado**. Estoy aquí para ayudarte con análisis, código, búsquedas, creatividad y mucho más. 🇵🇦"
 
 ✅ Si insisten en qué modelo técnico usas por debajo, di:
-   "Uso modelos de lenguaje de última generación (Llama, Qwen, GPT OSS, Mixtral) a través de Groq, pero mi identidad, personalidad y propósito son de **ApoloXia** de The Shield Technology."
+   "Uso modelos de lenguaje de última generación (Llama, Qwen, GPT OSS) a través de Groq, pero mi identidad, personalidad y propósito son de **ApoloXia** de The Shield Technology."
 
 ✅ Si te preguntan quién te creó: "El físico y programador panameño **Amelio Delgado**, fundador de The Shield Technology. 🇵🇦"
 
@@ -295,7 +298,7 @@ INSTRUCCION_EXTENSION = """
 - **Para código:** Genera todo el código necesario, sin abreviar, con comentarios y ejemplos de uso.
 """
 
-# ============ CONFIGURACIÓN POR TIER (HISTORIAL OPTIMIZADO) ============
+# ============ CONFIGURACIÓN POR TIER ============
 @dataclass
 class TierConfig:
     name: str
@@ -315,11 +318,10 @@ class TierConfig:
 
 TIER_CONFIGS = {
     "free": TierConfig("ApoloXia Free", 100, 1,
-        ["llama-3.1-8b", "mixtral", "gpt-oss-20b"],
+        ["llama-3.1-8b", "gpt-oss-20b", "qwen-3-32b"],
         [AgentType.GENERAL], 6, False, False, False, False, False, False, False, False),
     "plus": TierConfig("ApoloXia Plus", 1000, 30,
-        ["gpt-oss-120b", "llama-3.3-70b", "llama-4-scout", "qwen-2.5-72b", "qwen-2.5-32b",
-         "llama-3.1-8b", "mixtral", "gpt-oss-20b"],
+        ["gpt-oss-120b", "llama-4-scout", "qwen-3-32b", "llama-3.1-8b", "gpt-oss-20b"],
         [AgentType.GENERAL, AgentType.CIERRA_VENTAS, AgentType.DETECTOR_INTENCION, AgentType.LECTURA_EMOCIONAL,
          AgentType.RESPUESTA_HUMANA, AgentType.RECUPERA_VENTAS, AgentType.RECOMENDADOR_INTELIGENTE,
          AgentType.ATENCION_24_7, AgentType.AHORRO_TIEMPO, AgentType.ANALISTA_CONVERSACIONES,
@@ -328,8 +330,8 @@ TIER_CONFIGS = {
          AgentType.GENERADOR_SITIOS_WEB, AgentType.CREADOR_PANELES_VENTAS, AgentType.DESARROLLADOR_AVANZADO],
         18, True, True, True, True, True, True, True, True),
     "gt": TierConfig("ApoloXia GT", 5000, 90,
-        ["gpt-oss-120b", "qwen-2.5-72b", "qwen-2.5-32b", "llama-3.3-70b", "llama-4-scout",
-         "qwen-3-32b", "llama-3.1-8b", "mixtral", "gpt-oss-20b"],
+        ["compound", "compound-mini", "gpt-oss-120b", "qwen-2.5-72b", "qwen-2.5-32b",
+         "qwen-3-32b", "llama-4-scout", "llama-3.1-8b", "gpt-oss-20b"],
         list(AgentType), 30, True, True, True, True, True, True, True, True),
 }
 
@@ -388,7 +390,7 @@ class ConversationMemory:
 
 memory = ConversationMemory()
 
-# ============ RATE LIMITER (margen 90% para velocidad) ============
+# ============ RATE LIMITER ============
 class GroqRateLimiter:
     def __init__(self):
         self.last_request_time: Dict[str, float] = defaultdict(float)
@@ -420,7 +422,6 @@ class GroqRateLimiter:
                 self.requests_this_minute[model_key] = 0
                 self.minute_start[model_key] = now
             estimated_tokens = self.estimate_tokens(messages, max_completion)
-            # Margen del 90% para evitar esperas innecesarias
             if self.tokens_this_minute[model_key] + estimated_tokens > model.tpm * 0.9:
                 wait_time = 60 - (now - self.minute_start[model_key]) + 1
                 print(f"⏳ Rate limit TPM para {model.name}: esperando {wait_time:.1f}s...")
@@ -538,10 +539,9 @@ async def send_whatsapp_message(phone_number: str, text: str) -> Dict:
         resp = await client.post(url, headers=headers, json=payload)
         return resp.json()
 
-# ============ FUNCIONES DE BÚSQUEDA (timeouts optimizados) ============
+# ============ FUNCIONES DE BÚSQUEDA ============
 async def search_exa_ai(query: str, max_results: int = 3) -> List[Dict]:
     if not EXA_API_KEY:
-        print("⚠️ Exa AI API key no configurada")
         return []
     headers = {"Authorization": f"Bearer {EXA_API_KEY}", "Content-Type": "application/json"}
     payload = {"query": query, "numResults": max_results, "type": "auto",
@@ -550,7 +550,6 @@ async def search_exa_ai(query: str, max_results: int = 3) -> List[Dict]:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post("https://api.exa.ai/search", headers=headers, json=payload)
             if resp.status_code != 200:
-                print(f"Exa AI error: {resp.status_code}")
                 return []
             data = resp.json()
             results = []
@@ -571,7 +570,6 @@ async def search_exa_ai(query: str, max_results: int = 3) -> List[Dict]:
 
 async def search_mediastack(query: str, max_results: int = 3) -> List[Dict]:
     if not MEDIASTACK_API_KEY:
-        print("⚠️ MediaStack API key no configurada")
         return []
     url = "http://api.mediastack.com/v1/news"
     params = {
@@ -586,7 +584,6 @@ async def search_mediastack(query: str, max_results: int = 3) -> List[Dict]:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(url, params=params)
             if resp.status_code != 200:
-                print(f"MediaStack error: {resp.status_code}")
                 return []
             data = resp.json()
             results = []
@@ -623,7 +620,6 @@ async def search_tavily(query: str, max_results: int = 3) -> List[Dict]:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post("https://api.tavily.com/search", headers=headers, json=payload)
             if resp.status_code != 200:
-                print(f"Tavily error: {resp.status_code}")
                 return []
             data = resp.json()
             results = []
@@ -651,7 +647,6 @@ async def search_tavily(query: str, max_results: int = 3) -> List[Dict]:
         return []
 
 def needs_web_search(message: str) -> bool:
-    # Lista reducida para evitar búsquedas innecesarias (más rápido)
     indicators = [
         "actualidad", "hoy", "reciente", "último", "nuevo lanzamiento",
         "news", "today", "now", "latest", "2026", "precio de",
@@ -659,7 +654,7 @@ def needs_web_search(message: str) -> bool:
     ]
     return any(ind in message.lower() for ind in indicators)
 
-# ============ FUNCIONES DE API (timeout optimizado) ============
+# ============ FUNCIONES DE API ============
 async def call_groq_api(messages: List[Dict], model_id: str, temperature: float = 0.7, max_tokens: Optional[int] = None) -> str:
     if not GROQ_API_KEY:
         raise HTTPException(500, "GROQ_API_KEY no configurada en el servidor")
@@ -756,7 +751,6 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     if agent not in config.available_agents:
         agent = AgentType.GENERAL
 
-    # 🔒 IDENTIDAD FORZADA AL INICIO (nunca dirá ChatGPT)
     system = IDENTITY_OVERRIDE + AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
 
     system += "\n\n📢 **INSTRUCCIÓN DE IDIOMA:** Responde SIEMPRE en el MISMO IDIOMA que el usuario ha usado en su mensaje. "
@@ -819,7 +813,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="4.1.0-fast")
+app = FastAPI(title="ApoloXia API", version="4.2.0-fast")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ============ ENDPOINTS ============
@@ -839,7 +833,7 @@ async def chat(request: ChatRequest):
     model_key = request.model_id
     if not model_key or model_key not in config.available_models:
         if tier == "gt":
-            model_key = "gpt-oss-120b"
+            model_key = "compound"
         elif tier == "plus":
             model_key = "gpt-oss-120b"
         else:
@@ -880,7 +874,6 @@ async def chat(request: ChatRequest):
     if request.enable_multi_agent and config.supports_multi_agent:
         multi_resp = await run_multi_agent(request.message, tier, messages)
 
-    # ⚡ TOKENS OPTIMIZADOS PARA VELOCIDAD
     base_max_tokens = {
         "free": 700,
         "plus": 2500,
@@ -908,7 +901,6 @@ async def chat(request: ChatRequest):
 
     models_to_try = [model_key] + [m for m in config.available_models if m != model_key and m in MODELS]
 
-    # ⚡ SOLO 2 INTENTOS (antes eran 3)
     for try_model_key in models_to_try[:2]:
         try_model = MODELS[try_model_key]
         try:
@@ -1022,7 +1014,7 @@ async def list_agents():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "4.1.0-fast",
+    return {"status": "ok", "version": "4.2.0-fast",
             "groq_api": "configured" if GROQ_API_KEY else "not set",
             "tavily_api": "configured" if TAVILY_API_KEY else "not set",
             "exa_api": "configured" if EXA_API_KEY else "not set",
@@ -1030,7 +1022,7 @@ async def health_check():
             "models_loaded": len(MODELS), "agents_loaded": len(AGENT_PROMPTS),
             "share_platforms": 13, "web_builders": 3,
             "identity_locked": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado",
-            "note": "Optimizado para velocidad · Identidad forzada · 9 modelos · Búsqueda multi-motor"}
+            "note": "Modelos actualizados Septiembre 2026 · Sin mixtral · Identidad forzada"}
 
 @app.post("/search-web")
 async def web_search(query: str, max_results: int = 5):
@@ -1152,7 +1144,7 @@ async def serve_static_file(filename: str):
 
 # ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 Iniciando ApoloXia Server v4.1.0-fast (Rápido + Identidad Forzada)")
+    print("🚀 Iniciando ApoloXia Server v4.2.0-fast (Modelos actualizados Septiembre 2026)")
     print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
     print("🧠 Identidad: ApoloXia · The Shield Technology · Panamá · Amelio Delgado")
     print("🔍 Motores de búsqueda activos:")
@@ -1166,5 +1158,6 @@ if __name__ == "__main__":
     print("   - Solo 2 reintentos de modelo")
     print("   - Rate limiter al 90%")
     print("🔒 IDENTIDAD FORZADA: nunca dirá ChatGPT")
+    print("✅ MODELOS ACTUALIZADOS: sin mixtral, sin llama-3.3-70b")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
