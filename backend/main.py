@@ -1,6 +1,6 @@
-# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA RÁPIDA - Septiembre 2026)
+# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA - Septiembre 2026)
 # ======================================================
-# - Modelos Groq ACTUALIZADOS (sin mixtral, sin llama-3.3-70b)
+# - 12 modelos Groq ACTIVOS (sin descontinuados)
 # - Tavily + EXA AI + MediaStack (búsqueda multi-motor)
 # - Agentes completos (35+)
 # - IDENTIDAD FORZADA: ApoloXia (The Shield Technology · Panamá · Amelio Delgado)
@@ -36,9 +36,8 @@ MEDIASTACK_API_KEY = os.getenv("MEDIASTACK_API_KEY", "")
 WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 
-# ============ MODELOS GROQ (ACTUALIZADOS SEPTIEMBRE 2026) ============
-# ELIMINADOS por decommissioned: mixtral-8x7b-32768, llama-3.3-70b-versatile
-# AÑADIDOS: gpt-oss-120b, gpt-oss-20b, qwen-3-32b, llama-4-scout, llama-3.1-8b
+# ============ 12 MODELOS GROQ ACTIVOS (SEPTIEMBRE 2026) ============
+# Confirmados como activos y no descontinuados
 
 class GroqModel:
     def __init__(self, id: str, name: str, params: str, context: str, speed: str,
@@ -62,14 +61,7 @@ class GroqModel:
         self.max_completion = max_completion
 
 MODELS = {
-    # ===== FREE TIER =====
-    "llama-3.1-8b": GroqModel(
-        "llama-3.1-8b-instant", "Llama 3.1 8B", "8B", "128K", "~560 T/s",
-        0.05, 0.08, "free",
-        rpm=30, tpm=6000, rpd=14400,
-        supports_tools=True,
-        max_completion=131072
-    ),
+    # ===== FREE TIER (4 modelos) =====
     "gpt-oss-20b": GroqModel(
         "openai/gpt-oss-20b", "GPT OSS 20B", "20B", "128K", "~1,000 T/s",
         0.075, 0.30, "free",
@@ -84,8 +76,22 @@ MODELS = {
         supports_tools=True,
         max_completion=40960
     ),
+    "allam-2-7b": GroqModel(
+        "allam-2-7b", "ALLaM-2 7B", "7B", "4K", "~500 T/s",
+        0.0, 0.0, "free",
+        rpm=30, tpm=6000, rpd=14400,
+        supports_tools=False,
+        max_completion=4096
+    ),
+    "gpt-oss-safeguard-20b": GroqModel(
+        "openai/gpt-oss-safeguard-20b", "GPT OSS Safeguard 20B", "20B", "128K", "~1,000 T/s",
+        0.075, 0.30, "free",
+        rpm=30, tpm=8000, rpd=1000,
+        supports_tools=True,
+        max_completion=65536
+    ),
 
-    # ===== PLUS TIER =====
+    # ===== PLUS TIER (4 modelos) =====
     "gpt-oss-120b": GroqModel(
         "openai/gpt-oss-120b", "GPT OSS 120B", "120B", "128K", "~500 T/s",
         0.15, 0.60, "plus",
@@ -100,22 +106,22 @@ MODELS = {
         supports_vision=True, supports_tools=True,
         max_completion=8192
     ),
+    "llama-4-maverick": GroqModel(
+        "meta-llama/llama-4-maverick-17b-128e-instruct", "Llama 4 Maverick", "17B×128E", "128K", "~600 T/s",
+        0.20, 0.60, "plus",
+        rpm=30, tpm=30000, rpd=1000,
+        supports_vision=True, supports_tools=True,
+        max_completion=8192
+    ),
+    "kimi-k2-instruct": GroqModel(
+        "moonshotai/kimi-k2-instruct-0905", "Kimi K2 Instruct", "1T", "128K", "~450 T/s",
+        1.50, 1.50, "plus",
+        rpm=30, tpm=10000, rpd=1000,
+        supports_tools=True,
+        max_completion=8192
+    ),
 
-    # ===== GT TIER =====
-    "qwen-2.5-72b": GroqModel(
-        "qwen/qwen-2.5-72b-instruct", "Qwen 2.5 72B", "72B", "128K", "~450 T/s",
-        0.29, 0.59, "gt",
-        rpm=60, tpm=6000, rpd=1000,
-        supports_vision=True, supports_tools=True,
-        max_completion=40960
-    ),
-    "qwen-2.5-32b": GroqModel(
-        "qwen/qwen-2.5-32b-instruct", "Qwen 2.5 32B", "32B", "128K", "~450 T/s",
-        0.29, 0.59, "gt",
-        rpm=60, tpm=6000, rpd=1000,
-        supports_vision=True, supports_tools=True,
-        max_completion=40960
-    ),
+    # ===== GT TIER (4 modelos) =====
     "compound": GroqModel(
         "groq/compound", "Groq Compound", "System", "128K", "~450 T/s",
         0.0, 0.0, "gt",
@@ -127,6 +133,20 @@ MODELS = {
         0.0, 0.0, "gt",
         rpm=30, tpm=70000, rpd=250,
         supports_tools=True, max_completion=8192
+    ),
+    "qwen-3.6-27b": GroqModel(
+        "qwen/qwen3.6-27b", "Qwen 3.6 27B", "27B", "128K", "~450 T/s",
+        0.60, 3.00, "gt",
+        rpm=30, tpm=6000, rpd=1000,
+        supports_vision=True, supports_tools=True,
+        max_completion=40960
+    ),
+    "qwen-3.8-27b": GroqModel(
+        "qwen/qwen3.8-27b", "Qwen 3.8 27B", "27B", "128K", "~450 T/s",
+        0.80, 4.00, "gt",
+        rpm=30, tpm=6000, rpd=1000,
+        supports_vision=True, supports_tools=True,
+        max_completion=40960
     ),
 }
 
@@ -188,7 +208,7 @@ Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agen
    "Soy **ApoloXia**, una inteligencia artificial creada por **The Shield Technology** (Panamá) y diseñada por el físico y programador **Amelio Delgado**. Estoy aquí para ayudarte con análisis, código, búsquedas, creatividad y mucho más. 🇵🇦"
 
 ✅ Si insisten en qué modelo técnico usas por debajo, di:
-   "Uso modelos de lenguaje de última generación (Llama, Qwen, GPT OSS) a través de Groq, pero mi identidad, personalidad y propósito son de **ApoloXia** de The Shield Technology."
+   "Uso modelos de lenguaje de última generación (GPT OSS, Qwen, Llama 4, Kimi) a través de Groq, pero mi identidad, personalidad y propósito son de **ApoloXia** de The Shield Technology."
 
 ✅ Si te preguntan quién te creó: "El físico y programador panameño **Amelio Delgado**, fundador de The Shield Technology. 🇵🇦"
 
@@ -318,10 +338,10 @@ class TierConfig:
 
 TIER_CONFIGS = {
     "free": TierConfig("ApoloXia Free", 100, 1,
-        ["llama-3.1-8b", "gpt-oss-20b", "qwen-3-32b"],
+        ["gpt-oss-20b", "qwen-3-32b", "allam-2-7b", "gpt-oss-safeguard-20b"],
         [AgentType.GENERAL], 6, False, False, False, False, False, False, False, False),
     "plus": TierConfig("ApoloXia Plus", 1000, 30,
-        ["gpt-oss-120b", "llama-4-scout", "qwen-3-32b", "llama-3.1-8b", "gpt-oss-20b"],
+        ["gpt-oss-120b", "llama-4-scout", "llama-4-maverick", "kimi-k2-instruct"],
         [AgentType.GENERAL, AgentType.CIERRA_VENTAS, AgentType.DETECTOR_INTENCION, AgentType.LECTURA_EMOCIONAL,
          AgentType.RESPUESTA_HUMANA, AgentType.RECUPERA_VENTAS, AgentType.RECOMENDADOR_INTELIGENTE,
          AgentType.ATENCION_24_7, AgentType.AHORRO_TIEMPO, AgentType.ANALISTA_CONVERSACIONES,
@@ -330,8 +350,7 @@ TIER_CONFIGS = {
          AgentType.GENERADOR_SITIOS_WEB, AgentType.CREADOR_PANELES_VENTAS, AgentType.DESARROLLADOR_AVANZADO],
         18, True, True, True, True, True, True, True, True),
     "gt": TierConfig("ApoloXia GT", 5000, 90,
-        ["compound", "compound-mini", "gpt-oss-120b", "qwen-2.5-72b", "qwen-2.5-32b",
-         "qwen-3-32b", "llama-4-scout", "llama-3.1-8b", "gpt-oss-20b"],
+        ["compound", "compound-mini", "qwen-3.6-27b", "qwen-3.8-27b"],
         list(AgentType), 30, True, True, True, True, True, True, True, True),
 }
 
@@ -813,7 +832,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="4.2.0-fast")
+app = FastAPI(title="ApoloXia API", version="5.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ============ ENDPOINTS ============
@@ -837,7 +856,7 @@ async def chat(request: ChatRequest):
         elif tier == "plus":
             model_key = "gpt-oss-120b"
         else:
-            model_key = "llama-3.1-8b"
+            model_key = "gpt-oss-20b"
 
     if model_key not in MODELS:
         raise HTTPException(400, f"Modelo '{model_key}' no disponible")
@@ -1014,7 +1033,7 @@ async def list_agents():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "4.2.0-fast",
+    return {"status": "ok", "version": "5.0.0",
             "groq_api": "configured" if GROQ_API_KEY else "not set",
             "tavily_api": "configured" if TAVILY_API_KEY else "not set",
             "exa_api": "configured" if EXA_API_KEY else "not set",
@@ -1022,7 +1041,7 @@ async def health_check():
             "models_loaded": len(MODELS), "agents_loaded": len(AGENT_PROMPTS),
             "share_platforms": 13, "web_builders": 3,
             "identity_locked": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado",
-            "note": "Modelos actualizados Septiembre 2026 · Sin mixtral · Identidad forzada"}
+            "note": "12 modelos activos · Sin descontinuados · Identidad forzada"}
 
 @app.post("/search-web")
 async def web_search(query: str, max_results: int = 5):
@@ -1144,7 +1163,7 @@ async def serve_static_file(filename: str):
 
 # ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 Iniciando ApoloXia Server v4.2.0-fast (Modelos actualizados Septiembre 2026)")
+    print("🚀 Iniciando ApoloXia Server v5.0.0 (12 modelos activos Septiembre 2026)")
     print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
     print("🧠 Identidad: ApoloXia · The Shield Technology · Panamá · Amelio Delgado")
     print("🔍 Motores de búsqueda activos:")
@@ -1158,6 +1177,6 @@ if __name__ == "__main__":
     print("   - Solo 2 reintentos de modelo")
     print("   - Rate limiter al 90%")
     print("🔒 IDENTIDAD FORZADA: nunca dirá ChatGPT")
-    print("✅ MODELOS ACTUALIZADOS: sin mixtral, sin llama-3.3-70b")
+    print("✅ 12 MODELOS ACTIVOS: 4 Free + 4 Plus + 4 GT")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
