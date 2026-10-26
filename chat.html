@@ -1745,7 +1745,6 @@
                     <div class="message-actions-bar">
                         <button class="msg-action-btn" onclick="copyMessage('${msgId}')" title="Copiar">📋</button>
                         <button class="msg-action-btn" onclick="regenerateLastMessage()" title="Regenerar">🔄</button>
-                        <button class="msg-action-btn" onclick="exportMessage('${msgId}', 'pdf')" title="Descargar PDF">📄 PDF</button>
                         <button class="msg-action-btn" onclick="exportMessage('${msgId}', 'docx')" title="Descargar Word">📝 Word</button>
                         <div style="position:relative;">
                             <button class="msg-action-btn" onclick="toggleShareMenu(this)">📤</button>
@@ -1883,9 +1882,6 @@
         } catch (e) { showToast('Error al compartir', 'error'); }
     }
 
-    // ═══════════════════════════════════════════════════════
-    // 📄 EXPORTACIÓN PDF / WORD
-    // ═══════════════════════════════════════════════════════
     async function exportMessage(msgId, format) {
         const el = document.getElementById(msgId);
         if (!el) return;
@@ -2062,7 +2058,8 @@
             generador_codigo: 'Generador Código', debugger_inteligente: 'Debugger',
             arquitecto_software: 'Arquitecto', analista_datos: 'Analista Datos',
             investigacion_cientifica: 'Investigación', finanzas_inversion: 'Finanzas',
-            educacion_avanzada: 'Educación'
+            educacion_avanzada: 'Educación', comparador_diferencias: 'Comparador',
+            buscador_noticias: 'Buscador Noticias'
         };
         return names[agentId] || agentId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
@@ -2102,7 +2099,9 @@
             creador_paneles_ventas: 'Dashboards y gráficos', desarrollador_avanzado: 'Apps completas, APIs',
             generador_codigo: 'Código limpio y documentado', debugger_inteligente: 'Detección y corrección de bugs',
             arquitecto_software: 'Diseño de sistemas escalables', analista_datos: 'Insights y visualización',
-            investigacion_cientifica: 'Investigación académica', finanzas_inversion: 'Análisis financiero'
+            investigacion_cientifica: 'Investigación académica', finanzas_inversion: 'Análisis financiero',
+            comparador_diferencias: 'Compara productos, versiones o conceptos',
+            buscador_noticias: 'Noticias del día con fuentes'
         };
         return descs[agentId] || 'Agente especializado';
     }
