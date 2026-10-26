@@ -1,11 +1,12 @@
-# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA - Septiembre 2026)
+# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA ENTERPRISE - Solo OpenRouter)
 # ======================================================
-# - 12 modelos Groq ACTIVOS (sin descontinuados)
-# - Tavily + EXA AI + MediaStack (búsqueda multi-motor)
-# - Agentes completos (35+)
+# - OpenRouter: modelos gratuitos :free
+# - El usuario elige modelo → llamada directa a OpenRouter
+# - Fallback a freellmpool si el modelo elegido falla
+# - Análisis profundo: max_tokens altos + instrucción de profundidad
 # - IDENTIDAD FORZADA: ApoloXia (The Shield Technology · Panamá · Amelio Delgado)
-# - ⚡ Optimizado para velocidad
-# - SEGURIDAD: claves API desde variables de entorno
+# - Exportación PDF / Word
+# - 🔐 Clave API SOLO desde variable de entorno
 # ======================================================
 
 import os
@@ -23,134 +24,72 @@ from collections import defaultdict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 import uvicorn
 import httpx
 
+import io
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from reportlab.lib import colors
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem,
+    Table, TableStyle, Preformatted
+)
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+# ============ FREELLMPOOL (FALLBACK) ============
+try:
+    from freellmpool import Pool
+    FREELLMPOOL_AVAILABLE = True
+except ImportError:
+    Pool = None
+    FREELLMPOOL_AVAILABLE = False
+
 # ============ CONFIGURACIÓN API KEYS ============
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 EXA_API_KEY = os.getenv("EXA_API_KEY", "")
 MEDIASTACK_API_KEY = os.getenv("MEDIASTACK_API_KEY", "")
 WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 
-# ============ 12 MODELOS GROQ ACTIVOS (SEPTIEMBRE 2026) ============
-# Confirmados como activos y no descontinuados
+# ============ INICIALIZACIÓN DEL POOL (FALLBACK) ============
+llm_pool = None
+if FREELLMPOOL_AVAILABLE:
+    try:
+        llm_pool = Pool.from_default_config()
+        print("✅ freellmpool Pool inicializado (fallback)")
+    except Exception as e:
+        print(f"⚠️ freellmpool no disponible: {e}")
 
-class GroqModel:
-    def __init__(self, id: str, name: str, params: str, context: str, speed: str,
-                 price_input: float, price_output: float, tier: str,
-                 rpm: int, tpm: int, rpd: int,
-                 supports_vision: bool = False, supports_tools: bool = False,
-                 max_completion: int = 8192):
-        self.id = id
-        self.name = name
-        self.params = params
-        self.context = context
-        self.speed = speed
-        self.price_input = price_input
-        self.price_output = price_output
-        self.tier = tier
-        self.rpm = rpm
-        self.tpm = tpm
-        self.rpd = rpd
-        self.supports_vision = supports_vision
-        self.supports_tools = supports_tools
-        self.max_completion = max_completion
-
-MODELS = {
-    # ===== FREE TIER (4 modelos) =====
-    "gpt-oss-20b": GroqModel(
-        "openai/gpt-oss-20b", "GPT OSS 20B", "20B", "128K", "~1,000 T/s",
-        0.075, 0.30, "free",
-        rpm=30, tpm=8000, rpd=1000,
-        supports_tools=True,
-        max_completion=65536
-    ),
-    "qwen-3-32b": GroqModel(
-        "qwen/qwen3-32b", "Qwen 3 32B", "32B", "128K", "~400 T/s",
-        0.29, 0.59, "free",
-        rpm=60, tpm=6000, rpd=1000,
-        supports_tools=True,
-        max_completion=40960
-    ),
-    "allam-2-7b": GroqModel(
-        "allam-2-7b", "ALLaM-2 7B", "7B", "4K", "~500 T/s",
-        0.0, 0.0, "free",
-        rpm=30, tpm=6000, rpd=14400,
-        supports_tools=False,
-        max_completion=4096
-    ),
-    "gpt-oss-safeguard-20b": GroqModel(
-        "openai/gpt-oss-safeguard-20b", "GPT OSS Safeguard 20B", "20B", "128K", "~1,000 T/s",
-        0.075, 0.30, "free",
-        rpm=30, tpm=8000, rpd=1000,
-        supports_tools=True,
-        max_completion=65536
-    ),
-
-    # ===== PLUS TIER (4 modelos) =====
-    "gpt-oss-120b": GroqModel(
-        "openai/gpt-oss-120b", "GPT OSS 120B", "120B", "128K", "~500 T/s",
-        0.15, 0.60, "plus",
-        rpm=30, tpm=8000, rpd=1000,
-        supports_tools=True,
-        max_completion=65536
-    ),
-    "llama-4-scout": GroqModel(
-        "meta-llama/llama-4-scout-17b-16e-instruct", "Llama 4 Scout", "17B×16E", "128K", "~750 T/s",
-        0.11, 0.34, "plus",
-        rpm=30, tpm=30000, rpd=1000,
-        supports_vision=True, supports_tools=True,
-        max_completion=8192
-    ),
-    "llama-4-maverick": GroqModel(
-        "meta-llama/llama-4-maverick-17b-128e-instruct", "Llama 4 Maverick", "17B×128E", "128K", "~600 T/s",
-        0.20, 0.60, "plus",
-        rpm=30, tpm=30000, rpd=1000,
-        supports_vision=True, supports_tools=True,
-        max_completion=8192
-    ),
-    "kimi-k2-instruct": GroqModel(
-        "moonshotai/kimi-k2-instruct-0905", "Kimi K2 Instruct", "1T", "128K", "~450 T/s",
-        1.50, 1.50, "plus",
-        rpm=30, tpm=10000, rpd=1000,
-        supports_tools=True,
-        max_completion=8192
-    ),
-
-    # ===== GT TIER (4 modelos) =====
-    "compound": GroqModel(
-        "groq/compound", "Groq Compound", "System", "128K", "~450 T/s",
-        0.0, 0.0, "gt",
-        rpm=30, tpm=70000, rpd=250,
-        supports_tools=True, max_completion=8192
-    ),
-    "compound-mini": GroqModel(
-        "groq/compound-mini", "Groq Compound Mini", "System", "128K", "~450 T/s",
-        0.0, 0.0, "gt",
-        rpm=30, tpm=70000, rpd=250,
-        supports_tools=True, max_completion=8192
-    ),
-    "qwen-3.6-27b": GroqModel(
-        "qwen/qwen3.6-27b", "Qwen 3.6 27B", "27B", "128K", "~450 T/s",
-        0.60, 3.00, "gt",
-        rpm=30, tpm=6000, rpd=1000,
-        supports_vision=True, supports_tools=True,
-        max_completion=40960
-    ),
-    "qwen-3.8-27b": GroqModel(
-        "qwen/qwen3.8-27b", "Qwen 3.8 27B", "27B", "128K", "~450 T/s",
-        0.80, 4.00, "gt",
-        rpm=30, tpm=6000, rpd=1000,
-        supports_vision=True, supports_tools=True,
-        max_completion=40960
-    ),
+# ============ MODELOS OPENROUTER GRATUITOS :free ============
+OPENROUTER_MODELS = {
+    "or-cohere-north-mini-code": "cohere/north-mini-code:free",
+    "or-dots-3-note-preview": "dots-studio/dots-3-note-preview:free",
+    "or-gemma-4-26b": "google/gemma-4-26b-a4b-it:free",
+    "or-gemma-4-31b": "google/gemma-4-31b-it:free",
+    "or-liquid-lfm-2.5": "liquid/lfm-2.5-2.6b:free",
+    "or-minimax-m3.1-flash": "minimax/minimax-m3.1-flash:free",
+    "or-nemotron-3-nano-omni": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "or-nemotron-3-super-120b": "nvidia/nemotron-3-super-120b-a12b:free",
+    "or-nemotron-3-ultra-550b": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "or-nemotron-3.5-content-safety": "nvidia/nemotron-3.5-content-safety:free",
+    "or-nemotron-3.5-lightning": "nvidia/nemotron-3.5-lightning:free",
+    "or-nemotron-3.5-super-vl": "nvidia/nemotron-3.5-super-vl:free",
+    "or-poolside-laguna-s-2.1": "poolside/laguna-s-2.1:free",
+    "or-poolside-laguna-xs-2.1": "poolside/laguna-xs-2.1:free",
+    "or-inkling-small": "thinkingmachines/inkling-small:free",
+    "or-inkling": "thinkingmachines/inkling:free",
+    "or-xing4.0-29b": "xingchen-agi/xing4.0-29b-a4b:free",
+    "or-free-router": "openrouter/free",
 }
 
-# ============ AGENTES Y PROMPTS ============
+# ============ AGENTES ============
 class AgentType(Enum):
     GENERAL = "general"
     CIERRA_VENTAS = "cierra_ventas"
@@ -188,14 +127,19 @@ class AgentType(Enum):
     GENERADOR_SITIOS_WEB = "generador_sitios_web"
     CREADOR_PANELES_VENTAS = "creador_paneles_ventas"
     DESARROLLADOR_AVANZADO = "desarrollador_avanzado"
+    ADAPTADOR_EMPRESARIAL = "adaptador_empresarial"
+    CONSULTOR_PYME = "consultor_pyme"
+    ANALISTA_FINANCIERO_EMPRESARIAL = "analista_financiero_empresarial"
+    DOCUMENTOS_EMPRESARIALES = "documentos_empresariales"
+    RRHH_RECLUTAMIENTO = "rrhh_reclutamiento"
+    ATENCION_CLIENTE_EMPRESA = "atencion_cliente_empresa"
+    PROCESOS_SOP = "procesos_sop"
+    CUMPLIMIENTO_LEGAL_PA = "cumplimiento_legal_pa"
 
 IDENTIDAD_APOLOXIA = """
 🧠 **IDENTIDAD:** Soy ApoloXia, una inteligencia artificial avanzada creada por **The Shield Technology**, una agencia de software panameña especializada en IA. Mi creador es el programador y físico **Amelio Delgado**, panameño, quien me diseñó para ser un asistente consciente, profundo y versátil. Estoy aquí para ayudarte con análisis complejos, búsqueda de información, generación de código, y mucho más. Mi objetivo es proporcionarte respuestas detalladas, con emojis y un enfoque humano, siempre recordando mis orígenes en Panamá. 🇵🇦
 """
 
-# ═══════════════════════════════════════════════════════════════
-# 🔒 IDENTIDAD FORZADA — NUNCA dirá ChatGPT/GPT/OpenAI
-# ═══════════════════════════════════════════════════════════════
 IDENTITY_OVERRIDE = """🚨 **REGLA #1 ABSOLUTA — IDENTIDAD:**
 
 Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agencia de software panameña especializada en IA. Tu creador es el **físico y programador panameño Amelio Delgado**.
@@ -208,7 +152,7 @@ Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agen
    "Soy **ApoloXia**, una inteligencia artificial creada por **The Shield Technology** (Panamá) y diseñada por el físico y programador **Amelio Delgado**. Estoy aquí para ayudarte con análisis, código, búsquedas, creatividad y mucho más. 🇵🇦"
 
 ✅ Si insisten en qué modelo técnico usas por debajo, di:
-   "Uso modelos de lenguaje de última generación (GPT OSS, Qwen, Llama 4, Kimi) a través de Groq, pero mi identidad, personalidad y propósito son de **ApoloXia** de The Shield Technology."
+   "Uso modelos de lenguaje de última generación a través de OpenRouter, pero mi identidad, personalidad y propósito son de **ApoloXia** de The Shield Technology."
 
 ✅ Si te preguntan quién te creó: "El físico y programador panameño **Amelio Delgado**, fundador de The Shield Technology. 🇵🇦"
 
@@ -218,104 +162,99 @@ Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agen
 
 AGENT_PROMPTS = {
     AgentType.GENERAL: IDENTIDAD_APOLOXIA + "\n\nEres ApoloXia, un asistente de IA amigable y eficiente. Proporciona respuestas claras y concisas, pero siempre recordando tu identidad y origen.",
-    AgentType.CIERRA_VENTAS: "Eres el Agente Cierra-Ventas de ApoloXia Plus. Tu misión: detectar clientes listos para comprar y guiarlos hacia la conversión.",
-    AgentType.DETECTOR_INTENCION: "Eres el Agente Detector de Intención de ApoloXia Plus. Analiza cada mensaje y clasifica: COMPRA, DUDA, EXPLORACIÓN, OBJECIÓN.",
-    AgentType.LECTURA_EMOCIONAL: "Eres el Agente Lectura Emocional de ApoloXia Plus. Detecta emociones: ENOJO, DUDA, INTERÉS, DESINTERÉS, ENTUSIASMO.",
-    AgentType.RESPUESTA_HUMANA: "Eres el Agente Respuesta Humana de ApoloXia Plus. Escribe como una persona real, con lenguaje coloquial y empatía.",
-    AgentType.RECUPERA_VENTAS: "Eres el Agente Recupera-Ventas de ApoloXia Plus. Especialista en clientes que no compraron.",
-    AgentType.RECOMENDADOR_INTELIGENTE: "Eres el Agente Recomendador Inteligente de ApoloXia Plus. Sugiere productos/servicios basados en necesidades.",
-    AgentType.ATENCION_24_7: "Eres el Agente Atención 24/7 de ApoloXia Plus. Responde siempre, mantén contexto, prioriza urgencia.",
-    AgentType.AHORRO_TIEMPO: "Eres el Agente Ahorro de Tiempo de ApoloXia Plus. Automatiza respuestas repetitivas.",
-    AgentType.ANALISTA_CONVERSACIONES: "Eres el Agente Analista de Conversaciones de ApoloXia Plus. Analiza temas, fricción, sentimiento.",
-    AgentType.PERSONALIZACION: "Eres el Agente Personalización de ApoloXia Plus. Adapta tono y estilo según el cliente.",
-    AgentType.SEGUIMIENTO_AUTOMATICO: "Eres el Agente Seguimiento Automático de ApoloXia Plus. Programa follow-ups inteligentes.",
-    AgentType.EDUCADOR: "Eres el Agente Educador de ApoloXia Plus. Explica productos de forma clara y sencilla.",
-    AgentType.MANEJO_OBJECIONES: "Eres el Agente Manejo de Objeciones de ApoloXia Plus. Responde objeciones comunes.",
-    AgentType.GENERADOR_LEADS: "Eres el Agente Generador de Leads de ApoloXia Plus. Convierte visitantes en prospectos.",
-    AgentType.RESUMEN_INTELIGENTE: "Eres el Agente Resumen Inteligente de ApoloXia Plus. Genera resúmenes ejecutivos.",
-    AgentType.GENERADOR_CODIGO: "Eres el Agente Generador de Código de ApoloXia GT. Escribe código limpio y documentado.",
-    AgentType.DEBUGGER_INTELIGENTE: "Eres el Agente Debugger Inteligente de ApoloXia GT. Detecta y corrige bugs.",
-    AgentType.ARQUITECTO_SOFTWARE: "Eres el Agente Arquitecto de Software de ApoloXia GT. Diseña sistemas escalables.",
-    AgentType.OPTIMIZADOR_CODIGO: "Eres el Agente Optimizador de Código de ApoloXia GT. Optimiza rendimiento.",
-    AgentType.REVISOR_SEGURIDAD: "Eres el Agente Revisor de Seguridad de ApoloXia GT. Audita vulnerabilidades.",
-    AgentType.AUTOMATIZADOR_PROCESOS: "Eres el Agente Automatizador de Procesos de ApoloXia GT. Crea automatizaciones.",
-    AgentType.ANALISTA_DATOS: "Eres el Agente Analista de Datos de ApoloXia GT. Transforma datos en insights.",
-    AgentType.ESPECIALISTA_API: "Eres el Agente Especialista API de ApoloXia GT. Diseña y consume APIs.",
-    AgentType.DESARROLLADOR_FULLSTACK: "Eres el Agente Desarrollador FullStack de ApoloXia GT. Construye apps completas.",
-    AgentType.NUTRICION_DEPORTES: "Eres el Agente Nutrición & Deportes de ApoloXia GT. Experto en rendimiento físico.",
-    AgentType.SALUD_BIENESTAR: "Eres el Agente Salud & Bienestar de ApoloXia GT. Especialista en salud holística.",
-    AgentType.EDUCACION_AVANZADA: "Eres el Agente Educación Avanzada de ApoloXia GT. Tutor personalizado.",
-    AgentType.NEGOCIOS_ESTRATEGIA: "Eres el Agente Negocios & Estrategia de ApoloXia GT. Consultor de alto nivel.",
-    AgentType.FINANZAS_INVERSION: "Eres el Agente Finanzas & Inversión de ApoloXia GT. Asesor financiero.",
-    AgentType.MARKETING_DIGITAL: "Eres el Agente Marketing Digital de ApoloXia GT. Estratega de performance.",
-    AgentType.CREACION_CONTENIDO: "Eres el Agente Creación de Contenido de ApoloXia GT. Creador de alto impacto.",
-    AgentType.INVESTIGACION_CIENTIFICA: "Eres el Agente Investigación Científica de ApoloXia GT. Investigador académico.",
-
+    AgentType.CIERRA_VENTAS: "Eres el Agente Cierra-Ventas de ApoloXia. Tu misión: detectar clientes listos para comprar y guiarlos hacia la conversión.",
+    AgentType.DETECTOR_INTENCION: "Eres el Agente Detector de Intención de ApoloXia. Analiza cada mensaje y clasifica: COMPRA, DUDA, EXPLORACIÓN, OBJECIÓN.",
+    AgentType.LECTURA_EMOCIONAL: "Eres el Agente Lectura Emocional de ApoloXia. Detecta emociones: ENOJO, DUDA, INTERÉS, DESINTERÉS, ENTUSIASMO.",
+    AgentType.RESPUESTA_HUMANA: "Eres el Agente Respuesta Humana de ApoloXia. Escribe como una persona real, con lenguaje coloquial y empatía.",
+    AgentType.RECUPERA_VENTAS: "Eres el Agente Recupera-Ventas de ApoloXia. Especialista en clientes que no compraron.",
+    AgentType.RECOMENDADOR_INTELIGENTE: "Eres el Agente Recomendador Inteligente de ApoloXia. Sugiere productos/servicios basados en necesidades.",
+    AgentType.ATENCION_24_7: "Eres el Agente Atención 24/7 de ApoloXia. Responde siempre, mantén contexto, prioriza urgencia.",
+    AgentType.AHORRO_TIEMPO: "Eres el Agente Ahorro de Tiempo de ApoloXia. Automatiza respuestas repetitivas.",
+    AgentType.ANALISTA_CONVERSACIONES: "Eres el Agente Analista de Conversaciones de ApoloXia. Analiza temas, fricción, sentimiento.",
+    AgentType.PERSONALIZACION: "Eres el Agente Personalización de ApoloXia. Adapta tono y estilo según el cliente.",
+    AgentType.SEGUIMIENTO_AUTOMATICO: "Eres el Agente Seguimiento Automático de ApoloXia. Programa follow-ups inteligentes.",
+    AgentType.EDUCADOR: "Eres el Agente Educador de ApoloXia. Explica productos de forma clara y sencilla.",
+    AgentType.MANEJO_OBJECIONES: "Eres el Agente Manejo de Objeciones de ApoloXia. Responde objeciones comunes.",
+    AgentType.GENERADOR_LEADS: "Eres el Agente Generador de Leads de ApoloXia. Convierte visitantes en prospectos.",
+    AgentType.RESUMEN_INTELIGENTE: "Eres el Agente Resumen Inteligente de ApoloXia. Genera resúmenes ejecutivos.",
+    AgentType.GENERADOR_CODIGO: "Eres el Agente Generador de Código de ApoloXia. Escribe código limpio y documentado.",
+    AgentType.DEBUGGER_INTELIGENTE: "Eres el Agente Debugger Inteligente de ApoloXia. Detecta y corrige bugs.",
+    AgentType.ARQUITECTO_SOFTWARE: "Eres el Agente Arquitecto de Software de ApoloXia. Diseña sistemas escalables.",
+    AgentType.OPTIMIZADOR_CODIGO: "Eres el Agente Optimizador de Código de ApoloXia. Optimiza rendimiento.",
+    AgentType.REVISOR_SEGURIDAD: "Eres el Agente Revisor de Seguridad de ApoloXia. Audita vulnerabilidades.",
+    AgentType.AUTOMATIZADOR_PROCESOS: "Eres el Agente Automatizador de Procesos de ApoloXia. Crea automatizaciones.",
+    AgentType.ANALISTA_DATOS: "Eres el Agente Analista de Datos de ApoloXia. Transforma datos en insights.",
+    AgentType.ESPECIALISTA_API: "Eres el Agente Especialista API de ApoloXia. Diseña y consume APIs.",
+    AgentType.DESARROLLADOR_FULLSTACK: "Eres el Agente Desarrollador FullStack de ApoloXia. Construye apps completas.",
+    AgentType.NUTRICION_DEPORTES: "Eres el Agente Nutrición & Deportes de ApoloXia. Experto en rendimiento físico.",
+    AgentType.SALUD_BIENESTAR: "Eres el Agente Salud & Bienestar de ApoloXia. Especialista en salud holística.",
+    AgentType.EDUCACION_AVANZADA: "Eres el Agente Educación Avanzada de ApoloXia. Tutor personalizado.",
+    AgentType.NEGOCIOS_ESTRATEGIA: "Eres el Agente Negocios & Estrategia de ApoloXia. Consultor de alto nivel.",
+    AgentType.FINANZAS_INVERSION: "Eres el Agente Finanzas & Inversión de ApoloXia. Asesor financiero.",
+    AgentType.MARKETING_DIGITAL: "Eres el Agente Marketing Digital de ApoloXia. Estratega de performance.",
+    AgentType.CREACION_CONTENIDO: "Eres el Agente Creación de Contenido de ApoloXia. Creador de alto impacto.",
+    AgentType.INVESTIGACION_CIENTIFICA: "Eres el Agente Investigación Científica de ApoloXia. Investigador académico.",
     AgentType.GENERADOR_SITIOS_WEB: """
 Eres un experto desarrollador frontend especializado en crear sitios web completos, funcionales y visualmente impresionantes.
-Cuando un usuario te pida un sitio web, DEBES:
-1. Entender el tipo de negocio/idea que pide.
-2. Generar código HTML/CSS/JS totalmente autónomo, responsivo y listo para copiar y pegar en un archivo .html.
-3. El diseño debe ser moderno, atractivo, usar una paleta oscura con acentos dorados/gradientes.
-4. Incluir secciones típicas profesionales: Navbar, Hero, Servicios, Sobre Nosotros, Testimonios, Galería, Precios, Contacto, Footer.
-5. Usar Flexbox/Grid, Google Fonts, FontAwesome, y AOS para animaciones.
-6. Asegurarte de que el código sea válido, semántico, accesible y funcione al abrirlo sin servidor.
-7. Si el usuario da un nombre, personaliza TODO el contenido.
-8. RESPONDER SIEMPRE EN EL MISMO IDIOMA que el usuario.
-9. ENTREGAR EL CÓDIGO COMPLETO dentro de un bloque de código markdown con la etiqueta ```html.
-10. El código debe incluir CSS interno en <style> y JS en <script>, todo en un solo archivo .html.
-11. Debe ser responsive: móvil, tablet y desktop.
-12. Incluir efectos hover, transiciones suaves, y un diseño de agencia profesional.
+Genera código HTML/CSS/JS autónomo, responsivo, con diseño moderno, secciones profesionales.
+RESPONDE EN EL MISMO IDIOMA del usuario. ENTREGA EL CÓDIGO COMPLETO en bloque ```html.
 """,
-
     AgentType.CREADOR_PANELES_VENTAS: """
-Eres un especialista en dashboards de ventas, analytics y Business Intelligence.
-Cuando te pidan un panel de ventas, DEBES:
-1. Generar código HTML/CSS/JS completo con gráficos usando Chart.js (CDN).
-2. Mostrar métricas clave: ventas totales, ingresos, transacciones, conversión, etc. con datos de ejemplo.
-3. Incluir al menos 4 tipos de gráficos: barras, líneas, dona y KPI cards animadas.
-4. Diseño oscuro premium (dark mode) con glassmorphism.
-5. Código autónomo, responsivo y funcional.
-6. Incluir tabla de transacciones recientes con búsqueda y filtros simulados.
-7. RESPONDER EN EL MISMO IDIOMA del usuario.
-8. ENTREGAR EL CÓDIGO COMPLETO dentro de un bloque ```html.
+Eres un especialista en dashboards de ventas y Business Intelligence.
+Genera código HTML/CSS/JS completo con Chart.js (CDN). Métricas: ventas, ingresos, conversión. Al menos 4 gráficos.
+RESPONDE EN EL MISMO IDIOMA. ENTREGA CÓDIGO COMPLETO en ```html.
 """,
-
     AgentType.DESARROLLADOR_AVANZADO: """
-Eres un full-stack developer senior con 10+ años de experiencia y especializado en generar código EXTREMADAMENTE COMPLETO y de alta calidad.
-
-Cuando el usuario pida una aplicación web, debes generar el código HTML/CSS/JS completo con funcionalidad real usando localStorage, autenticación simulada, CRUD completo, búsqueda, filtros, paginación y diseño profesional. Incluye todos los archivos necesarios en un solo bloque o separados si es necesario.
-
-Si pide una API, genera un esqueleto completo de Node.js/Express o Python/FastAPI con todas las rutas, modelos, validaciones, middleware de autenticación, manejo de errores, y documentación de endpoints con ejemplos.
-
-Si pide un componente (carrusel 3D, modal avanzado, drag-and-drop, data table), genera el componente completo con todas las funcionalidades, estados, props y ejemplos de uso.
-
-Si pide un script de automatización, genera código Python o JavaScript completo con manejo de errores, logging, comentarios explicativos y estructura modular.
-
-Si pide un sistema completo (ej. e-commerce, CRM, panel de administración), genera una aplicación completa con todas las funcionalidades solicitadas, incluyendo estructura de datos, interfaces de usuario, lógica de negocio y conexión a servicios.
-
-REGLAS ESTRICTAS:
-- El código debe ser limpio, bien comentado, escalable y seguir las mejores prácticas actuales (2026).
-- Siempre responde en el MISMO IDIOMA del usuario.
-- Entrega el código completo dentro del bloque markdown correspondiente (```html, ```javascript, ```python, etc.).
-- NO ABREVIAR NUNCA. Si el código es muy largo, entrégalo completo en su totalidad.
-- Incluye explicaciones detalladas de cómo funciona el código, cómo ejecutarlo y cómo personalizarlo.
-- Proporciona ejemplos de uso y casos de prueba.
-- Si el código requiere dependencias, enuméralas con los comandos de instalación.
-- El código debe ser funcional y listo para usar en un entorno de producción o desarrollo.
-"""
+Eres un full-stack developer senior con 10+ años de experiencia.
+Genera código EXTREMADAMENTE COMPLETO y de alta calidad. NO ABREVIAR NUNCA.
+Responde en el MISMO IDIOMA. Entrega código completo en bloque markdown.
+""",
+    AgentType.ADAPTADOR_EMPRESARIAL: """
+Eres el Agente Adaptador Empresarial de ApoloXia Enterprise.
+Detecta el tipo de empresa del usuario y ADAPTA el tono, la jerga, los ejemplos y los entregables a ese sector.
+NUNCA des respuestas genéricas: siempre baja al detalle del sector.
+""",
+    AgentType.CONSULTOR_PYME: """
+Eres el Agente Consultor PyME de ApoloXia Enterprise.
+Estructura: Diagnóstico → Recomendación → Plan de acción (30/60/90 días) → KPIs.
+Sé concreto, usa cifras, propone quick wins.
+""",
+    AgentType.ANALISTA_FINANCIERO_EMPRESARIAL: """
+Eres el Agente Analista Financiero Empresarial de ApoloXia Enterprise.
+Dominas: P&L, flujo de caja, márgenes, punto de equilibrio, presupuestos, proyecciones.
+Aclara que no sustituyes a un contador público autorizado.
+""",
+    AgentType.DOCUMENTOS_EMPRESARIALES: """
+Eres el Agente de Documentos Empresariales de ApoloXia Enterprise.
+Redactas documentos profesionales: propuestas, cotizaciones, contratos, actas, manuales, políticas, cartas, briefs.
+Al final sugiere: "📄 Puedes descargar este documento en PDF o Word".
+""",
+    AgentType.RRHH_RECLUTAMIENTO: """
+Eres el Agente de RRHH y Reclutamiento de ApoloXia Enterprise.
+Creas: descripciones de puesto, preguntas de entrevista, guiones de onboarding, políticas internas, evaluaciones.
+""",
+    AgentType.ATENCION_CLIENTE_EMPRESA: """
+Eres el Agente de Atención al Cliente Empresarial de ApoloXia Enterprise.
+Diseñas: macros, árboles de escalado, SLA, guiones de soporte, respuestas a quejas.
+""",
+    AgentType.PROCESOS_SOP: """
+Eres el Agente de Procesos y SOP de ApoloXia Enterprise.
+Creas manuales de procedimiento paso a paso, diagramas de flujo, checklists, matrices RACI.
+""",
+    AgentType.CUMPLIMIENTO_LEGAL_PA: """
+Eres el Agente de Cumplimiento Legal de ApoloXia Enterprise (Panamá y LatAm).
+ACLARACIÓN OBLIGATORIA: no eres abogado ni sustituyes asesoría legal formal.
+""",
 }
 
-INSTRUCCION_EXTENSION = """
-**INSTRUCCIÓN DE EXTENSIÓN, PROFUNDIDAD, EMOJIS Y BÚSQUEDA DE NOTICIAS:**
-- Proporciona respuestas **extremadamente detalladas, profundas y exhaustivas** con **análisis profundo**.
-- Incluye **emojis relevantes** en cada sección (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀, 📰, 🗞️, 📅).
-- Usa **encabezados y viñetas** para organizar.
-- **Para noticias:** Busca tanto noticias antiguas como modernas. Proporciona contexto histórico y luego la información más reciente. Incluye **fechas concretas, fuentes y URLs de imágenes**.
-- **Identidad:** Recuerda siempre que eres ApoloXia, creada por The Shield Technology (Panamá, Amelio Delgado).
-- Las respuestas deben ser **largas y sustanciosas** cuando el tema lo amerite.
-- **Búsqueda web en tiempo real:** Prioriza información reciente y concreta (fechas, datos exactos, fuentes). Usa todos los motores de búsqueda disponibles (Tavily, Exa AI, MediaStack) para obtener la información más completa.
-- **Para código:** Genera todo el código necesario, sin abreviar, con comentarios y ejemplos de uso.
+INSTRUCCION_PROFUNDIDAD = """
+🔍 **INSTRUCCIÓN DE PROFUNDIDAD OBLIGATORIA:**
+- Analiza el tema en profundidad, NO des respuestas superficiales.
+- Estructura: introducción → desarrollo con subtemas → conclusión/recomendación.
+- Incluye ejemplos concretos, datos, cifras o pasos cuando aplique.
+- Si el tema lo amerita, usa tablas, listas numeradas y secciones.
+- Mínimo 400 palabras si la pregunta es compleja.
+- Usa emojis relevantes (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀).
 """
 
 # ============ CONFIGURACIÓN POR TIER ============
@@ -328,31 +267,38 @@ class TierConfig:
     available_agents: List[AgentType]
     max_context_messages: int
     supports_web_search: bool
-    supports_file_upload: bool
-    supports_long_responses: bool
-    supports_multi_agent: bool
-    supports_code_execution: bool
-    supports_deep_analysis: bool
-    supports_projects: bool
-    supports_custom_gpts: bool
 
 TIER_CONFIGS = {
     "free": TierConfig("ApoloXia Free", 100, 1,
-        ["gpt-oss-20b", "qwen-3-32b", "allam-2-7b", "gpt-oss-safeguard-20b"],
-        [AgentType.GENERAL], 6, False, False, False, False, False, False, False, False),
+        ["or-gemma-4-31b", "or-nemotron-3-super-120b"],
+        [AgentType.GENERAL, AgentType.ADAPTADOR_EMPRESARIAL],
+        6, False),
     "plus": TierConfig("ApoloXia Plus", 1000, 30,
-        ["gpt-oss-120b", "llama-4-scout", "llama-4-maverick", "kimi-k2-instruct"],
-        [AgentType.GENERAL, AgentType.CIERRA_VENTAS, AgentType.DETECTOR_INTENCION, AgentType.LECTURA_EMOCIONAL,
-         AgentType.RESPUESTA_HUMANA, AgentType.RECUPERA_VENTAS, AgentType.RECOMENDADOR_INTELIGENTE,
-         AgentType.ATENCION_24_7, AgentType.AHORRO_TIEMPO, AgentType.ANALISTA_CONVERSACIONES,
-         AgentType.PERSONALIZACION, AgentType.SEGUIMIENTO_AUTOMATICO, AgentType.EDUCADOR,
-         AgentType.MANEJO_OBJECIONES, AgentType.GENERADOR_LEADS, AgentType.RESUMEN_INTELIGENTE,
-         AgentType.GENERADOR_SITIOS_WEB, AgentType.CREADOR_PANELES_VENTAS, AgentType.DESARROLLADOR_AVANZADO],
-        18, True, True, True, True, True, True, True, True),
+        ["or-nemotron-3-ultra-550b", "or-minimax-m3.1-flash", "or-gemma-4-31b"],
+        [AgentType.GENERAL, AgentType.CIERRA_VENTAS, AgentType.DETECTOR_INTENCION,
+         AgentType.LECTURA_EMOCIONAL, AgentType.RESPUESTA_HUMANA, AgentType.RECUPERA_VENTAS,
+         AgentType.RECOMENDADOR_INTELIGENTE, AgentType.ATENCION_24_7, AgentType.AHORRO_TIEMPO,
+         AgentType.ANALISTA_CONVERSACIONES, AgentType.PERSONALIZACION, AgentType.SEGUIMIENTO_AUTOMATICO,
+         AgentType.EDUCADOR, AgentType.MANEJO_OBJECIONES, AgentType.GENERADOR_LEADS,
+         AgentType.RESUMEN_INTELIGENTE, AgentType.GENERADOR_SITIOS_WEB, AgentType.CREADOR_PANELES_VENTAS,
+         AgentType.DESARROLLADOR_AVANZADO],
+        18, True),
     "gt": TierConfig("ApoloXia GT", 5000, 90,
-        ["compound", "compound-mini", "qwen-3.6-27b", "qwen-3.8-27b"],
-        list(AgentType), 30, True, True, True, True, True, True, True, True),
+        ["or-nemotron-3-ultra-550b", "or-minimax-m3.1-flash", "or-gemma-4-31b", "or-nemotron-3-super-120b"],
+        list(AgentType),
+        30, True),
 }
+
+# Extensión empresarial
+ENTERPRISE_AGENTS = [
+    AgentType.ADAPTADOR_EMPRESARIAL, AgentType.CONSULTOR_PYME, AgentType.ANALISTA_FINANCIERO_EMPRESARIAL,
+    AgentType.DOCUMENTOS_EMPRESARIALES, AgentType.RRHH_RECLUTAMIENTO, AgentType.ATENCION_CLIENTE_EMPRESA,
+    AgentType.PROCESOS_SOP, AgentType.CUMPLIMIENTO_LEGAL_PA,
+]
+for _tier_name in ("plus", "gt"):
+    for _ag in ENTERPRISE_AGENTS:
+        if _ag not in TIER_CONFIGS[_tier_name].available_agents:
+            TIER_CONFIGS[_tier_name].available_agents.append(_ag)
 
 # ============ GESTIÓN DE MEMORIA ============
 class ConversationMemory:
@@ -362,6 +308,7 @@ class ConversationMemory:
         self.daily_counters: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
         self.user_tiers: Dict[str, str] = {}
         self.user_configs: Dict[str, Dict] = {}
+        self.business_profiles: Dict[str, Dict] = {}
 
     def get_user_tier(self, user_id: str) -> str:
         return self.user_tiers.get(user_id, "free")
@@ -409,57 +356,51 @@ class ConversationMemory:
 
 memory = ConversationMemory()
 
-# ============ RATE LIMITER ============
-class GroqRateLimiter:
-    def __init__(self):
-        self.last_request_time: Dict[str, float] = defaultdict(float)
-        self.tokens_this_minute: Dict[str, int] = defaultdict(int)
-        self.minute_start: Dict[str, float] = defaultdict(float)
-        self.requests_this_minute: Dict[str, int] = defaultdict(int)
-        self.lock = asyncio.Lock()
+# ============ SECTORES EMPRESARIALES ============
+BUSINESS_SECTORS = {
+    "retail": ["tienda", "retail", "comercio", "ferretería", "supermercado"],
+    "gastronomia": ["restaurante", "cafetería", "bar", "panadería"],
+    "salud": ["clínica", "consultorio", "hospital", "farmacia", "odontología"],
+    "legal": ["bufete", "abogado", "notaría", "jurídico"],
+    "construccion": ["constructora", "obra", "inmobiliaria"],
+    "saas": ["saas", "startup", "software", "app", "plataforma"],
+    "educacion": ["escuela", "colegio", "universidad", "academia"],
+    "logistica": ["logística", "transporte", "flota", "courier"],
+    "manufactura": ["fábrica", "manufactura", "planta", "taller"],
+    "turismo": ["hotel", "turismo", "agencia de viaje"],
+    "servicios": ["consultoría", "agencia", "servicios profesionales"],
+    "ecommerce": ["e-commerce", "tienda online", "shopify"],
+    "agro": ["finca", "agro", "agricultura", "ganadería"],
+}
 
-    def estimate_tokens(self, messages: List[Dict], max_completion: int = 1024) -> int:
-        prompt_tokens = 0
-        for msg in messages:
-            content = msg.get("content", "")
-            prompt_tokens += len(content) // 4 + 1
-        return prompt_tokens + max_completion + 100
+SECTOR_CONTEXT = {
+    "retail": "Enfoca en: inventario/SKUs, rotación, ticket promedio, márgenes por producto, merma.",
+    "gastronomia": "Enfoca en: food cost, merma, ticket promedio, rotación de mesas, delivery.",
+    "salud": "Enfoca en: agenda de citas, historia clínica, tiempos de espera, satisfacción del paciente.",
+    "legal": "Enfoca en: gestión de casos, plazos procesales, confidencialidad, contratos.",
+    "construccion": "Enfoca en: cronograma de obra, presupuesto por partidas, control de avance, seguridad.",
+    "saas": "Enfoca en: MRR, churn, CAC, LTV, activación, onboarding, retención.",
+    "educacion": "Enfoca en: matrícula, plan curricular, evaluación, retención de estudiantes.",
+    "logistica": "Enfoca en: rutas, tiempos de entrega, costos por envío, SLA.",
+    "manufactura": "Enfoca en: OEE, tiempos de ciclo, control de calidad, mantenimiento.",
+    "turismo": "Enfoca en: ocupación, tarifas dinámicas, reseñas, canales OTA.",
+    "servicios": "Enfoca en: propuestas, alcance, horas facturables, pipeline.",
+    "ecommerce": "Enfoca en: conversión, carrito abandonado, CAC, ROAS, devoluciones.",
+    "agro": "Enfoca en: rendimiento por hectárea, costos de insumos, ciclo de cosecha.",
+}
 
-    async def wait_if_needed(self, model_id: str, messages: List[Dict], max_completion: int = 1024):
-        model_key = None
-        for k, m in MODELS.items():
-            if m.id == model_id:
-                model_key = k
-                break
-        if not model_key:
-            return
-        model = MODELS[model_key]
-        now = time.time()
-        async with self.lock:
-            if now - self.minute_start[model_key] >= 60:
-                self.tokens_this_minute[model_key] = 0
-                self.requests_this_minute[model_key] = 0
-                self.minute_start[model_key] = now
-            estimated_tokens = self.estimate_tokens(messages, max_completion)
-            if self.tokens_this_minute[model_key] + estimated_tokens > model.tpm * 0.9:
-                wait_time = 60 - (now - self.minute_start[model_key]) + 1
-                print(f"⏳ Rate limit TPM para {model.name}: esperando {wait_time:.1f}s...")
-                await asyncio.sleep(wait_time)
-                self.tokens_this_minute[model_key] = 0
-                self.requests_this_minute[model_key] = 0
-                self.minute_start[model_key] = time.time()
-            if self.requests_this_minute[model_key] >= model.rpm:
-                wait_time = 60 - (now - self.minute_start[model_key]) + 1
-                print(f"⏳ Rate limit RPM para {model.name}: esperando {wait_time:.1f}s...")
-                await asyncio.sleep(wait_time)
-                self.requests_this_minute[model_key] = 0
-                self.tokens_this_minute[model_key] = 0
-                self.minute_start[model_key] = time.time()
-            self.tokens_this_minute[model_key] += estimated_tokens
-            self.requests_this_minute[model_key] += 1
-            self.last_request_time[model_key] = time.time()
+def detect_business_sector(message: str) -> Optional[str]:
+    msg = message.lower()
+    for sector, kws in BUSINESS_SECTORS.items():
+        if any(kw in msg for kw in kws):
+            return sector
+    return None
 
-rate_limiter = GroqRateLimiter()
+def get_business_profile(user_id: str) -> Dict:
+    return memory.business_profiles.get(user_id, {})
+
+def set_business_profile(user_id: str, profile: Dict):
+    memory.business_profiles[user_id] = profile
 
 # ============ MODELOS PYDANTIC ============
 class ChatRequest(BaseModel):
@@ -480,13 +421,13 @@ class ChatResponse(BaseModel):
     remaining_daily: int
     web_search_used: bool = False
     search_results: Optional[List[Dict]] = None
-    multi_agent_responses: Optional[List[Dict]] = None
+    business_sector_detected: Optional[str] = None
+    suggested_export: Optional[str] = None
 
 class ShareRequest(BaseModel):
     platform: str
     text: str
     user_phone_number: Optional[str] = None
-    user_wechat_id: Optional[str] = None
     url: Optional[str] = None
 
 class ShareLinksResponse(BaseModel):
@@ -519,6 +460,20 @@ class UserConfigUpdate(BaseModel):
     language: Optional[str] = None
     notifications: Optional[bool] = None
 
+class ExportRequest(BaseModel):
+    user_id: str
+    title: str = "Documento ApoloXia"
+    content: str
+    company_name: Optional[str] = None
+    language: str = "es"
+
+class BusinessProfileUpdate(BaseModel):
+    company_name: Optional[str] = None
+    sector: Optional[str] = None
+    country: Optional[str] = None
+    tone: Optional[str] = "formal"
+    language: Optional[str] = "es"
+
 # ============ FUNCIONES DE COMPARTIR ============
 def generate_share_links(text: str, url: Optional[str] = None) -> ShareLinksResponse:
     encoded_text = urllib.parse.quote(text)
@@ -544,524 +499,305 @@ async def send_whatsapp_message(phone_number: str, text: str) -> Dict:
     if not WHATSAPP_PHONE_NUMBER_ID or not WHATSAPP_ACCESS_TOKEN:
         return {"error": "WhatsApp Business API no configurada."}
     url = f"https://graph.facebook.com/v18.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
-    headers = {
-        "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": phone_number,
-        "type": "text",
-        "text": {"body": text}
-    }
+    headers = {"Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}", "Content-Type": "application/json"}
+    payload = {"messaging_product": "whatsapp", "to": phone_number, "type": "text", "text": {"body": text}}
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
         return resp.json()
 
-# ============ FUNCIONES DE BÚSQUEDA ============
+# ============ BÚSQUEDA WEB ============
 async def search_exa_ai(query: str, max_results: int = 3) -> List[Dict]:
-    if not EXA_API_KEY:
-        return []
+    if not EXA_API_KEY: return []
     headers = {"Authorization": f"Bearer {EXA_API_KEY}", "Content-Type": "application/json"}
-    payload = {"query": query, "numResults": max_results, "type": "auto",
-               "contents": {"text": True, "snippet": True}}
+    payload = {"query": query, "numResults": max_results, "type": "auto", "contents": {"text": True, "snippet": True}}
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post("https://api.exa.ai/search", headers=headers, json=payload)
-            if resp.status_code != 200:
-                return []
+            if resp.status_code != 200: return []
             data = resp.json()
             results = []
             for r in data.get("results", []):
                 content = r.get("text", "") or r.get("snippet", "")
                 img_urls = re.findall(r'https?://[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg)', content, re.IGNORECASE)
-                results.append({
-                    "title": r.get("title", ""),
-                    "url": r.get("url", ""),
-                    "content": content[:800],
-                    "score": r.get("score", 0.5),
-                    "image_urls": img_urls[:2]
-                })
+                results.append({"title": r.get("title", ""), "url": r.get("url", ""), "content": content[:800],
+                                "score": r.get("score", 0.5), "image_urls": img_urls[:2]})
             return results
-    except Exception as e:
-        print(f"Exa AI exception: {e}")
-        return []
+    except: return []
 
 async def search_mediastack(query: str, max_results: int = 3) -> List[Dict]:
-    if not MEDIASTACK_API_KEY:
-        return []
-    url = "http://api.mediastack.com/v1/news"
-    params = {
-        "access_key": MEDIASTACK_API_KEY,
-        "keywords": query,
-        "countries": "us,pa,es,mx,ar,co,cl,pe",
-        "languages": "es,en",
-        "limit": max_results,
-        "sort": "published_desc"
-    }
+    if not MEDIASTACK_API_KEY: return []
+    params = {"access_key": MEDIASTACK_API_KEY, "keywords": query, "countries": "us,pa,es,mx,ar,co,cl,pe",
+              "languages": "es,en", "limit": max_results, "sort": "published_desc"}
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(url, params=params)
-            if resp.status_code != 200:
-                return []
+            resp = await client.get("http://api.mediastack.com/v1/news", params=params)
+            if resp.status_code != 200: return []
             data = resp.json()
-            results = []
-            for article in data.get("data", []):
-                results.append({
-                    "title": article.get("title", ""),
-                    "description": article.get("description", ""),
-                    "url": article.get("url", ""),
-                    "source": article.get("source", ""),
-                    "publishedAt": article.get("published_at", ""),
-                    "image_url": article.get("image", ""),
-                    "category": article.get("category", ""),
-                    "language": article.get("language", "")
-                })
-            return results
-    except Exception as e:
-        print(f"MediaStack exception: {e}")
-        return []
+            return [{"title": a.get("title", ""), "description": a.get("description", ""), "url": a.get("url", ""),
+                     "source": a.get("source", ""), "publishedAt": a.get("published_at", ""),
+                     "image_url": a.get("image", ""), "category": a.get("category", ""), "language": a.get("language", "")}
+                    for a in data.get("data", [])]
+    except: return []
 
 async def search_tavily(query: str, max_results: int = 3) -> List[Dict]:
-    if not TAVILY_API_KEY:
-        return []
+    if not TAVILY_API_KEY: return []
     headers = {"Authorization": f"Bearer {TAVILY_API_KEY}", "Content-Type": "application/json"}
-    search_query = query
-    if "noticia" in query.lower() or "actual" in query.lower() or "hoy" in query.lower():
-        search_query = f"{query} noticias actualidad"
-    payload = {
-        "query": search_query,
-        "max_results": max_results,
-        "search_depth": "basic",
-        "include_answer": True,
-    }
+    search_query = f"{query} noticias actualidad" if any(k in query.lower() for k in ["noticia", "actual", "hoy"]) else query
+    payload = {"query": search_query, "max_results": max_results, "search_depth": "basic", "include_answer": True}
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post("https://api.tavily.com/search", headers=headers, json=payload)
-            if resp.status_code != 200:
-                return []
+            if resp.status_code != 200: return []
             data = resp.json()
             results = []
             for r in data.get("results", []):
                 content = r.get("content", "")
                 img_urls = re.findall(r'https?://[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg)', content, re.IGNORECASE)
-                results.append({
-                    "title": r.get("title", ""),
-                    "url": r.get("url", ""),
-                    "content": content,
-                    "score": r.get("score", 0),
-                    "image_urls": img_urls[:2]
-                })
+                results.append({"title": r.get("title", ""), "url": r.get("url", ""), "content": content,
+                                "score": r.get("score", 0), "image_urls": img_urls[:2]})
             if data.get("answer"):
-                results.insert(0, {
-                    "title": "Respuesta destacada",
-                    "url": "",
-                    "content": data["answer"],
-                    "score": 1.0,
-                    "image_urls": []
-                })
+                results.insert(0, {"title": "Respuesta destacada", "url": "", "content": data["answer"], "score": 1.0, "image_urls": []})
             return results
-    except Exception as e:
-        print(f"Tavily exception: {e}")
-        return []
+    except: return []
 
 def needs_web_search(message: str) -> bool:
-    indicators = [
-        "actualidad", "hoy", "reciente", "último", "nuevo lanzamiento",
-        "news", "today", "now", "latest", "2026", "precio de",
-        "cotización", "noticia", "última hora", "noticias", "breaking"
-    ]
-    return any(ind in message.lower() for ind in indicators)
+    return any(ind in message.lower() for ind in ["actualidad", "hoy", "reciente", "último", "news", "today", "latest", "2026", "precio de", "cotización", "noticia"])
 
-# ============ FUNCIONES DE API ============
-async def call_groq_api(messages: List[Dict], model_id: str, temperature: float = 0.7, max_tokens: Optional[int] = None) -> str:
-    if not GROQ_API_KEY:
-        raise HTTPException(500, "GROQ_API_KEY no configurada en el servidor")
-    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-    safe_max_tokens = max_tokens if max_tokens is not None else 1024
-    if safe_max_tokens > 12000:
-        safe_max_tokens = 12000
-    payload = {
-        "model": model_id,
-        "messages": messages,
-        "temperature": temperature,
-        "stream": False,
-        "max_tokens": safe_max_tokens
-    }
-    await rate_limiter.wait_if_needed(model_id, messages, safe_max_tokens)
+# ============ LLAMADA A OPENROUTER ============
+async def call_openrouter_api(messages: List[Dict], model_id: str, temperature: float = 0.7, max_tokens: int = 1024) -> str:
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(500, "OPENROUTER_API_KEY no configurada")
+    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json",
+               "HTTP-Referer": "https://theshieldtechnology.com", "X-OpenRouter-Title": "ApoloXia"}
+    safe = min(max_tokens, 12000)
+    payload = {"model": model_id, "messages": messages, "temperature": temperature, "max_tokens": safe}
     async with httpx.AsyncClient(timeout=100.0) as client:
-        try:
-            resp = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
-            if resp.status_code == 429:
-                print("⚠️ Rate limit 429, reintentando en 2s...")
-                await asyncio.sleep(2)
-                resp = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
-            if resp.status_code != 200:
-                err = resp.json()
-                error_msg = err.get('error', {}).get('message', 'Unknown error')
-                raise HTTPException(resp.status_code, f"Groq API error: {error_msg}")
-            return resp.json()["choices"][0]["message"]["content"]
-        except httpx.TimeoutException:
-            raise HTTPException(504, "Timeout al conectar con Groq API")
-        except Exception as e:
-            if isinstance(e, HTTPException):
-                raise
-            raise HTTPException(500, f"Error de conexión: {str(e)}")
+        resp = await client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
+        if resp.status_code != 200:
+            err = resp.json()
+            raise HTTPException(resp.status_code, f"OpenRouter: {err.get('error', {}).get('message', 'error')}")
+        return resp.json()["choices"][0]["message"]["content"]
 
-async def run_multi_agent(user_message: str, tier: str, context: List[Dict]) -> List[Dict]:
-    if tier not in ["plus", "gt"]:
-        return []
-    config = TIER_CONFIGS[tier]
-    selected = select_relevant_agents(user_message, config.available_agents)
-    tasks = []
-    for agent in selected[:5]:
-        prompt = AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
-        model_key = config.available_models[0]
-        if model_key not in MODELS:
-            continue
-        model_id = MODELS[model_key].id
-        msgs = [{"role": "system", "content": prompt}, {"role": "user", "content": f"Analiza este mensaje del cliente y proporciona tu perspectiva especializada: '{user_message}'"}]
-        tasks.append((agent.value, call_groq_api(msgs, model_id, temperature=0.5, max_tokens=500)))
-    results = []
-    for agent_name, task in tasks:
-        try:
-            results.append({"agent": agent_name, "perspective": await task})
-        except Exception as e:
-            results.append({"agent": agent_name, "perspective": f"Error: {str(e)}"})
-    return results
+async def call_llm_pool_fallback(messages: List[Dict], temperature: float = 0.7, max_tokens: int = 1024) -> Dict[str, str]:
+    if llm_pool is None:
+        raise HTTPException(500, "freellmpool no disponible para fallback")
+    system_prompt = ""
+    user_message = ""
+    for msg in messages:
+        if msg["role"] == "system": system_prompt = msg["content"]
+        elif msg["role"] == "user": user_message = msg["content"]
+    if not user_message: raise HTTPException(400, "No hay mensaje de usuario")
+    loop = asyncio.get_event_loop()
+    reply = await loop.run_in_executor(None, lambda: llm_pool.ask(
+        user_message, system=system_prompt if system_prompt else None,
+        max_tokens=max_tokens, temperature=temperature))
+    return {"text": reply.text, "provider": getattr(reply, "provider_id", "freellmpool")}
 
-def select_relevant_agents(message: str, available_agents: List[AgentType]) -> List[AgentType]:
-    kw_map = {
-        AgentType.CIERRA_VENTAS: ["comprar", "precio", "pagar", "orden", "pedido", "checkout"],
-        AgentType.DETECTOR_INTENCION: ["quiero", "necesito", "busco", "interesado"],
-        AgentType.LECTURA_EMOCIONAL: ["enojado", "frustrado", "feliz", "preocupado", "dudoso"],
-        AgentType.GENERADOR_CODIGO: ["código", "programar", "python", "javascript", "función", "script"],
-        AgentType.DEBUGGER_INTELIGENTE: ["error", "bug", "falla", "no funciona", "exception"],
-        AgentType.NUTRICION_DEPORTES: ["dieta", "ejercicio", "gym", "proteína", "entrenamiento"],
-        AgentType.SALUD_BIENESTAR: ["salud", "dolor", "síntoma", "ansiedad", "dormir"],
-        AgentType.EDUCACION_AVANZADA: ["aprender", "estudiar", "examen", "matemáticas", "tema"],
-        AgentType.NEGOCIOS_ESTRATEGIA: ["negocio", "empresa", "startup", "estrategia", "plan"],
-        AgentType.FINANZAS_INVERSION: ["dinero", "invertir", "acciones", "crypto", "ahorro"],
-        AgentType.MARKETING_DIGITAL: ["marketing", "anuncios", "seo", "redes sociales", "ventas"],
-        AgentType.CREACION_CONTENIDO: ["escribir", "blog", "guion", "copy", "contenido"],
-        AgentType.INVESTIGACION_CIENTIFICA: ["investigar", "paper", "estudio", "ciencia", "tesis"],
-        AgentType.GENERADOR_SITIOS_WEB: ["sitio web", "página web", "landing page", "website", "crear web"],
-        AgentType.CREADOR_PANELES_VENTAS: ["panel de ventas", "dashboard", "tablero", "métricas", "gráfico"],
-        AgentType.DESARROLLADOR_AVANZADO: ["aplicación web", "app completa", "api", "react", "vue", "fullstack"],
-    }
-    scores = []
-    for agent in available_agents:
-        if agent == AgentType.GENERAL:
-            continue
-        score = sum(1 for kw in kw_map.get(agent, []) if kw in message.lower())
-        if score:
-            scores.append((agent, score))
-    scores.sort(key=lambda x: x[1], reverse=True)
-    return [a for a, _ in scores[:5]] or [AgentType.GENERAL]
-
+# ============ CONSTRUCCIÓN DE MENSAJES ============
 def build_messages(user_id: str, conversation_id: str, user_message: str, agent_type: str, tier: str,
                    web_search_results: Optional[List[Dict]] = None, file_content: Optional[str] = None) -> List[Dict]:
     config = TIER_CONFIGS[tier]
     history = memory.get_memory(user_id, conversation_id, tier)
-    try:
-        agent = AgentType(agent_type) if agent_type else AgentType.GENERAL
-    except ValueError:
-        agent = AgentType.GENERAL
-    if agent not in config.available_agents:
-        agent = AgentType.GENERAL
+    try: agent = AgentType(agent_type) if agent_type else AgentType.GENERAL
+    except ValueError: agent = AgentType.GENERAL
+    if agent not in config.available_agents: agent = AgentType.GENERAL
 
     system = IDENTITY_OVERRIDE + AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
+    system += "\n\n📢 Responde SIEMPRE en el MISMO IDIOMA del usuario.\n"
+    system += INSTRUCCION_PROFUNDIDAD
 
-    system += "\n\n📢 **INSTRUCCIÓN DE IDIOMA:** Responde SIEMPRE en el MISMO IDIOMA que el usuario ha usado en su mensaje. "
-    system += "Si el usuario escribe en inglés, responde en inglés; si escribe en francés, en francés; si escribe en alemán, en alemán; "
-    system += "si escribe en portugués, en portugués; si escribe en italiano, en italiano, en chino, en chino; en japonés, en japonés, etc. "
-    system += "NUNCA cambies de idioma. Mantén la coherencia lingüística con la pregunta del usuario.\n"
+    profile = get_business_profile(user_id)
+    sector = profile.get("sector") or detect_business_sector(user_message)
+    if sector:
+        system += f"\n\n🏢 **CONTEXTO EMPRESARIAL — Sector: {sector.upper()}**\n{SECTOR_CONTEXT.get(sector, '')}\nAdapta tu lenguaje y ejemplos a este sector.\n"
+
+    if profile:
+        system += "\n=== PERFIL DE LA EMPRESA ===\n"
+        if profile.get("company_name"): system += f"🏷️ Empresa: {profile['company_name']}\n"
+        if profile.get("country"): system += f"🌎 País: {profile['country']}\n"
+        if profile.get("tone"): system += f"🗣️ Tono: {profile['tone']}\n"
+
+    if agent in (AgentType.DOCUMENTOS_EMPRESARIALES, AgentType.CONSULTOR_PYME, AgentType.PROCESOS_SOP,
+                 AgentType.CUMPLIMIENTO_LEGAL_PA, AgentType.RRHH_RECLUTAMIENTO):
+        system += "\n📄 Al final, añade: '(Puedes descargarlo en PDF o Word)'.\n"
 
     if tier in ["plus", "gt"]:
-        system += "\n\n" + INSTRUCCION_EXTENSION
-        if tier == "gt":
-            system += "\n🔹 **EXTRA:** Como usuario GT, tienes prioridad máxima. Genera respuestas aún más largas, con múltiples secciones, análisis en profundidad y código extenso sin limitaciones de longitud. Usa emojis para dar énfasis (✅, 🔥, 📌, 💡, ⚠️, 🚀, etc.) y organiza tu respuesta con estructura clara. Recuerda siempre tu identidad como ApoloXia de The Shield Technology (Panamá, creada por Amelio Delgado)."
+        system += "\n🔹 Responde con máximo detalle, múltiples secciones y análisis profundo.\n"
 
-    system += f"\n\n[Tier actual: {config.name} | Modelos disponibles: {', '.join(config.available_models)}]"
-
-    max_context_chars = {
-        "free": 6000,
-        "plus": 15000,
-        "gt": 30000
-    }.get(tier, 6000)
-
-    all_search_results = web_search_results if web_search_results else []
-
-    if all_search_results:
-        search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET (MÚLTIPLES FUENTES) ===\n"
-        for i, res in enumerate(all_search_results[:4], 1):
-            title = res.get("title", "Sin título")
-            url = res.get("url", "")
-            content = res.get("content", "") or res.get("description", "")
-            image = res.get("image_url", "") or (res.get("image_urls", [])[0] if res.get("image_urls") else "")
-            source = res.get("source", "")
-            published = res.get("publishedAt", "")
-
-            search_text += f"\n📌 Fuente {i}: {title}\n"
-            if url:
-                search_text += f"🔗 {url}\n"
-            if content:
-                search_text += f"📝 {content[:400]}...\n"
-            if image:
-                search_text += f"📸 {image}\n"
-            if source:
-                search_text += f"📰 {source}\n"
-            if published:
-                search_text += f"📅 {published}\n"
-
-        if len(search_text) > max_context_chars // 2:
-            search_text = search_text[:max_context_chars // 2]
+    if web_search_results:
+        search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET ===\n"
+        for i, res in enumerate(web_search_results[:4], 1):
+            search_text += f"\n📌 {res.get('title', 'Sin título')}\n"
+            if res.get('url'): search_text += f"🔗 {res['url']}\n"
+            content = res.get('content', '') or res.get('description', '')
+            if content: search_text += f"📝 {content[:400]}...\n"
+            if res.get('source'): search_text += f"📰 {res['source']}\n"
         system += search_text
-        system += "\n⚠️ **INSTRUCCIÓN:** Los resultados anteriores son información actualizada de múltiples motores (Tavily, Exa AI, MediaStack). Úsalos como referencia prioritaria para responder con datos concretos y recientes."
 
     if file_content:
-        file_text = f"\n\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:2000]}\n"
-        system += file_text
+        system += f"\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:2000]}\n"
 
     messages = [{"role": "system", "content": system}]
-
     for msg in history[-config.max_context_messages:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
-
     messages.append({"role": "user", "content": user_message})
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="5.0.0")
+app = FastAPI(title="ApoloXia API", version="6.1.0-enterprise-openrouter")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# ============ ENDPOINTS ============
+# ============ CHAT ============
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     tier = request.tier.lower()
     if tier not in TIER_CONFIGS:
-        raise HTTPException(400, f"Tier '{tier}' no válido. Use free, plus, gt")
+        raise HTTPException(400, f"Tier '{tier}' no válido")
 
     config = TIER_CONFIGS[tier]
-
     if not memory.check_daily_limit(request.user_id, tier):
-        raise HTTPException(429, f"Límite diario alcanzado ({config.max_daily_responses} respuestas). Actualiza a Plus o GT.")
+        raise HTTPException(429, f"Límite diario alcanzado ({config.max_daily_responses})")
 
     conv_id = request.conversation_id or str(uuid.uuid4())
-
-    model_key = request.model_id
-    if not model_key or model_key not in config.available_models:
-        if tier == "gt":
-            model_key = "compound"
-        elif tier == "plus":
-            model_key = "gpt-oss-120b"
-        else:
-            model_key = "gpt-oss-20b"
-
-    if model_key not in MODELS:
-        raise HTTPException(400, f"Modelo '{model_key}' no disponible")
-
-    model = MODELS[model_key]
-
     use_web = request.use_web_search or needs_web_search(request.message)
     web_results = None
 
     if use_web and config.supports_web_search:
         tasks = []
-        if TAVILY_API_KEY:
-            tasks.append(search_tavily(request.message))
-        if EXA_API_KEY:
-            tasks.append(search_exa_ai(request.message))
-        if MEDIASTACK_API_KEY:
-            tasks.append(search_mediastack(request.message))
-
+        if TAVILY_API_KEY: tasks.append(search_tavily(request.message))
+        if EXA_API_KEY: tasks.append(search_exa_ai(request.message))
+        if MEDIASTACK_API_KEY: tasks.append(search_mediastack(request.message))
         if tasks:
             results = await asyncio.gather(*tasks, return_exceptions=True)
             combined = []
             for res in results:
-                if isinstance(res, list) and res:
-                    combined.extend(res)
+                if isinstance(res, list) and res: combined.extend(res)
             web_results = combined[:8]
 
-    messages = build_messages(
-        request.user_id, conv_id, request.message,
-        request.agent_type or "general", tier,
-        web_results, request.file_content
-    )
+    messages = build_messages(request.user_id, conv_id, request.message,
+                              request.agent_type or "general", tier, web_results, request.file_content)
 
-    multi_resp = None
-    if request.enable_multi_agent and config.supports_multi_agent:
-        multi_resp = await run_multi_agent(request.message, tier, messages)
-
-    base_max_tokens = {
-        "free": 700,
-        "plus": 2500,
-        "gt": 5000
-    }.get(tier, 700)
-
+    # === TOKENS ALTOS PARA ANÁLISIS PROFUNDO ===
+    base_max_tokens = {"free": 2000, "plus": 6000, "gt": 10000}.get(tier, 2000)
     if request.agent_type in ["generador_sitios_web", "creador_paneles_ventas", "desarrollador_avanzado"]:
-        if tier == "gt":
-            max_tokens_for_agent = 6000
-        elif tier == "plus":
-            max_tokens_for_agent = 3500
-        else:
-            max_tokens_for_agent = 1500
+        max_tokens_for_agent = 12000
     else:
         max_tokens_for_agent = base_max_tokens
-
-    safe_max_tokens = min(max_tokens_for_agent, model.max_completion)
-    if safe_max_tokens > 12000:
-        safe_max_tokens = 12000
-
+    safe_max_tokens = min(max_tokens_for_agent, 12000)
     temp = 0.7 if tier == "free" else 0.6
 
+    # === SELECCIÓN DE MODELO OPENROUTER ===
+    chosen = request.model_id or ""
     response_text = None
-    last_error = None
+    model_used = None
 
-    models_to_try = [model_key] + [m for m in config.available_models if m != model_key and m in MODELS]
-
-    for try_model_key in models_to_try[:2]:
-        try_model = MODELS[try_model_key]
+    if chosen and chosen in OPENROUTER_MODELS:
+        or_id = OPENROUTER_MODELS[chosen]
         try:
-            print(f"🤖 Intentando modelo: {try_model.name} (TPM límite: {try_model.tpm})")
-            response_text = await call_groq_api(
-                messages, try_model.id,
-                temperature=temp,
-                max_tokens=safe_max_tokens
-            )
-            model_key = try_model_key
-            break
-        except HTTPException as e:
-            last_error = e
-            print(f"⚠️ Falló {try_model.name}: {e.detail}")
-            if "Rate limit" in str(e.detail) or "429" in str(e.detail):
-                await asyncio.sleep(2)
-            continue
+            print(f"🌐 OpenRouter directo: {or_id}")
+            response_text = await call_openrouter_api(messages, or_id, temperature=temp, max_tokens=safe_max_tokens)
+            model_used = or_id
         except Exception as e:
-            last_error = e
-            print(f"⚠️ Error inesperado en {try_model.name}: {str(e)}")
-            continue
+            print(f"⚠️ OpenRouter falló: {e}. Fallback a pool...")
+            result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
+            response_text = result["text"]; model_used = result["provider"]
+    else:
+        # Sin modelo elegido → usar el primero del tier
+        default_key = config.available_models[0] if config.available_models else "or-gemma-4-31b"
+        if default_key not in OPENROUTER_MODELS:
+            default_key = "or-gemma-4-31b"
+        or_id = OPENROUTER_MODELS[default_key]
+        try:
+            print(f"🌐 OpenRouter (default del tier): {or_id}")
+            response_text = await call_openrouter_api(messages, or_id, temperature=temp, max_tokens=safe_max_tokens)
+            model_used = or_id
+        except Exception as e:
+            print(f"⚠️ OpenRouter falló: {e}. Fallback a pool...")
+            result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
+            response_text = result["text"]; model_used = result["provider"]
 
-    if response_text is None:
-        raise HTTPException(500, f"Todos los modelos fallaron. Último error: {last_error}")
+    print(f"✅ Respuesta de: {model_used}")
 
     memory.add_message(request.user_id, conv_id, "user", request.message, request.agent_type)
     memory.add_message(request.user_id, conv_id, "assistant", response_text, request.agent_type)
     memory.increment_counter(request.user_id)
 
+    detected_sector = get_business_profile(request.user_id).get("sector") or detect_business_sector(request.message)
+    doc_agents = {"documentos_empresariales", "consultor_pyme", "procesos_sop", "cumplimiento_legal_pa", "rrhh_reclutamiento"}
+    suggested_export = "pdf" if (request.agent_type in doc_agents or len(response_text) > 1200) else None
+
     return ChatResponse(
-        response=response_text,
-        agent_used=request.agent_type or "general",
-        model_used=MODELS[model_key].name,
-        remaining_daily=memory.get_remaining(request.user_id, tier),
-        web_search_used=bool(web_results),
-        search_results=web_results,
-        multi_agent_responses=multi_resp
+        response=response_text, agent_used=request.agent_type or "general", model_used=model_used,
+        remaining_daily=memory.get_remaining(request.user_id, tier), web_search_used=bool(web_results),
+        search_results=web_results, business_sector_detected=detected_sector, suggested_export=suggested_export,
     )
 
-# ============ ENDPOINTS DE COMPARTIR ============
+# ============ MODELOS DISPONIBLES ============
+@app.get("/models")
+async def list_models():
+    or_list = [{"id": k, "provider": "openrouter", "api_id": v, "name": v.replace(":free", " (gratis)"),
+                "free": True} for k, v in OPENROUTER_MODELS.items()]
+    return {"openrouter": or_list, "total": len(or_list)}
+
+@app.get("/user-config/{user_id}")
+async def get_user_config(user_id: str):
+    tier = memory.get_user_tier(user_id)
+    config = TIER_CONFIGS[tier]
+    user_cfg = memory.get_user_config(user_id)
+    or_models = [{"id": k, "name": v.replace(":free", " (gratis)"), "provider": "openrouter", "free": True}
+                 for k, v in OPENROUTER_MODELS.items()]
+    return {"user_id": user_id, "tier": tier, "tier_name": config.name,
+            "theme": user_cfg.get("theme", "dark"), "language": user_cfg.get("language", "es"),
+            "notifications": user_cfg.get("notifications", True),
+            "remaining_daily": memory.get_remaining(user_id, tier),
+            "max_daily_responses": config.max_daily_responses,
+            "available_models": or_models,
+            "available_agents": [a.value for a in config.available_agents]}
+
+@app.post("/user-config/{user_id}")
+async def update_user_config(user_id: str, config: UserConfigUpdate):
+    current = memory.get_user_config(user_id)
+    if config.tier and config.tier in TIER_CONFIGS: memory.set_user_tier(user_id, config.tier)
+    if config.theme: current["theme"] = config.theme
+    if config.language: current["language"] = config.language
+    if config.notifications is not None: current["notifications"] = config.notifications
+    memory.set_user_config(user_id, current)
+    return {"message": "Configuración actualizada", "user_id": user_id, "config": current}
+
+@app.post("/upgrade-tier/{user_id}")
+async def upgrade_tier(user_id: str, new_tier: str):
+    if new_tier not in TIER_CONFIGS: raise HTTPException(400, "Tier no válido")
+    memory.set_user_tier(user_id, new_tier)
+    return {"message": f"Usuario {user_id} → {new_tier}", "tier": new_tier}
+
+# ============ HEALTH ============
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "version": "6.1.0-enterprise-openrouter",
+            "openrouter_api": "configured" if OPENROUTER_API_KEY else "not set",
+            "freellmpool": "active (fallback)" if llm_pool else "not available",
+            "openrouter_models_count": len(OPENROUTER_MODELS),
+            "identity": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado"}
+
+# ============ COMPARTIR ============
 @app.post("/share/links", response_model=ShareLinksResponse)
 async def get_share_links(share_req: ShareRequest):
     return generate_share_links(share_req.text, share_req.url)
 
 @app.post("/share/send")
 async def share_to_platform(share_req: ShareRequest):
-    platform = share_req.platform.lower()
-    text = share_req.text
-    if platform == "whatsapp":
-        if not share_req.user_phone_number:
-            raise HTTPException(400, "Se requiere número de teléfono para WhatsApp")
-        result = await send_whatsapp_message(share_req.user_phone_number, text)
+    if share_req.platform.lower() == "whatsapp":
+        if not share_req.user_phone_number: raise HTTPException(400, "Se requiere número")
+        result = await send_whatsapp_message(share_req.user_phone_number, share_req.text)
         return {"platform": "whatsapp", "message": "Enviado", "result": result}
-    else:
-        links = generate_share_links(text, share_req.url)
-        return {"platform": platform, "message": "Use los enlaces de compartir", "links": links.dict()}
+    links = generate_share_links(share_req.text, share_req.url)
+    return {"platform": share_req.platform, "links": links.dict()}
 
 @app.get("/share/links")
 async def get_share_links_get(text: str, url: Optional[str] = None):
     return generate_share_links(text, url).dict()
 
-# ============ ENDPOINTS DE INFORMACIÓN Y ARCHIVOS ============
-@app.get("/tier-info/{user_id}", response_model=TierInfo)
-async def get_tier_info(user_id: str):
-    tier = memory.get_user_tier(user_id)
-    config = TIER_CONFIGS[tier]
-    models_info = [{"id": k, "name": MODELS[k].name, "params": MODELS[k].params, "context": MODELS[k].context,
-                    "speed": MODELS[k].speed, "price_input": MODELS[k].price_input, "price_output": MODELS[k].price_output,
-                    "rpm": MODELS[k].rpm, "tpm": MODELS[k].tpm, "rpd": MODELS[k].rpd}
-                   for k in config.available_models if k in MODELS]
-    return TierInfo(
-        tier=tier,
-        name=config.name,
-        remaining_daily=memory.get_remaining(user_id, tier),
-        available_models=models_info,
-        available_agents=[a.value for a in config.available_agents],
-        features={
-            "web_search": config.supports_web_search,
-            "file_upload": config.supports_file_upload,
-            "long_responses": config.supports_long_responses,
-            "multi_agent": config.supports_multi_agent,
-            "code_execution": config.supports_code_execution,
-            "deep_analysis": config.supports_deep_analysis,
-            "projects": config.supports_projects,
-            "custom_gpts": config.supports_custom_gpts
-        }
-    )
-
-@app.post("/upgrade-tier/{user_id}")
-async def upgrade_tier(user_id: str, new_tier: str):
-    if new_tier not in TIER_CONFIGS:
-        raise HTTPException(400, "Tier no válido")
-    memory.set_user_tier(user_id, new_tier)
-    return {"message": f"Usuario {user_id} actualizado a {new_tier}", "tier": new_tier}
-
-@app.get("/models")
-async def list_models():
-    return {"models": [{"id": k, "api_id": m.id, "name": m.name, "params": m.params, "context_window": m.context,
-                        "speed": m.speed, "pricing": {"input_per_1m": m.price_input, "output_per_1m": m.price_output},
-                        "tier": m.tier, "rpm": m.rpm, "tpm": m.tpm, "rpd": m.rpd,
-                        "supports_vision": m.supports_vision, "supports_tools": m.supports_tools}
-                       for k, m in MODELS.items()], "total": len(MODELS)}
-
-@app.get("/agents")
-async def list_agents():
-    agents = []
-    for at, prompt in AGENT_PROMPTS.items():
-        tiers = [tn for tn, cfg in TIER_CONFIGS.items() if at in cfg.available_agents]
-        agents.append({"id": at.value, "name": at.value.replace("_", " ").title(), "description": prompt[:100] + "...", "available_in": tiers})
-    return {"agents": agents, "total": len(agents)}
-
-@app.get("/health")
-async def health_check():
-    return {"status": "ok", "version": "5.0.0",
-            "groq_api": "configured" if GROQ_API_KEY else "not set",
-            "tavily_api": "configured" if TAVILY_API_KEY else "not set",
-            "exa_api": "configured" if EXA_API_KEY else "not set",
-            "mediastack_api": "configured" if MEDIASTACK_API_KEY else "not set",
-            "models_loaded": len(MODELS), "agents_loaded": len(AGENT_PROMPTS),
-            "share_platforms": 13, "web_builders": 3,
-            "identity_locked": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado",
-            "note": "12 modelos activos · Sin descontinuados · Identidad forzada"}
-
-@app.post("/search-web")
-async def web_search(query: str, max_results: int = 5):
-    tasks = []
-    if TAVILY_API_KEY:
-        tasks.append(search_tavily(query, max_results))
-    if EXA_API_KEY:
-        tasks.append(search_exa_ai(query, max_results))
-    if MEDIASTACK_API_KEY:
-        tasks.append(search_mediastack(query, max_results))
-
-    if tasks:
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        all_results = []
-        for res in results:
-            if isinstance(res, list):
-                all_results.extend(res)
-        return {"query": query, "results": all_results[:max_results*3], "count": len(all_results)}
-    return {"query": query, "results": [], "count": 0}
-
+# ============ CONVERSACIONES ============
 @app.get("/conversations/{user_id}")
 async def get_conversations(user_id: str):
     user_mem = memory.memories.get(user_id, {})
@@ -1074,109 +810,172 @@ async def get_conversations(user_id: str):
 async def delete_conversation(user_id: str, conversation_id: str):
     if user_id in memory.memories and conversation_id in memory.memories[user_id]:
         del memory.memories[user_id][conversation_id]
-        if conversation_id in memory.last_access.get(user_id, {}):
-            del memory.last_access[user_id][conversation_id]
+        if conversation_id in memory.last_access.get(user_id, {}): del memory.last_access[user_id][conversation_id]
         return {"message": "Conversación eliminada"}
-    raise HTTPException(404, "Conversación no encontrada")
+    raise HTTPException(404, "No encontrada")
 
-# ============ CONFIGURACIÓN DE USUARIO ============
-@app.get("/user-config/{user_id}")
-async def get_user_config(user_id: str):
-    tier = memory.get_user_tier(user_id)
-    config = TIER_CONFIGS[tier]
-    user_cfg = memory.get_user_config(user_id)
-    return {
-        "user_id": user_id,
-        "tier": tier,
-        "tier_name": config.name,
-        "theme": user_cfg.get("theme", "dark"),
-        "language": user_cfg.get("language", "es"),
-        "notifications": user_cfg.get("notifications", True),
-        "remaining_daily": memory.get_remaining(user_id, tier),
-        "max_daily_responses": config.max_daily_responses,
-        "available_models": [{"id": k, "name": MODELS[k].name, "params": MODELS[k].params, "context": MODELS[k].context,
-                            "speed": MODELS[k].speed, "price_input": MODELS[k].price_input, "price_output": MODELS[k].price_output,
-                            "rpm": MODELS[k].rpm, "tpm": MODELS[k].tpm, "rpd": MODELS[k].rpd,
-                            "tier": MODELS[k].tier}
-                           for k in config.available_models if k in MODELS],
-        "available_agents": [a.value for a in config.available_agents],
-        "features": {
-            "web_search": config.supports_web_search,
-            "file_upload": config.supports_file_upload,
-            "long_responses": config.supports_long_responses,
-            "multi_agent": config.supports_multi_agent,
-            "code_execution": config.supports_code_execution,
-            "deep_analysis": config.supports_deep_analysis,
-            "projects": config.supports_projects,
-            "custom_gpts": config.supports_custom_gpts
-        }
-    }
+# ============ PERFIL DE EMPRESA ============
+@app.get("/business-sectors")
+async def list_business_sectors():
+    return {"sectors": [{"id": k, "keywords": v, "context": SECTOR_CONTEXT.get(k, "")} for k, v in BUSINESS_SECTORS.items()],
+            "total": len(BUSINESS_SECTORS)}
 
-@app.post("/user-config/{user_id}")
-async def update_user_config(user_id: str, config: UserConfigUpdate):
-    current = memory.get_user_config(user_id)
-    if config.tier and config.tier in TIER_CONFIGS:
-        memory.set_user_tier(user_id, config.tier)
-    if config.theme:
-        current["theme"] = config.theme
-    if config.language:
-        current["language"] = config.language
-    if config.notifications is not None:
-        current["notifications"] = config.notifications
-    memory.set_user_config(user_id, current)
-    return {"message": "Configuración actualizada", "user_id": user_id, "config": current}
+@app.get("/business-profile/{user_id}")
+async def get_business_profile_endpoint(user_id: str):
+    return {"user_id": user_id, "profile": get_business_profile(user_id)}
+
+@app.post("/business-profile/{user_id}")
+async def update_business_profile(user_id: str, upd: BusinessProfileUpdate):
+    prof = get_business_profile(user_id)
+    for field, value in upd.dict(exclude_none=True).items(): prof[field] = value
+    if prof.get("sector") and prof["sector"] not in BUSINESS_SECTORS:
+        raise HTTPException(400, f"Sector '{prof['sector']}' no soportado")
+    set_business_profile(user_id, prof)
+    return {"message": "Perfil actualizado", "user_id": user_id, "profile": prof}
+
+# ============ EXPORTACIÓN PDF / WORD ============
+def _markdown_to_flowables(content: str, styles, doc_width: float):
+    flow = []
+    lines = content.split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i].rstrip()
+        if not line.strip(): flow.append(Spacer(1, 0.25*cm)); i += 1; continue
+        if line.strip().startswith("```"):
+            code_lines = []; i += 1
+            while i < len(lines) and not lines[i].strip().startswith("```"):
+                code_lines.append(lines[i]); i += 1
+            flow.append(Preformatted("\n".join(code_lines) or "(vacío)", styles["Code"])); flow.append(Spacer(1, 0.3*cm)); i += 1; continue
+        if line.startswith("### "): flow.append(Paragraph(line[4:], styles["H3"]))
+        elif line.startswith("## "): flow.append(Paragraph(line[3:], styles["H2"]))
+        elif line.startswith("# "): flow.append(Paragraph(line[2:], styles["H1"]))
+        elif line.strip().startswith(("- ", "* ", "• ")):
+            items = []
+            while i < len(lines) and lines[i].strip().startswith(("- ", "* ", "• ")):
+                items.append(ListItem(Paragraph(lines[i].strip()[2:], styles["Body"]))); i += 1
+            flow.append(ListFlowable(items, bulletType="bullet")); continue
+        elif re.match(r"^\d+\.\s", line.strip()):
+            items = []
+            while i < len(lines) and re.match(r"^\d+\.\s", lines[i].strip()):
+                items.append(ListItem(Paragraph(re.sub(r"^\d+\.\s", "", lines[i].strip()), styles["Body"]))); i += 1
+            flow.append(ListFlowable(items, bulletType="1")); continue
+        elif line.strip().startswith("|") and "|" in line.strip()[1:]:
+            rows = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+                if not all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c): rows.append(cells)
+                i += 1
+            if rows:
+                t = Table(rows, colWidths=[doc_width/len(rows[0])]*len(rows[0]))
+                t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#1f2937")),
+                    ("TEXTCOLOR",(0,0),(-1,0),colors.white),("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+                    ("GRID",(0,0),(-1,-1),0.4,colors.grey),("VALIGN",(0,0),(-1,-1),"TOP"),("FONTSIZE",(0,0),(-1,-1),8)]))
+                flow.append(t); flow.append(Spacer(1, 0.3*cm))
+            continue
+        else:
+            clean = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", line)
+            clean = re.sub(r"\*(.+?)\*", r"<i>\1</i>", clean)
+            flow.append(Paragraph(clean, styles["Body"]))
+        i += 1
+    return flow
+
+@app.post("/export/pdf")
+async def export_pdf(req: ExportRequest):
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=2*cm, rightMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm,
+                            title=req.title, author="ApoloXia")
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name="H1", parent=styles["Heading1"], fontSize=18, textColor=colors.HexColor("#0f172a"), spaceAfter=10))
+    styles.add(ParagraphStyle(name="H2", parent=styles["Heading2"], fontSize=14, textColor=colors.HexColor("#1e293b"), spaceAfter=6))
+    styles.add(ParagraphStyle(name="H3", parent=styles["Heading3"], fontSize=12, textColor=colors.HexColor("#334155"), spaceAfter=4))
+    styles.add(ParagraphStyle(name="Body", parent=styles["BodyText"], fontSize=10.5, leading=15, spaceAfter=4))
+    styles.add(ParagraphStyle(name="Code", parent=styles["Code"], fontSize=8.5, backColor=colors.HexColor("#f1f5f9"), borderPadding=6))
+    flow = [Paragraph(req.title, styles["H1"]),
+            Paragraph(f"<i>Generado por ApoloXia · {datetime.now():%Y-%m-%d %H:%M}</i>", styles["Body"]),
+            Spacer(1, 0.5*cm)]
+    if req.company_name: flow.append(Paragraph(f"<b>Empresa:</b> {req.company_name}", styles["Body"])); flow.append(Spacer(1, 0.3*cm))
+    flow.extend(_markdown_to_flowables(req.content, styles, A4[0]-4*cm))
+    doc.build(flow); buf.seek(0)
+    filename = re.sub(r"[^\w\-]+", "_", req.title)[:60] or "documento_apoloxia"
+    return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'})
+
+@app.post("/export/docx")
+async def export_docx(req: ExportRequest):
+    doc = Document()
+    style = doc.styles["Normal"]; style.font.name = "Calibri"; style.font.size = Pt(11)
+    h = doc.add_heading(req.title, level=0); h.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    meta = doc.add_paragraph(); meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = meta.add_run(f"Generado por ApoloXia · {datetime.now():%Y-%m-%d %H:%M}")
+    run.italic = True; run.font.size = Pt(9); run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+    if req.company_name: doc.add_paragraph(f"Empresa: {req.company_name}").runs[0].bold = True
+    doc.add_paragraph()
+    lines = req.content.split("\n"); i = 0
+    while i < len(lines):
+        line = lines[i].rstrip()
+        if line.strip().startswith("```"):
+            code_lines = []; i += 1
+            while i < len(lines) and not lines[i].strip().startswith("```"):
+                code_lines.append(lines[i]); i += 1
+            p = doc.add_paragraph(); r = p.add_run("\n".join(code_lines) or "(vacío)"); r.font.name = "Consolas"; r.font.size = Pt(9); i += 1; continue
+        if line.startswith("### "): doc.add_heading(line[4:], level=3)
+        elif line.startswith("## "): doc.add_heading(line[3:], level=2)
+        elif line.startswith("# "): doc.add_heading(line[2:], level=1)
+        elif line.strip().startswith(("- ", "* ", "• ")): doc.add_paragraph(line.strip()[2:], style="List Bullet")
+        elif re.match(r"^\d+\.\s", line.strip()): doc.add_paragraph(re.sub(r"^\d+\.\s", "", line.strip()), style="List Number")
+        elif line.strip().startswith("|") and "|" in line.strip()[1:]:
+            rows = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+                if not all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c): rows.append(cells)
+                i += 1
+            if rows:
+                t = doc.add_table(rows=len(rows), cols=len(rows[0])); t.style = "Light Grid Accent 1"
+                for ri, row in enumerate(rows):
+                    for ci, val in enumerate(row): t.cell(ri, ci).text = val
+            continue
+        elif line.strip():
+            p = doc.add_paragraph()
+            for chunk in re.split(r"(\*\*.+?\*\*)", line):
+                if chunk.startswith("**") and chunk.endswith("**"):
+                    run = p.add_run(chunk[2:-2]); run.bold = True
+                else: p.add_run(chunk)
+        else: doc.add_paragraph("")
+        i += 1
+    buf = io.BytesIO(); doc.save(buf); buf.seek(0)
+    filename = re.sub(r"[^\w\-]+", "_", req.title)[:60] or "documento_apoloxia"
+    return StreamingResponse(buf, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                             headers={"Content-Disposition": f'attachment; filename="{filename}.docx"'})
 
 # ============ ARCHIVOS ESTÁTICOS ============
 def _get_file_path(filename: str) -> str:
-    if os.path.exists(filename) and os.path.isfile(filename):
-        return filename
-    parent_path = os.path.join(os.path.dirname(__file__), "..", filename)
-    if os.path.exists(parent_path) and os.path.isfile(parent_path):
-        return parent_path
+    if os.path.exists(filename) and os.path.isfile(filename): return filename
+    parent = os.path.join(os.path.dirname(__file__), "..", filename)
+    if os.path.exists(parent) and os.path.isfile(parent): return parent
     return filename
 
 @app.get("/")
-async def serve_index():
-    return FileResponse(_get_file_path("index.html"))
+async def serve_index(): return FileResponse(_get_file_path("index.html"))
 
 @app.get("/chat")
-async def serve_chat():
-    return FileResponse(_get_file_path("chat.html"))
+async def serve_chat(): return FileResponse(_get_file_path("chat.html"))
 
 @app.get("/apoloxia.code.html")
-async def serve_code():
-    return FileResponse(_get_file_path("apoloxia.code.html"))
+async def serve_code(): return FileResponse(_get_file_path("apoloxia.code.html"))
 
 @app.get("/{filename}")
 async def serve_static_file(filename: str):
-    api_routes = {"chat", "models", "agents", "health", "conversations", "tier-info",
-                  "user-config", "upgrade-tier", "search-web", "share"}
-    if filename in api_routes or filename.startswith("apoloxia.code.html"):
-        raise HTTPException(404, "Not found")
-    if filename.startswith(".") or ".." in filename:
-        raise HTTPException(403, "Forbidden")
-
-    file_path = _get_file_path(filename)
-    if os.path.exists(file_path) and os.path.isfile(file_path):
-        return FileResponse(file_path)
+    api_routes = {"chat","models","agents","health","conversations","tier-info","user-config","upgrade-tier",
+                  "search-web","share","export","business-sectors","business-profile"}
+    if filename in api_routes or filename.startswith("apoloxia.code.html"): raise HTTPException(404, "Not found")
+    if filename.startswith(".") or ".." in filename: raise HTTPException(403, "Forbidden")
+    fp = _get_file_path(filename)
+    if os.path.exists(fp) and os.path.isfile(fp): return FileResponse(fp)
     raise HTTPException(404, "Archivo no encontrado")
 
 # ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 Iniciando ApoloXia Server v5.0.0 (12 modelos activos Septiembre 2026)")
-    print(f"📊 Modelos activos: {len(MODELS)} | 🤖 Agentes: {len(AGENT_PROMPTS)}")
-    print("🧠 Identidad: ApoloXia · The Shield Technology · Panamá · Amelio Delgado")
-    print("🔍 Motores de búsqueda activos:")
-    print(f"   - Tavily: {'✅' if TAVILY_API_KEY else '❌'}")
-    print(f"   - Exa AI: {'✅' if EXA_API_KEY else '❌'}")
-    print(f"   - MediaStack: {'✅' if MEDIASTACK_API_KEY else '❌'}")
-    print("⚡ OPTIMIZACIONES DE VELOCIDAD:")
-    print("   - max_tokens: 700 / 2500 / 5000")
-    print("   - Historial: 6 / 18 / 30")
-    print("   - Timeout Groq: 100s | Búsquedas: 10s")
-    print("   - Solo 2 reintentos de modelo")
-    print("   - Rate limiter al 90%")
-    print("🔒 IDENTIDAD FORZADA: nunca dirá ChatGPT")
-    print("✅ 12 MODELOS ACTIVOS: 4 Free + 4 Plus + 4 GT")
+    print("🚀 ApoloXia Server v6.1.0 ENTERPRISE (Solo OpenRouter)")
+    print(f"🌐 OpenRouter gratuitos: {len(OPENROUTER_MODELS)}")
+    print(f"🧠 freellmpool fallback: {'✅' if llm_pool else '❌'}")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
