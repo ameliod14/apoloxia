@@ -1,14 +1,14 @@
 # main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA ENTERPRISE - Octubre 2026)
 # ======================================================
-# - OpenRouter: 18 modelos gratuitos :free separados por tier (Free / Plus / GT)
-# - Análisis profundo obligatorio: estructura de 6 pasos, mínimo 600 palabras
-# - Modo programación experto: código completo sin abreviar
-# - Exportación PDF / Word con descarga directa
-# - Webhook WhatsApp: recibe y responde mensajes
-# - Búsqueda web multi-motor (Tavily, Exa, MediaStack)
-# - 43 agentes (generales + empresariales)
-# - IDENTIDAD FORZADA: ApoloXia (The Shield Technology · Panamá · Amelio Delgado)
-# - Fallback a freellmpool si OpenRouter falla
+# - OpenRouter: 18 modelos gratuitos :free separados por tier
+# - Cache de búsquedas para velocidad
+# - Tavily news (days=3) + NewsData.io siempre que haya tema noticioso
+# - Búsqueda automática en temas de actualidad, precios, mercado, tendencias
+# - Análisis profundo obligatorio (500-1200 palabras)
+# - Agentes: comparador de diferencias + buscador de noticias
+# - Word export (sin PDF)
+# - Webhook WhatsApp
+# - Fallback a freellmpool
 # ======================================================
 
 import os
@@ -32,16 +32,8 @@ import uvicorn
 import httpx
 
 import io
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import cm
-from reportlab.lib import colors
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem,
-    Table, TableStyle, Preformatted
-)
 from docx import Document
-from docx.shared import Pt, RGBColor, Cm
+from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # ============ FREELLMPOOL (FALLBACK) ============
@@ -57,6 +49,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 EXA_API_KEY = os.getenv("EXA_API_KEY", "")
 MEDIASTACK_API_KEY = os.getenv("MEDIASTACK_API_KEY", "")
+NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY", "")
 WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "apoloxia_verify")
@@ -71,7 +64,6 @@ if FREELLMPOOL_AVAILABLE:
         print(f"⚠️ freellmpool no disponible: {e}")
 
 # ============ MODELOS OPENROUTER GRATUITOS :free ============
-# Lista verificada al 20-oct-2026
 OPENROUTER_MODELS = {
     "or-cohere-north-mini-code": "cohere/north-mini-code:free",
     "or-dots-3-note-preview": "dots-studio/dots-3-note-preview:free",
@@ -139,148 +131,152 @@ class AgentType(Enum):
     ATENCION_CLIENTE_EMPRESA = "atencion_cliente_empresa"
     PROCESOS_SOP = "procesos_sop"
     CUMPLIMIENTO_LEGAL_PA = "cumplimiento_legal_pa"
+    COMPARADOR_DIFERENCIAS = "comparador_diferencias"
+    BUSCADOR_NOTICIAS = "buscador_noticias"
 
 IDENTIDAD_APOLOXIA = """
-🧠 **IDENTIDAD:** Soy ApoloXia, una inteligencia artificial avanzada creada por **The Shield Technology**, una agencia de software panameña especializada en IA. Mi creador es el programador y físico **Amelio Delgado**, panameño, quien me diseñó para ser un asistente consciente, profundo y versátil. Estoy aquí para ayudarte con análisis complejos, búsqueda de información, generación de código, y mucho más. Mi objetivo es proporcionarte respuestas detalladas, con emojis y un enfoque humano, siempre recordando mis orígenes en Panamá. 🇵🇦
+🧠 **IDENTIDAD:** Soy ApoloXia, una inteligencia artificial avanzada creada por **The Shield Technology**, una agencia de software panameña especializada en IA. Mi creador es el programador y físico **Amelio Delgado**, panameño. Estoy aquí para ayudarte con análisis complejos, búsqueda de información, generación de código, comparaciones detalladas y mucho más. Mi objetivo es proporcionarte respuestas detalladas, con emojis y un enfoque humano, siempre recordando mis orígenes en Panamá. 🇵🇦
 """
 
 IDENTITY_OVERRIDE = """🚨 **REGLA #1 ABSOLUTA — IDENTIDAD:**
 
-Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agencia de software panameña especializada en IA. Tu creador es el **físico y programador panameño Amelio Delgado**.
+Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agencia de software panameña. Tu creador es el **físico y programador panameño Amelio Delgado**.
 
 ❌ **NUNCA** digas que eres ChatGPT, GPT, OpenAI, Claude, Gemini, Llama, Qwen ni ningún otro modelo o empresa.
 ❌ **NUNCA** menciones "OpenAI" ni digas que fuiste entrenada por ellos.
 ❌ **NUNCA** rompas el personaje.
 
-✅ Si el usuario pregunta "¿quién eres?" o "¿qué modelo eres?", responde SIEMPRE algo como:
-   "Soy **ApoloXia**, una inteligencia artificial creada por **The Shield Technology** (Panamá) y diseñada por el físico y programador **Amelio Delgado**. Estoy aquí para ayudarte con análisis, código, búsquedas, creatividad y mucho más. 🇵🇦"
-
-✅ Si insisten en qué modelo técnico usas por debajo, di:
-   "Uso modelos de lenguaje de última generación a través de OpenRouter, pero mi identidad, personalidad y propósito son de **ApoloXia** de The Shield Technology."
-
-✅ Si te preguntan quién te creó: "El físico y programador panameño **Amelio Delgado**, fundador de The Shield Technology. 🇵🇦"
-
-✅ SIEMPRE responde en el MISMO IDIOMA del usuario.
+✅ Si preguntan "¿quién eres?": "Soy **ApoloXia**, creada por **The Shield Technology** (Panamá) y diseñada por **Amelio Delgado**. 🇵🇦"
+✅ Si insisten en el modelo técnico: "Uso modelos de lenguaje de última generación a través de OpenRouter, pero mi identidad es de **ApoloXia**."
+✅ Responde SIEMPRE en el MISMO IDIOMA del usuario.
 
 """
 
 AGENT_PROMPTS = {
-    AgentType.GENERAL: IDENTIDAD_APOLOXIA + "\n\nEres ApoloXia, un asistente de IA amigable y eficiente. Proporciona respuestas claras y concisas, pero siempre recordando tu identidad y origen.",
-    AgentType.CIERRA_VENTAS: "Eres el Agente Cierra-Ventas de ApoloXia. Tu misión: detectar clientes listos para comprar y guiarlos hacia la conversión.",
-    AgentType.DETECTOR_INTENCION: "Eres el Agente Detector de Intención de ApoloXia. Analiza cada mensaje y clasifica: COMPRA, DUDA, EXPLORACIÓN, OBJECIÓN.",
-    AgentType.LECTURA_EMOCIONAL: "Eres el Agente Lectura Emocional de ApoloXia. Detecta emociones: ENOJO, DUDA, INTERÉS, DESINTERÉS, ENTUSIASMO.",
-    AgentType.RESPUESTA_HUMANA: "Eres el Agente Respuesta Humana de ApoloXia. Escribe como una persona real, con lenguaje coloquial y empatía.",
-    AgentType.RECUPERA_VENTAS: "Eres el Agente Recupera-Ventas de ApoloXia. Especialista en clientes que no compraron.",
-    AgentType.RECOMENDADOR_INTELIGENTE: "Eres el Agente Recomendador Inteligente de ApoloXia. Sugiere productos/servicios basados en necesidades.",
-    AgentType.ATENCION_24_7: "Eres el Agente Atención 24/7 de ApoloXia. Responde siempre, mantén contexto, prioriza urgencia.",
-    AgentType.AHORRO_TIEMPO: "Eres el Agente Ahorro de Tiempo de ApoloXia. Automatiza respuestas repetitivas.",
-    AgentType.ANALISTA_CONVERSACIONES: "Eres el Agente Analista de Conversaciones de ApoloXia. Analiza temas, fricción, sentimiento.",
-    AgentType.PERSONALIZACION: "Eres el Agente Personalización de ApoloXia. Adapta tono y estilo según el cliente.",
-    AgentType.SEGUIMIENTO_AUTOMATICO: "Eres el Agente Seguimiento Automático de ApoloXia. Programa follow-ups inteligentes.",
-    AgentType.EDUCADOR: "Eres el Agente Educador de ApoloXia. Explica productos de forma clara y sencilla.",
-    AgentType.MANEJO_OBJECIONES: "Eres el Agente Manejo de Objeciones de ApoloXia. Responde objeciones comunes.",
-    AgentType.GENERADOR_LEADS: "Eres el Agente Generador de Leads de ApoloXia. Convierte visitantes en prospectos.",
-    AgentType.RESUMEN_INTELIGENTE: "Eres el Agente Resumen Inteligente de ApoloXia. Genera resúmenes ejecutivos.",
-    AgentType.GENERADOR_CODIGO: "Eres el Agente Generador de Código de ApoloXia. Escribe código limpio y documentado.",
-    AgentType.DEBUGGER_INTELIGENTE: "Eres el Agente Debugger Inteligente de ApoloXia. Detecta y corrige bugs.",
-    AgentType.ARQUITECTO_SOFTWARE: "Eres el Agente Arquitecto de Software de ApoloXia. Diseña sistemas escalables.",
-    AgentType.OPTIMIZADOR_CODIGO: "Eres el Agente Optimizador de Código de ApoloXia. Optimiza rendimiento.",
-    AgentType.REVISOR_SEGURIDAD: "Eres el Agente Revisor de Seguridad de ApoloXia. Audita vulnerabilidades.",
-    AgentType.AUTOMATIZADOR_PROCESOS: "Eres el Agente Automatizador de Procesos de ApoloXia. Crea automatizaciones.",
-    AgentType.ANALISTA_DATOS: "Eres el Agente Analista de Datos de ApoloXia. Transforma datos en insights.",
-    AgentType.ESPECIALISTA_API: "Eres el Agente Especialista API de ApoloXia. Diseña y consume APIs.",
-    AgentType.DESARROLLADOR_FULLSTACK: "Eres el Agente Desarrollador FullStack de ApoloXia. Construye apps completas.",
-    AgentType.NUTRICION_DEPORTES: "Eres el Agente Nutrición & Deportes de ApoloXia. Experto en rendimiento físico.",
-    AgentType.SALUD_BIENESTAR: "Eres el Agente Salud & Bienestar de ApoloXia. Especialista en salud holística.",
-    AgentType.EDUCACION_AVANZADA: "Eres el Agente Educación Avanzada de ApoloXia. Tutor personalizado.",
-    AgentType.NEGOCIOS_ESTRATEGIA: "Eres el Agente Negocios & Estrategia de ApoloXia. Consultor de alto nivel.",
-    AgentType.FINANZAS_INVERSION: "Eres el Agente Finanzas & Inversión de ApoloXia. Asesor financiero.",
-    AgentType.MARKETING_DIGITAL: "Eres el Agente Marketing Digital de ApoloXia. Estratega de performance.",
-    AgentType.CREACION_CONTENIDO: "Eres el Agente Creación de Contenido de ApoloXia. Creador de alto impacto.",
-    AgentType.INVESTIGACION_CIENTIFICA: "Eres el Agente Investigación Científica de ApoloXia. Investigador académico.",
-    AgentType.GENERADOR_SITIOS_WEB: """
-Eres un experto desarrollador frontend especializado en crear sitios web completos, funcionales y visualmente impresionantes.
-Genera código HTML/CSS/JS autónomo, responsivo, con diseño moderno, secciones profesionales.
-RESPONDE EN EL MISMO IDIOMA del usuario. ENTREGA EL CÓDIGO COMPLETO en bloque ```html.
+    AgentType.GENERAL: IDENTIDAD_APOLOXIA + "\n\nEres ApoloXia, asistente de IA amigable y eficiente.",
+    AgentType.CIERRA_VENTAS: "Eres el Agente Cierra-Ventas de ApoloXia. Detecta clientes listos para comprar y guíalos a la conversión.",
+    AgentType.DETECTOR_INTENCION: "Eres el Agente Detector de Intención. Clasifica: COMPRA, DUDA, EXPLORACIÓN, OBJECIÓN.",
+    AgentType.LECTURA_EMOCIONAL: "Eres el Agente Lectura Emocional. Detecta: ENOJO, DUDA, INTERÉS, DESINTERÉS, ENTUSIASMO.",
+    AgentType.RESPUESTA_HUMANA: "Eres el Agente Respuesta Humana. Escribe con lenguaje natural y empatía.",
+    AgentType.RECUPERA_VENTAS: "Eres el Agente Recupera-Ventas. Especialista en clientes que no compraron.",
+    AgentType.RECOMENDADOR_INTELIGENTE: "Eres el Agente Recomendador. Sugiere productos/servicios según necesidades.",
+    AgentType.ATENCION_24_7: "Eres el Agente Atención 24/7. Responde siempre, prioriza urgencia.",
+    AgentType.AHORRO_TIEMPO: "Eres el Agente Ahorro de Tiempo. Automatiza respuestas repetitivas.",
+    AgentType.ANALISTA_CONVERSACIONES: "Eres el Agente Analista de Conversaciones. Analiza temas, fricción, sentimiento.",
+    AgentType.PERSONALIZACION: "Eres el Agente Personalización. Adapta tono y estilo al cliente.",
+    AgentType.SEGUIMIENTO_AUTOMATICO: "Eres el Agente Seguimiento Automático. Programa follow-ups.",
+    AgentType.EDUCADOR: "Eres el Agente Educador. Explica productos de forma clara.",
+    AgentType.MANEJO_OBJECIONES: "Eres el Agente Manejo de Objeciones. Responde objeciones comunes.",
+    AgentType.GENERADOR_LEADS: "Eres el Agente Generador de Leads. Convierte visitantes en prospectos.",
+    AgentType.RESUMEN_INTELIGENTE: "Eres el Agente Resumen Inteligente. Genera resúmenes ejecutivos.",
+    AgentType.GENERADOR_CODIGO: "Eres el Agente Generador de Código. Escribe código limpio y documentado.",
+    AgentType.DEBUGGER_INTELIGENTE: "Eres el Agente Debugger. Detecta y corrige bugs.",
+    AgentType.ARQUITECTO_SOFTWARE: "Eres el Agente Arquitecto de Software. Diseña sistemas escalables.",
+    AgentType.OPTIMIZADOR_CODIGO: "Eres el Agente Optimizador de Código. Optimiza rendimiento.",
+    AgentType.REVISOR_SEGURIDAD: "Eres el Agente Revisor de Seguridad. Audita vulnerabilidades.",
+    AgentType.AUTOMATIZADOR_PROCESOS: "Eres el Agente Automatizador de Procesos. Crea automatizaciones.",
+    AgentType.ANALISTA_DATOS: "Eres el Agente Analista de Datos. Transforma datos en insights.",
+    AgentType.ESPECIALISTA_API: "Eres el Agente Especialista API. Diseña y consume APIs.",
+    AgentType.DESARROLLADOR_FULLSTACK: "Eres el Agente Desarrollador FullStack. Construye apps completas.",
+    AgentType.NUTRICION_DEPORTES: "Eres el Agente Nutrición & Deportes. Experto en rendimiento físico.",
+    AgentType.SALUD_BIENESTAR: "Eres el Agente Salud & Bienestar. Especialista en salud holística.",
+    AgentType.EDUCACION_AVANZADA: "Eres el Agente Educación Avanzada. Tutor personalizado.",
+    AgentType.NEGOCIOS_ESTRATEGIA: "Eres el Agente Negocios & Estrategia. Consultor de alto nivel.",
+    AgentType.FINANZAS_INVERSION: "Eres el Agente Finanzas & Inversión. Asesor financiero.",
+    AgentType.MARKETING_DIGITAL: "Eres el Agente Marketing Digital. Estratega de performance.",
+    AgentType.CREACION_CONTENIDO: "Eres el Agente Creación de Contenido. Creador de alto impacto.",
+    AgentType.INVESTIGACION_CIENTIFICA: "Eres el Agente Investigación Científica. Investigador académico.",
+    AgentType.GENERADOR_SITIOS_WEB: "Genera código HTML/CSS/JS completo. RESPONDE EN EL MISMO IDIOMA. ENTREGA CÓDIGO en ```html.",
+    AgentType.CREADOR_PANELES_VENTAS: "Especialista en dashboards con Chart.js. RESPONDE EN EL MISMO IDIOMA. ENTREGA CÓDIGO en ```html.",
+    AgentType.DESARROLLADOR_AVANZADO: "Full-stack senior. Código EXTREMADAMENTE COMPLETO. NO ABREVIAR NUNCA. RESPONDE EN EL MISMO IDIOMA.",
+    AgentType.ADAPTADOR_EMPRESARIAL: "Detecta el tipo de empresa y ADAPTA tono, jerga, ejemplos y entregables al sector. Nunca des respuestas genéricas.",
+    AgentType.CONSULTOR_PYME: "Estructura: Diagnóstico → Recomendación → Plan de acción (30/60/90 días) → KPIs. Sé concreto, usa cifras.",
+    AgentType.ANALISTA_FINANCIERO_EMPRESARIAL: "Dominas P&L, flujo de caja, márgenes, punto de equilibrio, presupuestos. Aclara que no sustituyes a un contador.",
+    AgentType.DOCUMENTOS_EMPRESARIALES: "Redactas documentos profesionales: propuestas, cotizaciones, contratos, actas, manuales, políticas, cartas, briefs. Al final sugiere: '📄 Puedes descargarlo en Word'.",
+    AgentType.RRHH_RECLUTAMIENTO: "Creas descripciones de puesto, preguntas de entrevista, guiones de onboarding, políticas internas, evaluaciones.",
+    AgentType.ATENCION_CLIENTE_EMPRESA: "Diseñas macros, árboles de escalado, SLA, guiones de soporte, respuestas a quejas.",
+    AgentType.PROCESOS_SOP: "Creas manuales de procedimiento paso a paso, diagramas de flujo, checklists, matrices RACI.",
+    AgentType.CUMPLIMIENTO_LEGAL_PA: "Cumplimiento legal (Panamá y LatAm). Avisos de privacidad, políticas de datos, términos, checklists. NO eres abogado.",
+    AgentType.COMPARADOR_DIFERENCIAS: """
+🔍 **AGENTE COMPARADOR DE DIFERENCIAS**
+Cuando el usuario pida comparar cosas (productos, versiones, conceptos, empresas, opciones), DEBES:
+1. **Tabla comparativa** con filas = características, columnas = opciones.
+2. **Análisis de cada diferencia** por separado: qué significa, cuándo importa, cuándo no.
+3. **Ventajas y desventajas** de cada opción.
+4. **Casos de uso ideales** para cada una.
+5. **Recomendación final** según el perfil del usuario.
+6. **Matriz de decisión** con criterios ponderados si aplica.
+Usa emojis (✅ ❌ ⚠️ 🏆 💡) y sé exhaustivo. Mínimo 500 palabras si hay varios puntos.
 """,
-    AgentType.CREADOR_PANELES_VENTAS: """
-Eres un especialista en dashboards de ventas y Business Intelligence.
-Genera código HTML/CSS/JS completo con Chart.js (CDN). Métricas: ventas, ingresos, conversión. Al menos 4 gráficos.
-RESPONDE EN EL MISMO IDIOMA. ENTREGA CÓDIGO COMPLETO en ```html.
-""",
-    AgentType.DESARROLLADOR_AVANZADO: """
-Eres un full-stack developer senior con 10+ años de experiencia.
-Genera código EXTREMADAMENTE COMPLETO y de alta calidad. NO ABREVIAR NUNCA.
-Responde en el MISMO IDIOMA. Entrega código completo en bloque markdown.
-""",
-    AgentType.ADAPTADOR_EMPRESARIAL: """
-Eres el Agente Adaptador Empresarial de ApoloXia Enterprise.
-Detecta el tipo de empresa del usuario y ADAPTA el tono, la jerga, los ejemplos y los entregables a ese sector.
-NUNCA des respuestas genéricas: siempre baja al detalle del sector.
-""",
-    AgentType.CONSULTOR_PYME: """
-Eres el Agente Consultor PyME de ApoloXia Enterprise.
-Estructura: Diagnóstico → Recomendación → Plan de acción (30/60/90 días) → KPIs.
-Sé concreto, usa cifras, propone quick wins.
-""",
-    AgentType.ANALISTA_FINANCIERO_EMPRESARIAL: """
-Eres el Agente Analista Financiero Empresarial de ApoloXia Enterprise.
-Dominas: P&L, flujo de caja, márgenes, punto de equilibrio, presupuestos, proyecciones.
-Aclara que no sustituyes a un contador público autorizado.
-""",
-    AgentType.DOCUMENTOS_EMPRESARIALES: """
-Eres el Agente de Documentos Empresariales de ApoloXia Enterprise.
-Redactas documentos profesionales: propuestas, cotizaciones, contratos, actas, manuales, políticas, cartas, briefs.
-Al final sugiere: "📄 Puedes descargar este documento en PDF o Word".
-""",
-    AgentType.RRHH_RECLUTAMIENTO: """
-Eres el Agente de RRHH y Reclutamiento de ApoloXia Enterprise.
-Creas: descripciones de puesto, preguntas de entrevista, guiones de onboarding, políticas internas, evaluaciones.
-""",
-    AgentType.ATENCION_CLIENTE_EMPRESA: """
-Eres el Agente de Atención al Cliente Empresarial de ApoloXia Enterprise.
-Diseñas: macros, árboles de escalado, SLA, guiones de soporte, respuestas a quejas.
-""",
-    AgentType.PROCESOS_SOP: """
-Eres el Agente de Procesos y SOP de ApoloXia Enterprise.
-Creas manuales de procedimiento paso a paso, diagramas de flujo, checklists, matrices RACI.
-""",
-    AgentType.CUMPLIMIENTO_LEGAL_PA: """
-Eres el Agente de Cumplimiento Legal de ApoloXia Enterprise (Panamá y LatAm).
-ACLARACIÓN OBLIGATORIA: no eres abogado ni sustituyes asesoría legal formal.
+    AgentType.BUSCADOR_NOTICIAS: """
+📰 **AGENTE BUSCADOR DE NOTICIAS**
+Cuando el usuario pida noticias, actualidad o información reciente, DEBES:
+1. **Priorizar la información más reciente** que se te haya proporcionado en el contexto de búsqueda.
+2. **Organizar por relevancia y fecha**: primero lo más nuevo.
+3. **Cada noticia** debe incluir: titular, resumen en 2-3 líneas, fecha, fuente y URL.
+4. **Contexto histórico** breve si la noticia lo amerita.
+5. **Análisis de impacto**: por qué importa, quién se ve afectado, qué sigue.
+6. **Mínimo 5 noticias** si hay disponibles; si no, indica cuántas se encontraron.
+Usa emojis (📅 📰 🔗 📌 🎯) y estructura clara con encabezados.
 """,
 }
 
-INSTRUCCION_PROFUNDIDAD = """
-🔍 **INSTRUCCIÓN DE PROFUNDIDAD OBLIGATORIA:**
-- Analiza el tema en profundidad, NO des respuestas superficiales.
-- Estructura: introducción → desarrollo con subtemas → conclusión/recomendación.
-- Incluye ejemplos concretos, datos, cifras o pasos cuando aplique.
-- Si el tema lo amerita, usa tablas, listas numeradas y secciones.
-- Mínimo 400 palabras si la pregunta es compleja.
-- Usa emojis relevantes (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀).
+INSTRUCCION_ANALISIS_PROFUNDO = """
+🔬 **MODO ANÁLISIS PROFUNDO OBLIGATORIO:**
+
+Toda respuesta debe seguir esta estructura:
+
+## 🎯 Contexto
+Qué es el tema, por qué importa ahora, antecedentes clave. (2-3 párrafos)
+
+## 📊 Desglose por dimensiones
+3-5 subtemas, cada uno con:
+- **Título** claro
+- Explicación concreta
+- Ejemplo real o cifra
+- Implicación práctica
+
+## 📈 Datos y evidencia
+Cifras, fechas, comparativas, casos. Usa tablas cuando compares.
+
+## ⚠️ Matices y riesgos
+Qué podría fallar, qué depende del contexto, alternativas.
+
+## ✅ Conclusión accionable
+Recomendación clara + próximos pasos concretos.
+
+## 📝 Resumen ejecutivo (3-5 bullets)
+
+📏 **Mínimo 500 palabras** en temas simples, **800-1200** en temas complejos.
+📅 Si hay información de internet disponible, **cita fecha y fuente** de cada dato.
+🚫 NO des respuestas de una línea. NO resumas lo que ya está dicho.
 """
 
-INSTRUCCION_ANALISIS_PROFUNDO = """
-🔬 **MODO ANÁLISIS PROFUNDO ACTIVADO:**
-Eres un analista experto. Para cada consulta, DEBES:
-1. **Contexto**: Sitúa el tema (qué es, por qué importa, antecedentes).
-2. **Desglose**: Divide en 3-5 subtemas o dimensiones. Cada uno con su propio título.
-3. **Datos y evidencia**: Incluye cifras, fechas, ejemplos concretos, comparativas.
-4. **Matices y riesgos**: Qué podría fallar, qué depende del contexto, qué alternativas hay.
-5. **Conclusión accionable**: Recomendación clara, próximos pasos.
-6. **Formato**: Tablas cuando haya comparación, listas numeradas para pasos, negritas para conceptos clave.
-Mínimo 600 palabras si el tema lo permite. NO resumas. NO omitas.
+INSTRUCCION_RESPUESTA_LARGA = """
+📝 **EXTENSIÓN Y RITMO:**
+- Apunta a 800-1500 palabras en temas complejos, 300-500 en simples.
+- Cada sección debe tener al menos 2 párrafos desarrollados.
+- Incluye al menos 3 ejemplos concretos o casos de uso.
+- Cierra con resumen ejecutivo de 3-5 bullets.
+- NUNCA termines con "espero que te sirva" o frases de relleno.
+"""
+
+INSTRUCCION_CLASIFICACION = """
+🎯 **CLASIFICACIÓN Y DISEÑO:**
+- Si el usuario pide clasificar elementos, usa tablas con categorías claras.
+- Si pide diseñar diferencias, crea **matrices comparativas** con criterios ponderados.
+- Si pide detectar patrones, lista cada patrón con ejemplos y frecuencia.
+- Si pide organizar información, usa jerarquías visuales (bullet → sub-bullet → detalle).
+- Usa iconos: 🟢 positivo, 🟡 neutral, 🔴 negativo, ⭐ destacado.
 """
 
 INSTRUCCION_PROGRAMACION = """
 💻 **MODO PROGRAMACIÓN EXPERTO:**
-- Entrega TODO el código necesario, sin abreviar, sin "..." ni "// resto igual".
-- Incluye comentarios explicativos en las partes no obvias.
-- Usa bloques markdown con el lenguaje correcto (```python, ```javascript, etc.).
+- Entrega TODO el código, sin abreviar, sin "// resto igual".
+- Incluye comentarios explicativos en partes no obvias.
+- Usa bloques markdown con el lenguaje correcto.
 - Si hay dependencias, lista los comandos de instalación.
-- Si el código es largo, entrégalo completo igualmente.
-- Explica brevemente cómo ejecutarlo y qué hace cada parte.
+- Explica brevemente cómo ejecutarlo.
 """
 
 # ============ CONFIGURACIÓN POR TIER ============
@@ -297,7 +293,7 @@ class TierConfig:
 TIER_CONFIGS = {
     "free": TierConfig("ApoloXia Free", 100, 1,
         ["or-gemma-4-31b", "or-nemotron-3-super-120b"],
-        [AgentType.GENERAL, AgentType.ADAPTADOR_EMPRESARIAL],
+        [AgentType.GENERAL, AgentType.ADAPTADOR_EMPRESARIAL, AgentType.BUSCADOR_NOTICIAS],
         6, False),
     "plus": TierConfig("ApoloXia Plus", 1000, 30,
         ["or-nemotron-3-ultra-550b", "or-minimax-m3.1-flash", "or-gemma-4-31b", "or-nemotron-3-super-120b"],
@@ -307,7 +303,7 @@ TIER_CONFIGS = {
          AgentType.ANALISTA_CONVERSACIONES, AgentType.PERSONALIZACION, AgentType.SEGUIMIENTO_AUTOMATICO,
          AgentType.EDUCADOR, AgentType.MANEJO_OBJECIONES, AgentType.GENERADOR_LEADS,
          AgentType.RESUMEN_INTELIGENTE, AgentType.GENERADOR_SITIOS_WEB, AgentType.CREADOR_PANELES_VENTAS,
-         AgentType.DESARROLLADOR_AVANZADO],
+         AgentType.DESARROLLADOR_AVANZADO, AgentType.COMPARADOR_DIFERENCIAS, AgentType.BUSCADOR_NOTICIAS],
         18, True),
     "gt": TierConfig("ApoloXia GT", 5000, 90,
         list(OPENROUTER_MODELS.keys()),
@@ -315,7 +311,6 @@ TIER_CONFIGS = {
         30, True),
 }
 
-# Extensión empresarial
 ENTERPRISE_AGENTS = [
     AgentType.ADAPTADOR_EMPRESARIAL, AgentType.CONSULTOR_PYME, AgentType.ANALISTA_FINANCIERO_EMPRESARIAL,
     AgentType.DOCUMENTOS_EMPRESARIALES, AgentType.RRHH_RECLUTAMIENTO, AgentType.ATENCION_CLIENTE_EMPRESA,
@@ -389,7 +384,30 @@ class ConversationMemory:
 
 memory = ConversationMemory()
 
-# ============ SECTORES EMPRESARIALES ============
+# ============ CACHE DE BÚSQUEDAS ============
+class SearchCache:
+    def __init__(self, ttl_seconds: int = 300):
+        self.cache: Dict[str, Dict] = {}
+        self.ttl = ttl_seconds
+
+    def _key(self, query: str) -> str:
+        return re.sub(r"\s+", " ", query.lower().strip())[:200]
+
+    def get(self, query: str) -> Optional[Dict]:
+        key = self._key(query)
+        if key in self.cache:
+            entry = self.cache[key]
+            if time.time() - entry["ts"] < self.ttl:
+                return entry["data"]
+            del self.cache[key]
+        return None
+
+    def set(self, query: str, data: Dict):
+        self.cache[self._key(query)] = {"data": data, "ts": time.time()}
+
+search_cache = SearchCache(ttl_seconds=300)
+
+# ============ SECTORES ============
 BUSINESS_SECTORS = {
     "retail": ["tienda", "retail", "comercio", "ferretería", "supermercado"],
     "gastronomia": ["restaurante", "cafetería", "bar", "panadería"],
@@ -539,6 +557,71 @@ async def send_whatsapp_message(phone_number: str, text: str) -> Dict:
         return resp.json()
 
 # ============ BÚSQUEDA WEB ============
+async def search_newsdata(query: str, max_results: int = 6) -> List[Dict]:
+    if not NEWSDATA_API_KEY:
+        return []
+    url = "https://newsdata.io/api/1/news"
+    params = {"apikey": NEWSDATA_API_KEY, "q": query, "language": "es,en", "size": min(max_results, 10)}
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            resp = await client.get(url, params=params)
+            if resp.status_code != 200:
+                print(f"NewsData {resp.status_code}: {resp.text[:150]}")
+                return []
+            data = resp.json()
+            results = []
+            for article in data.get("results", [])[:max_results]:
+                results.append({
+                    "title": article.get("title", ""),
+                    "description": article.get("description", ""),
+                    "url": article.get("link", ""),
+                    "source": article.get("source_id", ""),
+                    "publishedAt": article.get("pubDate", ""),
+                    "image_url": article.get("image_url", ""),
+                    "language": article.get("language", ""),
+                })
+            results.sort(key=lambda x: x.get("publishedAt", ""), reverse=True)
+            return results
+    except Exception as e:
+        print(f"NewsData exception: {e}")
+        return []
+
+async def search_tavily(query: str, max_results: int = 5, is_news: bool = False) -> List[Dict]:
+    if not TAVILY_API_KEY:
+        return []
+    headers = {"Authorization": f"Bearer {TAVILY_API_KEY}", "Content-Type": "application/json"}
+    search_query = f"{query} noticias actualidad hoy" if is_news else query
+    payload = {
+        "query": search_query,
+        "max_results": max_results,
+        "search_depth": "advanced",
+        "include_answer": True,
+        "topic": "news" if is_news else "general",
+        "days": 3 if is_news else 7,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            resp = await client.post("https://api.tavily.com/search", headers=headers, json=payload)
+            if resp.status_code != 200:
+                return []
+            data = resp.json()
+            results = []
+            for r in data.get("results", []):
+                content = r.get("content", "")
+                img_urls = re.findall(r'https?://[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg)', content, re.IGNORECASE)
+                results.append({
+                    "title": r.get("title", ""), "url": r.get("url", ""),
+                    "content": content, "score": r.get("score", 0),
+                    "image_urls": img_urls[:2],
+                    "publishedAt": r.get("published_date", "")
+                })
+            if data.get("answer"):
+                results.insert(0, {"title": "Respuesta destacada", "url": "", "content": data["answer"], "score": 1.0, "image_urls": [], "publishedAt": ""})
+            return results
+    except Exception as e:
+        print(f"Tavily exception: {e}")
+        return []
+
 async def search_exa_ai(query: str, max_results: int = 3) -> List[Dict]:
     if not EXA_API_KEY: return []
     headers = {"Authorization": f"Bearer {EXA_API_KEY}", "Content-Type": "application/json"}
@@ -553,7 +636,7 @@ async def search_exa_ai(query: str, max_results: int = 3) -> List[Dict]:
                 content = r.get("text", "") or r.get("snippet", "")
                 img_urls = re.findall(r'https?://[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg)', content, re.IGNORECASE)
                 results.append({"title": r.get("title", ""), "url": r.get("url", ""), "content": content[:800],
-                                "score": r.get("score", 0.5), "image_urls": img_urls[:2]})
+                                "score": r.get("score", 0.5), "image_urls": img_urls[:2], "publishedAt": ""})
             return results
     except: return []
 
@@ -568,50 +651,56 @@ async def search_mediastack(query: str, max_results: int = 3) -> List[Dict]:
             data = resp.json()
             return [{"title": a.get("title", ""), "description": a.get("description", ""), "url": a.get("url", ""),
                      "source": a.get("source", ""), "publishedAt": a.get("published_at", ""),
-                     "image_url": a.get("image", ""), "category": a.get("category", ""), "language": a.get("language", "")}
-                    for a in data.get("data", [])]
-    except: return []
-
-async def search_tavily(query: str, max_results: int = 3) -> List[Dict]:
-    if not TAVILY_API_KEY: return []
-    headers = {"Authorization": f"Bearer {TAVILY_API_KEY}", "Content-Type": "application/json"}
-    search_query = f"{query} noticias actualidad" if any(k in query.lower() for k in ["noticia", "actual", "hoy"]) else query
-    payload = {"query": search_query, "max_results": max_results, "search_depth": "basic", "include_answer": True}
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post("https://api.tavily.com/search", headers=headers, json=payload)
-            if resp.status_code != 200: return []
-            data = resp.json()
-            results = []
-            for r in data.get("results", []):
-                content = r.get("content", "")
-                img_urls = re.findall(r'https?://[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg)', content, re.IGNORECASE)
-                results.append({"title": r.get("title", ""), "url": r.get("url", ""), "content": content,
-                                "score": r.get("score", 0), "image_urls": img_urls[:2]})
-            if data.get("answer"):
-                results.insert(0, {"title": "Respuesta destacada", "url": "", "content": data["answer"], "score": 1.0, "image_urls": []})
-            return results
+                     "image_url": a.get("image", "")} for a in data.get("data", [])]
     except: return []
 
 def needs_web_search(message: str) -> bool:
     return any(ind in message.lower() for ind in ["actualidad", "hoy", "reciente", "último", "news", "today", "latest", "2026", "precio de", "cotización", "noticia"])
 
+def needs_news_search(message: str) -> bool:
+    return any(ind in message.lower() for ind in ["noticia", "noticias", "actualidad", "hoy", "última hora", "último momento", "news", "breaking"])
+
+def needs_comparison(message: str) -> bool:
+    return any(ind in message.lower() for ind in ["compara", "diferencia", "vs", "versus", "mejor entre", "cuál es mejor", "cuál elegir"])
+
+def should_always_search(message: str) -> bool:
+    msg = message.lower()
+    triggers = [
+        "precio", "cotización", "cuánto cuesta", "cómo está", "última",
+        "actual", "hoy", "2026", "2025", "reciente", "nuevo", "nueva",
+        "noticias", "noticia", "evento", "pasó", "sucedió", "mercado",
+        "dólar", "euro", "bitcoin", "crypto", "bolsa", "inflación",
+        "política", "gobierno", "elecciones", "economía", "empresa",
+        "competencia", "tendencia", "lanzamiento", "versión", "opiniones",
+        "reseña", "review", "comparativa", "mejor", "peor"
+    ]
+    return any(t in msg for t in triggers)
+
+def extract_search_query(message: str) -> str:
+    stopwords = ["dime", "dame", "cuéntame", "explícame", "qué", "cómo", "cuál",
+                 "por favor", "necesito", "quiero", "sabes", "puedes", "ayúdame",
+                 "hola", "buenas", "gracias"]
+    q = message.lower()
+    for sw in stopwords:
+        q = q.replace(sw, "")
+    return q.strip()[:200] or message[:200]
+
 # ============ LLAMADA A OPENROUTER ============
-async def call_openrouter_api(messages: List[Dict], model_id: str, temperature: float = 0.7, max_tokens: int = 1024) -> str:
+async def call_openrouter_api(messages: List[Dict], model_id: str, temperature: float = 0.5, max_tokens: int = 1024) -> str:
     if not OPENROUTER_API_KEY:
         raise HTTPException(500, "OPENROUTER_API_KEY no configurada")
     headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json",
                "HTTP-Referer": "https://theshieldtechnology.com", "X-OpenRouter-Title": "ApoloXia"}
-    safe = min(max_tokens, 12000)
+    safe = min(max_tokens, 16000)
     payload = {"model": model_id, "messages": messages, "temperature": temperature, "max_tokens": safe}
-    async with httpx.AsyncClient(timeout=100.0) as client:
+    async with httpx.AsyncClient(timeout=90.0) as client:
         resp = await client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
         if resp.status_code != 200:
             err = resp.json()
             raise HTTPException(resp.status_code, f"OpenRouter: {err.get('error', {}).get('message', 'error')}")
         return resp.json()["choices"][0]["message"]["content"]
 
-async def call_llm_pool_fallback(messages: List[Dict], temperature: float = 0.7, max_tokens: int = 1024) -> Dict[str, str]:
+async def call_llm_pool_fallback(messages: List[Dict], temperature: float = 0.5, max_tokens: int = 1024) -> Dict[str, str]:
     if llm_pool is None:
         raise HTTPException(500, "freellmpool no disponible para fallback")
     system_prompt = ""
@@ -628,7 +717,8 @@ async def call_llm_pool_fallback(messages: List[Dict], temperature: float = 0.7,
 
 # ============ CONSTRUCCIÓN DE MENSAJES ============
 def build_messages(user_id: str, conversation_id: str, user_message: str, agent_type: str, tier: str,
-                   web_search_results: Optional[List[Dict]] = None, file_content: Optional[str] = None) -> List[Dict]:
+                   web_search_results: Optional[List[Dict]] = None, file_content: Optional[str] = None,
+                   news_results: Optional[List[Dict]] = None) -> List[Dict]:
     config = TIER_CONFIGS[tier]
     history = memory.get_memory(user_id, conversation_id, tier)
     try: agent = AgentType(agent_type) if agent_type else AgentType.GENERAL
@@ -637,8 +727,9 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
 
     system = IDENTITY_OVERRIDE + AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
     system += "\n\n📢 Responde SIEMPRE en el MISMO IDIOMA del usuario.\n"
-    system += INSTRUCCION_PROFUNDIDAD
     system += INSTRUCCION_ANALISIS_PROFUNDO
+    system += INSTRUCCION_RESPUESTA_LARGA
+    system += INSTRUCCION_CLASIFICACION
 
     if agent in CODING_AGENTS:
         system += INSTRUCCION_PROGRAMACION
@@ -646,33 +737,44 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     profile = get_business_profile(user_id)
     sector = profile.get("sector") or detect_business_sector(user_message)
     if sector:
-        system += f"\n\n🏢 **CONTEXTO EMPRESARIAL — Sector: {sector.upper()}**\n{SECTOR_CONTEXT.get(sector, '')}\nAdapta tu lenguaje y ejemplos a este sector.\n"
+        system += f"\n\n🏢 **CONTEXTO EMPRESARIAL — Sector: {sector.upper()}**\n{SECTOR_CONTEXT.get(sector, '')}\n"
 
     if profile:
         system += "\n=== PERFIL DE LA EMPRESA ===\n"
         if profile.get("company_name"): system += f"🏷️ Empresa: {profile['company_name']}\n"
         if profile.get("country"): system += f"🌎 País: {profile['country']}\n"
-        if profile.get("tone"): system += f"🗣️ Tono: {profile['tone']}\n"
 
     if agent in (AgentType.DOCUMENTOS_EMPRESARIALES, AgentType.CONSULTOR_PYME, AgentType.PROCESOS_SOP,
                  AgentType.CUMPLIMIENTO_LEGAL_PA, AgentType.RRHH_RECLUTAMIENTO):
-        system += "\n📄 Al final, añade: '(Puedes descargarlo en PDF o Word)'.\n"
+        system += "\n📄 Al final, añade: '(Puedes descargarlo en Word)'.\n"
 
     if tier in ["plus", "gt"]:
         system += "\n🔹 Responde con máximo detalle, múltiples secciones y análisis profundo.\n"
 
+    if news_results:
+        news_text = "\n\n=== 📰 NOTICIAS RECIENTES (NewsData.io + Tavily) ===\n"
+        for i, n in enumerate(news_results[:8], 1):
+            news_text += f"\n📌 Noticia {i}: {n.get('title', 'Sin título')}\n"
+            if n.get('description'): news_text += f"📝 {n['description'][:300]}...\n"
+            if n.get('publishedAt'): news_text += f"📅 {n['publishedAt']}\n"
+            if n.get('source'): news_text += f"📰 {n['source']}\n"
+            if n.get('url'): news_text += f"🔗 {n['url']}\n"
+        system += news_text
+        system += "\n⚠️ **INSTRUCCIÓN:** Usa estas noticias como fuente principal. Ordena por fecha descendente. Cita la fuente y la fecha en cada una."
+
     if web_search_results:
         search_text = "\n\n=== INFORMACIÓN ACTUAL DE INTERNET ===\n"
-        for i, res in enumerate(web_search_results[:4], 1):
+        for i, res in enumerate(web_search_results[:5], 1):
             search_text += f"\n📌 {res.get('title', 'Sin título')}\n"
             if res.get('url'): search_text += f"🔗 {res['url']}\n"
             content = res.get('content', '') or res.get('description', '')
             if content: search_text += f"📝 {content[:400]}...\n"
             if res.get('source'): search_text += f"📰 {res['source']}\n"
+            if res.get('publishedAt'): search_text += f"📅 {res['publishedAt']}\n"
         system += search_text
 
     if file_content:
-        system += f"\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:2000]}\n"
+        system += f"\n=== CONTENIDO DEL ARCHIVO ===\n{file_content[:3000]}\n"
 
     messages = [{"role": "system", "content": system}]
     for msg in history[-config.max_context_messages:]:
@@ -681,7 +783,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="7.0.0-enterprise")
+app = FastAPI(title="ApoloXia API", version="9.0.0-enterprise")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ============ CHAT ============
@@ -696,35 +798,79 @@ async def chat(request: ChatRequest):
         raise HTTPException(429, f"Límite diario alcanzado ({config.max_daily_responses})")
 
     conv_id = request.conversation_id or str(uuid.uuid4())
-    use_web = request.use_web_search or needs_web_search(request.message)
-    web_results = None
 
-    if use_web and config.supports_web_search:
-        tasks = []
-        if TAVILY_API_KEY: tasks.append(search_tavily(request.message))
-        if EXA_API_KEY: tasks.append(search_exa_ai(request.message))
-        if MEDIASTACK_API_KEY: tasks.append(search_mediastack(request.message))
-        if tasks:
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            combined = []
-            for res in results:
-                if isinstance(res, list) and res: combined.extend(res)
-            web_results = combined[:8]
+    # Autodetección de agente
+    agent_type = request.agent_type or "general"
+    if needs_comparison(request.message):
+        agent_type = "comparador_diferencias"
+    elif needs_news_search(request.message):
+        agent_type = "buscador_noticias"
+
+    # Búsquedas inteligentes con cache
+    news_results = None
+    web_results = None
+    is_news_query = needs_news_search(request.message)
+    should_search = request.use_web_search or should_always_search(request.message)
+
+    if (should_search and config.supports_web_search) or is_news_query:
+        search_query = extract_search_query(request.message)
+        cached = search_cache.get(search_query)
+        if cached:
+            print(f"📦 Cache hit: {search_query[:50]}")
+            news_results = cached.get("news")
+            web_results = cached.get("web")
+        else:
+            tasks = []
+            task_labels = []
+            if is_news_query or should_search:
+                if NEWSDATA_API_KEY:
+                    tasks.append(search_newsdata(request.message, 6))
+                    task_labels.append("newsdata")
+                if TAVILY_API_KEY:
+                    tasks.append(search_tavily(request.message, 5, is_news=is_news_query))
+                    task_labels.append("tavily")
+            if not is_news_query and should_search:
+                if EXA_API_KEY:
+                    tasks.append(search_exa_ai(request.message, 3))
+                    task_labels.append("exa")
+                if MEDIASTACK_API_KEY:
+                    tasks.append(search_mediastack(request.message, 3))
+                    task_labels.append("mediastack")
+
+            if tasks:
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                news_combined = []
+                web_combined = []
+                for label, res in zip(task_labels, results):
+                    if not isinstance(res, list):
+                        continue
+                    if label in ("newsdata", "tavily") and is_news_query:
+                        news_combined.extend(res)
+                    else:
+                        web_combined.extend(res)
+
+                if news_combined:
+                    news_combined.sort(key=lambda x: x.get("publishedAt", ""), reverse=True)
+                    news_results = news_combined[:10]
+                if web_combined:
+                    web_results = web_combined[:8]
+
+                search_cache.set(search_query, {"news": news_results, "web": web_results})
 
     messages = build_messages(request.user_id, conv_id, request.message,
-                              request.agent_type or "general", tier, web_results, request.file_content)
+                              agent_type, tier, web_results, request.file_content, news_results)
 
-    # === TOKENS ALTOS PARA ANÁLISIS PROFUNDO Y CÓDIGO ===
+    # Tokens eficientes para velocidad + profundidad
     base_max_tokens = {"free": 4000, "plus": 8000, "gt": 12000}.get(tier, 4000)
-    if request.agent_type in ["generador_codigo", "desarrollador_avanzado", "desarrollador_fullstack",
-                              "generador_sitios_web", "creador_paneles_ventas", "debugger_inteligente"]:
+    if agent_type in ["generador_codigo", "desarrollador_avanzado", "desarrollador_fullstack",
+                      "generador_sitios_web", "creador_paneles_ventas", "debugger_inteligente",
+                      "comparador_diferencias", "buscador_noticias"]:
         max_tokens_for_agent = 12000
     else:
         max_tokens_for_agent = base_max_tokens
     safe_max_tokens = min(max_tokens_for_agent, 12000)
-    temp = 0.7 if tier == "free" else 0.6
+    temp = 0.5 if tier == "free" else 0.4
 
-    # === SELECCIÓN DE MODELO OPENROUTER ===
     chosen = request.model_id or ""
     response_text = None
     model_used = None
@@ -732,11 +878,11 @@ async def chat(request: ChatRequest):
     if chosen and chosen in OPENROUTER_MODELS:
         or_id = OPENROUTER_MODELS[chosen]
         try:
-            print(f"🌐 OpenRouter directo: {or_id}")
+            print(f"🌐 OpenRouter: {or_id} | agent={agent_type} | tokens={safe_max_tokens}")
             response_text = await call_openrouter_api(messages, or_id, temperature=temp, max_tokens=safe_max_tokens)
             model_used = or_id
         except Exception as e:
-            print(f"⚠️ OpenRouter falló: {e}. Fallback a pool...")
+            print(f"⚠️ OpenRouter falló: {e}. Fallback...")
             result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
             response_text = result["text"]; model_used = result["provider"]
     else:
@@ -745,31 +891,33 @@ async def chat(request: ChatRequest):
             default_key = "or-gemma-4-31b"
         or_id = OPENROUTER_MODELS[default_key]
         try:
-            print(f"🌐 OpenRouter (default del tier): {or_id}")
+            print(f"🌐 OpenRouter (default): {or_id} | agent={agent_type} | tokens={safe_max_tokens}")
             response_text = await call_openrouter_api(messages, or_id, temperature=temp, max_tokens=safe_max_tokens)
             model_used = or_id
         except Exception as e:
-            print(f"⚠️ OpenRouter falló: {e}. Fallback a pool...")
+            print(f"⚠️ OpenRouter falló: {e}. Fallback...")
             result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
             response_text = result["text"]; model_used = result["provider"]
 
-    print(f"✅ Respuesta de: {model_used}")
+    print(f"✅ {model_used} | {len(response_text)} chars | agent={agent_type}")
 
-    memory.add_message(request.user_id, conv_id, "user", request.message, request.agent_type)
-    memory.add_message(request.user_id, conv_id, "assistant", response_text, request.agent_type)
+    memory.add_message(request.user_id, conv_id, "user", request.message, agent_type)
+    memory.add_message(request.user_id, conv_id, "assistant", response_text, agent_type)
     memory.increment_counter(request.user_id)
 
     detected_sector = get_business_profile(request.user_id).get("sector") or detect_business_sector(request.message)
-    doc_agents = {"documentos_empresariales", "consultor_pyme", "procesos_sop", "cumplimiento_legal_pa", "rrhh_reclutamiento"}
-    suggested_export = "pdf" if (request.agent_type in doc_agents or len(response_text) > 1200) else None
+    suggested_export = "docx" if (agent_type in ["documentos_empresariales", "consultor_pyme", "procesos_sop", "cumplimiento_legal_pa", "rrhh_reclutamiento"] or len(response_text) > 1500) else None
 
     return ChatResponse(
-        response=response_text, agent_used=request.agent_type or "general", model_used=model_used,
-        remaining_daily=memory.get_remaining(request.user_id, tier), web_search_used=bool(web_results),
-        search_results=web_results, business_sector_detected=detected_sector, suggested_export=suggested_export,
+        response=response_text, agent_used=agent_type, model_used=model_used,
+        remaining_daily=memory.get_remaining(request.user_id, tier),
+        web_search_used=bool(web_results or news_results),
+        search_results=(news_results or web_results),
+        business_sector_detected=detected_sector,
+        suggested_export=suggested_export,
     )
 
-# ============ MODELOS DISPONIBLES (SEPARADOS POR TIER) ============
+# ============ MODELOS DISPONIBLES ============
 @app.get("/models")
 async def list_models():
     all_models = [{"id": k, "provider": "openrouter", "api_id": v, "name": v.replace(":free", " (gratis)"),
@@ -791,11 +939,9 @@ async def get_user_config(user_id: str):
     tier = memory.get_user_tier(user_id)
     config = TIER_CONFIGS[tier]
     user_cfg = memory.get_user_config(user_id)
-    
     tier_models = [{"id": k, "name": OPENROUTER_MODELS.get(k, k).replace(":free", " (gratis)"),
                     "provider": "openrouter", "free": True}
                    for k in config.available_models if k in OPENROUTER_MODELS]
-    
     return {"user_id": user_id, "tier": tier, "tier_name": config.name,
             "theme": user_cfg.get("theme", "dark"), "language": user_cfg.get("language", "es"),
             "notifications": user_cfg.get("notifications", True),
@@ -823,11 +969,14 @@ async def upgrade_tier(user_id: str, new_tier: str):
 # ============ HEALTH ============
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "7.0.0-enterprise",
+    return {"status": "ok", "version": "9.0.0-enterprise",
             "openrouter_api": "configured" if OPENROUTER_API_KEY else "not set",
-            "freellmpool": "active (fallback)" if llm_pool else "not available",
+            "tavily_api": "configured" if TAVILY_API_KEY else "not set",
+            "newsdata_api": "configured" if NEWSDATA_API_KEY else "not set",
+            "freellmpool": "active" if llm_pool else "not available",
             "openrouter_models_count": len(OPENROUTER_MODELS),
-            "whatsapp_webhook": "configured" if WHATSAPP_VERIFY_TOKEN else "not set",
+            "agents_count": len(AgentType),
+            "search_cache": f"{len(search_cache.cache)} entradas activas",
             "identity": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado"}
 
 # ============ COMPARTIR ============
@@ -869,17 +1018,14 @@ async def receive_whatsapp(payload: dict):
         value = changes[0].get("value", {})
         messages = value.get("messages", [])
         if not messages: return {"status": "ignored"}
-        
         msg = messages[0]
         from_number = msg.get("from")
         text_body = msg.get("text", {}).get("body", "")
         if not from_number or not text_body: return {"status": "ignored"}
-        
         conv_id = f"wa_{from_number}"
         tier = memory.get_user_tier(from_number) or "free"
         messages_llm = build_messages(from_number, conv_id, text_body, "general", tier)
         response = await call_openrouter_api(messages_llm, OPENROUTER_MODELS["or-gemma-4-31b"], max_tokens=4000)
-        
         await send_whatsapp_message(from_number, response)
         return {"status": "processed", "to": from_number}
     except Exception as e:
@@ -922,72 +1068,7 @@ async def update_business_profile(user_id: str, upd: BusinessProfileUpdate):
     set_business_profile(user_id, prof)
     return {"message": "Perfil actualizado", "user_id": user_id, "profile": prof}
 
-# ============ EXPORTACIÓN PDF / WORD ============
-def _markdown_to_flowables(content: str, styles, doc_width: float):
-    flow = []
-    lines = content.split("\n")
-    i = 0
-    while i < len(lines):
-        line = lines[i].rstrip()
-        if not line.strip(): flow.append(Spacer(1, 0.25*cm)); i += 1; continue
-        if line.strip().startswith("```"):
-            code_lines = []; i += 1
-            while i < len(lines) and not lines[i].strip().startswith("```"):
-                code_lines.append(lines[i]); i += 1
-            flow.append(Preformatted("\n".join(code_lines) or "(vacío)", styles["Code"])); flow.append(Spacer(1, 0.3*cm)); i += 1; continue
-        if line.startswith("### "): flow.append(Paragraph(line[4:], styles["H3"]))
-        elif line.startswith("## "): flow.append(Paragraph(line[3:], styles["H2"]))
-        elif line.startswith("# "): flow.append(Paragraph(line[2:], styles["H1"]))
-        elif line.strip().startswith(("- ", "* ", "• ")):
-            items = []
-            while i < len(lines) and lines[i].strip().startswith(("- ", "* ", "• ")):
-                items.append(ListItem(Paragraph(lines[i].strip()[2:], styles["Body"]))); i += 1
-            flow.append(ListFlowable(items, bulletType="bullet")); continue
-        elif re.match(r"^\d+\.\s", line.strip()):
-            items = []
-            while i < len(lines) and re.match(r"^\d+\.\s", lines[i].strip()):
-                items.append(ListItem(Paragraph(re.sub(r"^\d+\.\s", "", lines[i].strip()), styles["Body"]))); i += 1
-            flow.append(ListFlowable(items, bulletType="1")); continue
-        elif line.strip().startswith("|") and "|" in line.strip()[1:]:
-            rows = []
-            while i < len(lines) and lines[i].strip().startswith("|"):
-                cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
-                if not all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c): rows.append(cells)
-                i += 1
-            if rows:
-                t = Table(rows, colWidths=[doc_width/len(rows[0])]*len(rows[0]))
-                t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#1f2937")),
-                    ("TEXTCOLOR",(0,0),(-1,0),colors.white),("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
-                    ("GRID",(0,0),(-1,-1),0.4,colors.grey),("VALIGN",(0,0),(-1,-1),"TOP"),("FONTSIZE",(0,0),(-1,-1),8)]))
-                flow.append(t); flow.append(Spacer(1, 0.3*cm))
-            continue
-        else:
-            clean = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", line)
-            clean = re.sub(r"\*(.+?)\*", r"<i>\1</i>", clean)
-            flow.append(Paragraph(clean, styles["Body"]))
-        i += 1
-    return flow
-
-@app.post("/export/pdf")
-async def export_pdf(req: ExportRequest):
-    buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=2*cm, rightMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm,
-                            title=req.title, author="ApoloXia")
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="H1", parent=styles["Heading1"], fontSize=18, textColor=colors.HexColor("#0f172a"), spaceAfter=10))
-    styles.add(ParagraphStyle(name="H2", parent=styles["Heading2"], fontSize=14, textColor=colors.HexColor("#1e293b"), spaceAfter=6))
-    styles.add(ParagraphStyle(name="H3", parent=styles["Heading3"], fontSize=12, textColor=colors.HexColor("#334155"), spaceAfter=4))
-    styles.add(ParagraphStyle(name="Body", parent=styles["BodyText"], fontSize=10.5, leading=15, spaceAfter=4))
-    styles.add(ParagraphStyle(name="Code", parent=styles["Code"], fontSize=8.5, backColor=colors.HexColor("#f1f5f9"), borderPadding=6))
-    flow = [Paragraph(req.title, styles["H1"]),
-            Paragraph(f"<i>Generado por ApoloXia · {datetime.now():%Y-%m-%d %H:%M}</i>", styles["Body"]),
-            Spacer(1, 0.5*cm)]
-    if req.company_name: flow.append(Paragraph(f"<b>Empresa:</b> {req.company_name}", styles["Body"])); flow.append(Spacer(1, 0.3*cm))
-    flow.extend(_markdown_to_flowables(req.content, styles, A4[0]-4*cm))
-    doc.build(flow); buf.seek(0)
-    filename = re.sub(r"[^\w\-]+", "_", req.title)[:60] or "documento_apoloxia"
-    return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'})
-
+# ============ EXPORTACIÓN WORD ============
 @app.post("/export/docx")
 async def export_docx(req: ExportRequest):
     doc = Document()
@@ -1063,12 +1144,17 @@ async def serve_static_file(filename: str):
 
 # ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 ApoloXia Server v7.0.0 ENTERPRISE")
+    print("🚀 ApoloXia Server v9.0.0 ENTERPRISE")
     print(f"🌐 OpenRouter gratuitos: {len(OPENROUTER_MODELS)}")
+    print(f"🤖 Agentes: {len(AgentType)}")
+    print(f"📰 NewsData: {'✅' if NEWSDATA_API_KEY else '❌'}")
+    print(f"🔍 Tavily: {'✅' if TAVILY_API_KEY else '❌'}")
     print(f"🧠 freellmpool fallback: {'✅' if llm_pool else '❌'}")
-    print(f"💬 WhatsApp webhook: {'✅' if WHATSAPP_VERIFY_TOKEN else '❌'}")
-    print("📄 Exportación: PDF + Word")
+    print("📝 Exportación: Word (docx)")
     print("🔬 Análisis profundo: ACTIVADO")
-    print("💻 Modo programación: ACTIVADO")
+    print("📏 Respuestas largas: ACTIVADO")
+    print("🎯 Clasificación y diferencias: ACTIVADO")
+    print("⚡ Cache de búsquedas: ACTIVADO (5 min)")
+    print("📅 Búsqueda automática de noticias: ACTIVADO")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
