@@ -1,12 +1,14 @@
-# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA ENTERPRISE - Solo OpenRouter)
+# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA ENTERPRISE - Octubre 2026)
 # ======================================================
-# - OpenRouter: modelos gratuitos :free
-# - El usuario elige modelo → llamada directa a OpenRouter
-# - Fallback a freellmpool si el modelo elegido falla
-# - Análisis profundo: max_tokens altos + instrucción de profundidad
+# - OpenRouter: 18 modelos gratuitos :free separados por tier (Free / Plus / GT)
+# - Análisis profundo obligatorio: estructura de 6 pasos, mínimo 600 palabras
+# - Modo programación experto: código completo sin abreviar
+# - Exportación PDF / Word con descarga directa
+# - Webhook WhatsApp: recibe y responde mensajes
+# - Búsqueda web multi-motor (Tavily, Exa, MediaStack)
+# - 43 agentes (generales + empresariales)
 # - IDENTIDAD FORZADA: ApoloXia (The Shield Technology · Panamá · Amelio Delgado)
-# - Exportación PDF / Word
-# - 🔐 Clave API SOLO desde variable de entorno
+# - Fallback a freellmpool si OpenRouter falla
 # ======================================================
 
 import os
@@ -22,7 +24,7 @@ from dataclasses import dataclass
 from enum import Enum
 from collections import defaultdict
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
@@ -57,6 +59,7 @@ EXA_API_KEY = os.getenv("EXA_API_KEY", "")
 MEDIASTACK_API_KEY = os.getenv("MEDIASTACK_API_KEY", "")
 WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "apoloxia_verify")
 
 # ============ INICIALIZACIÓN DEL POOL (FALLBACK) ============
 llm_pool = None
@@ -68,6 +71,7 @@ if FREELLMPOOL_AVAILABLE:
         print(f"⚠️ freellmpool no disponible: {e}")
 
 # ============ MODELOS OPENROUTER GRATUITOS :free ============
+# Lista verificada al 20-oct-2026
 OPENROUTER_MODELS = {
     "or-cohere-north-mini-code": "cohere/north-mini-code:free",
     "or-dots-3-note-preview": "dots-studio/dots-3-note-preview:free",
@@ -257,6 +261,28 @@ INSTRUCCION_PROFUNDIDAD = """
 - Usa emojis relevantes (📌, 🔍, 💡, ✅, ⚠️, 📊, 🚀).
 """
 
+INSTRUCCION_ANALISIS_PROFUNDO = """
+🔬 **MODO ANÁLISIS PROFUNDO ACTIVADO:**
+Eres un analista experto. Para cada consulta, DEBES:
+1. **Contexto**: Sitúa el tema (qué es, por qué importa, antecedentes).
+2. **Desglose**: Divide en 3-5 subtemas o dimensiones. Cada uno con su propio título.
+3. **Datos y evidencia**: Incluye cifras, fechas, ejemplos concretos, comparativas.
+4. **Matices y riesgos**: Qué podría fallar, qué depende del contexto, qué alternativas hay.
+5. **Conclusión accionable**: Recomendación clara, próximos pasos.
+6. **Formato**: Tablas cuando haya comparación, listas numeradas para pasos, negritas para conceptos clave.
+Mínimo 600 palabras si el tema lo permite. NO resumas. NO omitas.
+"""
+
+INSTRUCCION_PROGRAMACION = """
+💻 **MODO PROGRAMACIÓN EXPERTO:**
+- Entrega TODO el código necesario, sin abreviar, sin "..." ni "// resto igual".
+- Incluye comentarios explicativos en las partes no obvias.
+- Usa bloques markdown con el lenguaje correcto (```python, ```javascript, etc.).
+- Si hay dependencias, lista los comandos de instalación.
+- Si el código es largo, entrégalo completo igualmente.
+- Explica brevemente cómo ejecutarlo y qué hace cada parte.
+"""
+
 # ============ CONFIGURACIÓN POR TIER ============
 @dataclass
 class TierConfig:
@@ -274,7 +300,7 @@ TIER_CONFIGS = {
         [AgentType.GENERAL, AgentType.ADAPTADOR_EMPRESARIAL],
         6, False),
     "plus": TierConfig("ApoloXia Plus", 1000, 30,
-        ["or-nemotron-3-ultra-550b", "or-minimax-m3.1-flash", "or-gemma-4-31b"],
+        ["or-nemotron-3-ultra-550b", "or-minimax-m3.1-flash", "or-gemma-4-31b", "or-nemotron-3-super-120b"],
         [AgentType.GENERAL, AgentType.CIERRA_VENTAS, AgentType.DETECTOR_INTENCION,
          AgentType.LECTURA_EMOCIONAL, AgentType.RESPUESTA_HUMANA, AgentType.RECUPERA_VENTAS,
          AgentType.RECOMENDADOR_INTELIGENTE, AgentType.ATENCION_24_7, AgentType.AHORRO_TIEMPO,
@@ -284,7 +310,7 @@ TIER_CONFIGS = {
          AgentType.DESARROLLADOR_AVANZADO],
         18, True),
     "gt": TierConfig("ApoloXia GT", 5000, 90,
-        ["or-nemotron-3-ultra-550b", "or-minimax-m3.1-flash", "or-gemma-4-31b", "or-nemotron-3-super-120b"],
+        list(OPENROUTER_MODELS.keys()),
         list(AgentType),
         30, True),
 }
@@ -299,6 +325,13 @@ for _tier_name in ("plus", "gt"):
     for _ag in ENTERPRISE_AGENTS:
         if _ag not in TIER_CONFIGS[_tier_name].available_agents:
             TIER_CONFIGS[_tier_name].available_agents.append(_ag)
+
+CODING_AGENTS = {
+    AgentType.GENERADOR_CODIGO, AgentType.DEBUGGER_INTELIGENTE,
+    AgentType.ARQUITECTO_SOFTWARE, AgentType.DESARROLLADOR_AVANZADO,
+    AgentType.DESARROLLADOR_FULLSTACK, AgentType.GENERADOR_SITIOS_WEB,
+    AgentType.CREADOR_PANELES_VENTAS
+}
 
 # ============ GESTIÓN DE MEMORIA ============
 class ConversationMemory:
@@ -605,6 +638,10 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     system = IDENTITY_OVERRIDE + AGENT_PROMPTS.get(agent, AGENT_PROMPTS[AgentType.GENERAL])
     system += "\n\n📢 Responde SIEMPRE en el MISMO IDIOMA del usuario.\n"
     system += INSTRUCCION_PROFUNDIDAD
+    system += INSTRUCCION_ANALISIS_PROFUNDO
+
+    if agent in CODING_AGENTS:
+        system += INSTRUCCION_PROGRAMACION
 
     profile = get_business_profile(user_id)
     sector = profile.get("sector") or detect_business_sector(user_message)
@@ -644,7 +681,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="6.1.0-enterprise-openrouter")
+app = FastAPI(title="ApoloXia API", version="7.0.0-enterprise")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ============ CHAT ============
@@ -677,9 +714,10 @@ async def chat(request: ChatRequest):
     messages = build_messages(request.user_id, conv_id, request.message,
                               request.agent_type or "general", tier, web_results, request.file_content)
 
-    # === TOKENS ALTOS PARA ANÁLISIS PROFUNDO ===
-    base_max_tokens = {"free": 2000, "plus": 6000, "gt": 10000}.get(tier, 2000)
-    if request.agent_type in ["generador_sitios_web", "creador_paneles_ventas", "desarrollador_avanzado"]:
+    # === TOKENS ALTOS PARA ANÁLISIS PROFUNDO Y CÓDIGO ===
+    base_max_tokens = {"free": 4000, "plus": 8000, "gt": 12000}.get(tier, 4000)
+    if request.agent_type in ["generador_codigo", "desarrollador_avanzado", "desarrollador_fullstack",
+                              "generador_sitios_web", "creador_paneles_ventas", "debugger_inteligente"]:
         max_tokens_for_agent = 12000
     else:
         max_tokens_for_agent = base_max_tokens
@@ -702,7 +740,6 @@ async def chat(request: ChatRequest):
             result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
             response_text = result["text"]; model_used = result["provider"]
     else:
-        # Sin modelo elegido → usar el primero del tier
         default_key = config.available_models[0] if config.available_models else "or-gemma-4-31b"
         if default_key not in OPENROUTER_MODELS:
             default_key = "or-gemma-4-31b"
@@ -732,26 +769,39 @@ async def chat(request: ChatRequest):
         search_results=web_results, business_sector_detected=detected_sector, suggested_export=suggested_export,
     )
 
-# ============ MODELOS DISPONIBLES ============
+# ============ MODELOS DISPONIBLES (SEPARADOS POR TIER) ============
 @app.get("/models")
 async def list_models():
-    or_list = [{"id": k, "provider": "openrouter", "api_id": v, "name": v.replace(":free", " (gratis)"),
-                "free": True} for k, v in OPENROUTER_MODELS.items()]
-    return {"openrouter": or_list, "total": len(or_list)}
+    all_models = [{"id": k, "provider": "openrouter", "api_id": v, "name": v.replace(":free", " (gratis)"),
+                   "free": True} for k, v in OPENROUTER_MODELS.items()]
+    return {"openrouter": all_models, "total": len(all_models)}
+
+@app.get("/models/tier/{tier}")
+async def list_models_by_tier(tier: str):
+    if tier not in TIER_CONFIGS:
+        raise HTTPException(400, f"Tier '{tier}' no válido")
+    config = TIER_CONFIGS[tier]
+    tier_models = [{"id": k, "name": OPENROUTER_MODELS[k].replace(":free", " (gratis)"),
+                    "provider": "openrouter", "api_id": OPENROUTER_MODELS[k], "free": True}
+                   for k in config.available_models if k in OPENROUTER_MODELS]
+    return {"tier": tier, "name": config.name, "models": tier_models, "total": len(tier_models)}
 
 @app.get("/user-config/{user_id}")
 async def get_user_config(user_id: str):
     tier = memory.get_user_tier(user_id)
     config = TIER_CONFIGS[tier]
     user_cfg = memory.get_user_config(user_id)
-    or_models = [{"id": k, "name": v.replace(":free", " (gratis)"), "provider": "openrouter", "free": True}
-                 for k, v in OPENROUTER_MODELS.items()]
+    
+    tier_models = [{"id": k, "name": OPENROUTER_MODELS.get(k, k).replace(":free", " (gratis)"),
+                    "provider": "openrouter", "free": True}
+                   for k in config.available_models if k in OPENROUTER_MODELS]
+    
     return {"user_id": user_id, "tier": tier, "tier_name": config.name,
             "theme": user_cfg.get("theme", "dark"), "language": user_cfg.get("language", "es"),
             "notifications": user_cfg.get("notifications", True),
             "remaining_daily": memory.get_remaining(user_id, tier),
             "max_daily_responses": config.max_daily_responses,
-            "available_models": or_models,
+            "available_models": tier_models,
             "available_agents": [a.value for a in config.available_agents]}
 
 @app.post("/user-config/{user_id}")
@@ -773,10 +823,11 @@ async def upgrade_tier(user_id: str, new_tier: str):
 # ============ HEALTH ============
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "6.1.0-enterprise-openrouter",
+    return {"status": "ok", "version": "7.0.0-enterprise",
             "openrouter_api": "configured" if OPENROUTER_API_KEY else "not set",
             "freellmpool": "active (fallback)" if llm_pool else "not available",
             "openrouter_models_count": len(OPENROUTER_MODELS),
+            "whatsapp_webhook": "configured" if WHATSAPP_VERIFY_TOKEN else "not set",
             "identity": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado"}
 
 # ============ COMPARTIR ============
@@ -796,6 +847,44 @@ async def share_to_platform(share_req: ShareRequest):
 @app.get("/share/links")
 async def get_share_links_get(text: str, url: Optional[str] = None):
     return generate_share_links(text, url).dict()
+
+# ============ WHATSAPP WEBHOOK ============
+@app.get("/webhook/whatsapp")
+async def verify_whatsapp(
+    hub_mode: str = Header(None, alias="hub.mode"),
+    hub_token: str = Header(None, alias="hub.verify_token"),
+    hub_challenge: str = Header(None, alias="hub.challenge"),
+):
+    if hub_mode == "subscribe" and hub_token == WHATSAPP_VERIFY_TOKEN:
+        return int(hub_challenge) if hub_challenge else 0
+    raise HTTPException(403, "Verificación fallida")
+
+@app.post("/webhook/whatsapp")
+async def receive_whatsapp(payload: dict):
+    try:
+        entry = payload.get("entry", [])
+        if not entry: return {"status": "ignored"}
+        changes = entry[0].get("changes", [])
+        if not changes: return {"status": "ignored"}
+        value = changes[0].get("value", {})
+        messages = value.get("messages", [])
+        if not messages: return {"status": "ignored"}
+        
+        msg = messages[0]
+        from_number = msg.get("from")
+        text_body = msg.get("text", {}).get("body", "")
+        if not from_number or not text_body: return {"status": "ignored"}
+        
+        conv_id = f"wa_{from_number}"
+        tier = memory.get_user_tier(from_number) or "free"
+        messages_llm = build_messages(from_number, conv_id, text_body, "general", tier)
+        response = await call_openrouter_api(messages_llm, OPENROUTER_MODELS["or-gemma-4-31b"], max_tokens=4000)
+        
+        await send_whatsapp_message(from_number, response)
+        return {"status": "processed", "to": from_number}
+    except Exception as e:
+        print(f"Error webhook WhatsApp: {e}")
+        return {"status": "error", "detail": str(e)}
 
 # ============ CONVERSACIONES ============
 @app.get("/conversations/{user_id}")
@@ -965,7 +1054,7 @@ async def serve_code(): return FileResponse(_get_file_path("apoloxia.code.html")
 @app.get("/{filename}")
 async def serve_static_file(filename: str):
     api_routes = {"chat","models","agents","health","conversations","tier-info","user-config","upgrade-tier",
-                  "search-web","share","export","business-sectors","business-profile"}
+                  "search-web","share","export","business-sectors","business-profile","webhook"}
     if filename in api_routes or filename.startswith("apoloxia.code.html"): raise HTTPException(404, "Not found")
     if filename.startswith(".") or ".." in filename: raise HTTPException(403, "Forbidden")
     fp = _get_file_path(filename)
@@ -974,8 +1063,12 @@ async def serve_static_file(filename: str):
 
 # ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 ApoloXia Server v6.1.0 ENTERPRISE (Solo OpenRouter)")
+    print("🚀 ApoloXia Server v7.0.0 ENTERPRISE")
     print(f"🌐 OpenRouter gratuitos: {len(OPENROUTER_MODELS)}")
     print(f"🧠 freellmpool fallback: {'✅' if llm_pool else '❌'}")
+    print(f"💬 WhatsApp webhook: {'✅' if WHATSAPP_VERIFY_TOKEN else '❌'}")
+    print("📄 Exportación: PDF + Word")
+    print("🔬 Análisis profundo: ACTIVADO")
+    print("💻 Modo programación: ACTIVADO")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
