@@ -42,7 +42,6 @@
 
         .app { display: flex; height: 100vh; width: 100vw; }
 
-        /* ===== SIDEBAR ===== */
         .sidebar {
             width: 280px;
             background: var(--bg-sidebar);
@@ -229,7 +228,6 @@
             color: var(--accent-gray);
         }
 
-        /* ===== MAIN ===== */
         .main {
             flex: 1;
             display: flex;
@@ -295,7 +293,6 @@
             color: var(--accent-blue);
         }
 
-        /* ===== MESSAGES ===== */
         .messages-container {
             flex: 1;
             overflow-y: auto;
@@ -388,7 +385,6 @@
             margin-top: 4px;
         }
 
-        /* Messages */
         .message {
             display: flex;
             gap: 14px;
@@ -450,9 +446,6 @@
             max-width: 100%;
         }
 
-        /* ═══════════════════════════════════════════
-           MENSAJES ENRIQUECIDOS
-           ═══════════════════════════════════════════ */
         .message.assistant .message-content h1,
         .message.assistant .message-content h2,
         .message.assistant .message-content h3,
@@ -467,7 +460,6 @@
         .message.assistant .message-content h3 { font-size: 1.1rem; color: #d0d0d0; }
         .message.assistant .message-content h4 { font-size: 1rem; color: #c0c0c0; }
 
-        /* PÁRRAFOS LARGOS: más espacio y mejor lectura */
         .message.assistant .message-content p {
             margin-bottom: 16px;
             line-height: 1.8;
@@ -481,8 +473,6 @@
             color: #d8d8d8;
         }
 
-        /* EMOJIS MÁS GRANDES Y VISIBLES */
-        .message.assistant .message-content .emoji-big,
         .emoji-big {
             font-size: 1.3em;
             vertical-align: -3px;
@@ -529,7 +519,6 @@
             border-bottom-color: var(--accent-blue);
         }
 
-        /* Blockquote clásico (por si no aplica callout) */
         .message.assistant .message-content blockquote {
             border-left: 3px solid var(--accent-blue);
             padding: 12px 18px;
@@ -540,7 +529,6 @@
             font-style: italic;
         }
 
-        /* Separadores hr con estilo */
         .message.assistant .message-content hr {
             border: none;
             height: 1px;
@@ -548,7 +536,6 @@
             margin: 24px 0;
         }
 
-        /* TABLAS markdown con estilo premium */
         .message.assistant .message-content table {
             width: 100%;
             border-collapse: collapse;
@@ -576,9 +563,6 @@
         .message.assistant .message-content tr:last-child td { border-bottom: none; }
         .message.assistant .message-content tr:hover td { background: rgba(79,158,255,0.04); }
 
-        /* ═══════════════════════════════════════════
-           CALLOUTS (RECUADROS ESPECIALES)
-           ═══════════════════════════════════════════ */
         .callout {
             display: flex;
             gap: 12px;
@@ -614,61 +598,23 @@
         }
         .callout-content p:last-child { margin-bottom: 0; }
 
-        .callout.tip {
-            background: rgba(79, 158, 255, 0.07);
-            border-left-color: #4f9eff;
-        }
+        .callout.tip { background: rgba(79, 158, 255, 0.07); border-left-color: #4f9eff; }
         .callout.tip .callout-title { color: #4f9eff; }
-
-        .callout.success, .callout.check {
-            background: rgba(34, 197, 94, 0.07);
-            border-left-color: #22c55e;
-        }
-        .callout.success .callout-title,
-        .callout.check .callout-title { color: #22c55e; }
-
-        .callout.warning, .callout.alert {
-            background: rgba(245, 179, 66, 0.08);
-            border-left-color: #f5b342;
-        }
-        .callout.warning .callout-title,
-        .callout.alert .callout-title { color: #f5b342; }
-
-        .callout.danger, .callout.error {
-            background: rgba(239, 68, 68, 0.08);
-            border-left-color: #ef4444;
-        }
-        .callout.danger .callout-title,
-        .callout.error .callout-title { color: #ef4444; }
-
-        .callout.note, .callout.info {
-            background: rgba(139, 92, 246, 0.07);
-            border-left-color: #8b5cf6;
-        }
-        .callout.note .callout-title,
-        .callout.info .callout-title { color: #8b5cf6; }
-
-        .callout.important {
-            background: rgba(236, 72, 153, 0.07);
-            border-left-color: #ec4899;
-        }
+        .callout.success, .callout.check { background: rgba(34, 197, 94, 0.07); border-left-color: #22c55e; }
+        .callout.success .callout-title, .callout.check .callout-title { color: #22c55e; }
+        .callout.warning, .callout.alert { background: rgba(245, 179, 66, 0.08); border-left-color: #f5b342; }
+        .callout.warning .callout-title, .callout.alert .callout-title { color: #f5b342; }
+        .callout.danger, .callout.error { background: rgba(239, 68, 68, 0.08); border-left-color: #ef4444; }
+        .callout.danger .callout-title, .callout.error .callout-title { color: #ef4444; }
+        .callout.note, .callout.info { background: rgba(139, 92, 246, 0.07); border-left-color: #8b5cf6; }
+        .callout.note .callout-title, .callout.info .callout-title { color: #8b5cf6; }
+        .callout.important { background: rgba(236, 72, 153, 0.07); border-left-color: #ec4899; }
         .callout.important .callout-title { color: #ec4899; }
-
-        .callout.question {
-            background: rgba(14, 165, 233, 0.07);
-            border-left-color: #0ea5e9;
-        }
+        .callout.question { background: rgba(14, 165, 233, 0.07); border-left-color: #0ea5e9; }
         .callout.question .callout-title { color: #0ea5e9; }
-
-        .callout.quote {
-            background: rgba(255, 255, 255, 0.03);
-            border-left-color: var(--accent-gray);
-        }
+        .callout.quote { background: rgba(255, 255, 255, 0.03); border-left-color: var(--accent-gray); }
         .callout.quote .callout-title { color: var(--accent-gray); }
 
-        /* ═══════════════════════════════════════════
-           CÓDIGO
-           ═══════════════════════════════════════════ */
         .code-block {
             background: var(--bg-sidebar);
             border: 1px solid var(--border-light);
@@ -857,7 +803,6 @@
             30% { transform: translateY(-8px); }
         }
 
-        /* ===== INPUT ===== */
         .input-container {
             padding: 16px 24px 24px;
             background: linear-gradient(to top, var(--bg-primary) 70%, transparent);
@@ -986,7 +931,6 @@
             font-weight: 700;
         }
 
-        /* ===== DROPDOWNS ===== */
         .model-dropdown, .agent-dropdown {
             position: absolute;
             bottom: 100%;
@@ -1050,7 +994,6 @@
         .tag-plus { background: rgba(79,158,255,0.12); color: var(--accent-blue); }
         .tag-gt { background: rgba(139,92,246,0.12); color: #8b5cf6; }
 
-        /* ===== SETTINGS ===== */
         .settings-overlay {
             position: fixed;
             top: 0;
@@ -1181,7 +1124,6 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -1346,7 +1288,6 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-    // ========== CONFIGURACIÓN ==========
     const API_BASE_URL = '';
     let state = {
         userEmail: '',
@@ -1367,7 +1308,6 @@
     };
     let MODELS_CATALOG = {};
 
-    // ========== FUNCIONES DE ALMACENAMIENTO LOCAL ==========
     function getLocalStorageKey(email, convId) { return `apoloxia_messages_${email}_${convId}`; }
     function getConversationsKey(email) { return `apoloxia_conversations_${email}`; }
     function saveMessagesToLocal(email, convId, messages) {
@@ -1406,9 +1346,6 @@
         return convs;
     }
 
-    // ═══════════════════════════════════════════════════════
-    // 🎨 POST-PROCESADOR DE MARKDOWN
-    // ═══════════════════════════════════════════════════════
     const CALLOUT_TYPES = {
         "tip": { icon: "💡", label: "TIP", cls: "tip" },
         "consejo": { icon: "💡", label: "CONSEJO", cls: "tip" },
@@ -1534,7 +1471,6 @@
         });
     }
 
-    // ========== INICIO ==========
     document.addEventListener('DOMContentLoaded', initApp);
 
     async function initApp() {
@@ -1567,7 +1503,6 @@
         tierEl.className = 'user-tier';
     }
 
-    // ========== CONFIGURACIÓN ==========
     async function loadUserConfig() {
         try {
             const res = await fetch(`${API_BASE_URL}/user-config/${encodeURIComponent(state.userEmail)}`);
@@ -1601,9 +1536,9 @@
         state.userTier = 'free';
         state.remainingDaily = 100;
         state.maxDaily = 100;
-        state.availableModels = [{id: 'gpt-oss-20b', name: 'GPT OSS 20B', params: '20B', context: '128K', tier: 'free'}];
+        state.availableModels = [{id: 'or-gemma-4-31b', name: 'Gemma 4 31B (gratis)', provider: 'openrouter', free: true}];
         state.availableAgents = ['general'];
-        state.currentModelId = 'gpt-oss-20b';
+        state.currentModelId = 'or-gemma-4-31b';
         state.currentAgentId = 'general';
         applyConfig({
             tier: 'free', remaining_daily: 100, max_daily_responses: 100,
@@ -1611,7 +1546,6 @@
         });
     }
 
-    // ========== CONVERSACIONES ==========
     async function loadConversations() {
         let backendConvs = [];
         try {
@@ -1687,7 +1621,6 @@
         focusInput();
     }
 
-    // ========== ENVÍO DE MENSAJES ==========
     async function sendMessage() {
         const input = document.getElementById('messageInput');
         const message = input.value.trim();
@@ -1770,7 +1703,6 @@
         }
     }
 
-    // ========== RENDERIZADO ==========
     function addMessageToUI(role, content) {
         const wrapper = document.getElementById('messagesWrapper');
         const div = document.createElement('div');
@@ -1811,8 +1743,10 @@
                 <div class="message-meta-row">
                     <span class="message-time">${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
                     <div class="message-actions-bar">
-                        <button class="msg-action-btn" onclick="copyMessage('${msgId}')">📋</button>
-                        <button class="msg-action-btn" onclick="regenerateLastMessage()">🔄</button>
+                        <button class="msg-action-btn" onclick="copyMessage('${msgId}')" title="Copiar">📋</button>
+                        <button class="msg-action-btn" onclick="regenerateLastMessage()" title="Regenerar">🔄</button>
+                        <button class="msg-action-btn" onclick="exportMessage('${msgId}', 'pdf')" title="Descargar PDF">📄 PDF</button>
+                        <button class="msg-action-btn" onclick="exportMessage('${msgId}', 'docx')" title="Descargar Word">📝 Word</button>
                         <div style="position:relative;">
                             <button class="msg-action-btn" onclick="toggleShareMenu(this)">📤</button>
                             <div class="share-menu">
@@ -1874,7 +1808,6 @@
         scrollToBottom();
     }
 
-    // ========== TYPING ==========
     function showTypingIndicator() {
         const wrapper = document.getElementById('messagesWrapper');
         const div = document.createElement('div');
@@ -1912,7 +1845,6 @@
         document.getElementById('sendBtn').disabled = state.isTyping;
     }
 
-    // ========== UTILIDADES ==========
     function escapeHtml(text) {
         const d = document.createElement('div');
         d.textContent = text;
@@ -1951,7 +1883,56 @@
         } catch (e) { showToast('Error al compartir', 'error'); }
     }
 
-    // ========== FILE UPLOAD ==========
+    // ═══════════════════════════════════════════════════════
+    // 📄 EXPORTACIÓN PDF / WORD
+    // ═══════════════════════════════════════════════════════
+    async function exportMessage(msgId, format) {
+        const el = document.getElementById(msgId);
+        if (!el) return;
+        const content = el.innerText;
+
+        const loadingToast = document.createElement('div');
+        loadingToast.className = 'toast info';
+        const toastId = 'toast-export-' + Date.now();
+        loadingToast.id = toastId;
+        loadingToast.innerText = `⏳ Generando ${format.toUpperCase()}...`;
+        document.getElementById('toastContainer').appendChild(loadingToast);
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/export/${format}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: state.userEmail,
+                    title: 'Respuesta ApoloXia',
+                    content: content,
+                    company_name: state.userName
+                })
+            });
+
+            document.getElementById(toastId)?.remove();
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `Error ${res.status}`);
+            }
+
+            const blob = await res.blob();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `apoloxia_${Date.now()}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+            showToast(`✅ ${format.toUpperCase()} descargado`, 'success');
+        } catch (e) {
+            document.getElementById(toastId)?.remove();
+            showToast(`❌ Error al exportar: ${e.message}`, 'error');
+            console.error('Export error:', e);
+        }
+    }
+
     function handleFileSelect(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -1971,7 +1952,6 @@
         document.getElementById('filePreview').classList.remove('show');
     }
 
-    // ========== UI ==========
     function renderWelcomeBanner() {
         const wrapper = document.getElementById('messagesWrapper');
         wrapper.innerHTML = `
@@ -2087,7 +2067,6 @@
         return names[agentId] || agentId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
 
-    // ========== SELECTORES ==========
     function renderModelDropdown() {
         const container = document.getElementById('modelDropdown');
         if (!state.availableModels.length) return;
@@ -2098,7 +2077,7 @@
                     ${m.name}
                     <span class="tier-tag tag-${m.tier || 'free'}">${m.tier || 'free'}</span>
                 </div>
-                <div class="model-meta">${m.params} · ${m.context}</div>
+                <div class="model-meta">${m.params || ''} ${m.context ? '· ' + m.context : ''}</div>
             </div>
         `).join('');
         container.innerHTML = html;
@@ -2130,9 +2109,9 @@
 
     function renderTierCards() {
         const tiers = [
-            { id: 'free', name: 'Free', limit: '100 msgs/día', price: 'Gratis', models: 'GPT OSS 20B', features: ['Básico', '1 modelo'] },
-            { id: 'plus', name: 'Plus', limit: '1,000 msgs/día', price: 'Premium', models: 'GPT OSS 120B, Qwen', features: ['Web search', 'Multi-agente', 'Archivos', '19 agentes'] },
-            { id: 'gt', name: 'GT', limit: '5,000 msgs/día', price: 'Elite', models: 'GPT OSS 120B, Qwen 72B', features: ['Todo Plus', 'Respuestas largas', 'Análisis profundo'] }
+            { id: 'free', name: 'Free', limit: '100 msgs/día', price: 'Gratis', models: '2 modelos OpenRouter', features: ['Básico', '2 modelos'] },
+            { id: 'plus', name: 'Plus', limit: '1,000 msgs/día', price: 'Premium', models: '4 modelos OpenRouter', features: ['Web search', 'Multi-agente', 'Archivos', '19 agentes'] },
+            { id: 'gt', name: 'GT', limit: '5,000 msgs/día', price: 'Elite', models: '18 modelos OpenRouter', features: ['Todo Plus', 'Respuestas largas', 'Análisis profundo', 'Todos los agentes'] }
         ];
         const container = document.getElementById('tierCards');
         container.innerHTML = tiers.map(t => `
