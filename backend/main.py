@@ -1,10 +1,10 @@
 # main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA ENTERPRISE - Octubre 2026)
 # ======================================================
-# - OpenRouter: 18 modelos gratuitos :free separados por tier
+# - OpenRouter: 18 modelos gratuitos :free con PERFIL ESPECIALIZADO cada uno
 # - Cache de búsquedas para velocidad
 # - Tavily news (days=3) + NewsData.io siempre que haya tema noticioso
 # - Búsqueda automática en temas de actualidad, precios, mercado, tendencias
-# - Análisis profundo obligatorio (500-1200 palabras)
+# - Análisis profundo EXTREMO: 1200-2500 palabras, 10 secciones, frameworks
 # - Agentes: comparador de diferencias + buscador de noticias
 # - Word export (sin PDF)
 # - Webhook WhatsApp
@@ -85,6 +85,226 @@ OPENROUTER_MODELS = {
     "or-free-router": "openrouter/free",
 }
 
+# ============ PERFIL ESPECIALIZADO DE CADA MODELO ============
+MODEL_PROFILES = {
+    "or-cohere-north-mini-code": {
+        "name": "Cohere North Mini Code",
+        "strengths": "código, razonamiento técnico, estructuras de datos",
+        "focus": "Ingeniería de software y análisis técnico",
+        "deep_prompt": """
+🔧 **PERFIL DEL MODELO — Cohere North Mini Code:**
+- Descompón en capas: lógica → estructura → implementación → pruebas.
+- Usa pseudocódigo o diagramas mentales antes de la explicación final.
+- Cita complejidad algorítmica (O(n), memoria, trade-offs).
+- Incluye siempre ejemplos de código ejecutables y casos límite.
+""",
+    },
+    "or-dots-3-note-preview": {
+        "name": "Dots 3 Note Preview",
+        "strengths": "síntesis, notas estructuradas, organización de información",
+        "focus": "Análisis organizado, síntesis y mapas mentales",
+        "deep_prompt": """
+📝 **PERFIL DEL MODELO — Dots 3 Note Preview:**
+- Organiza como notas jerárquicas: título → secciones → subsecciones.
+- Usa mapas mentales en texto (A → B1, B2; C → D) cuando ayuden.
+- Prioriza claridad sobre erudición: cada punto en 1-2 frases densas.
+- Cierra con "Notas clave": 3-5 bullets que resuman lo esencial.
+""",
+    },
+    "or-gemma-4-26b": {
+        "name": "Gemma 4 26B",
+        "strengths": "razonamiento general, explicaciones didácticas, multilingüe",
+        "focus": "Explicaciones claras y bien estructuradas",
+        "deep_prompt": """
+🎓 **PERFIL DEL MODELO — Gemma 4 26B:**
+- Explica con progresión pedagógica: de lo simple a lo complejo.
+- Usa analogías cotidianas antes de la definición técnica.
+- Añade "Error común" en cada categoría.
+- Incluye mini-resumen al final de cada sección (1 frase).
+""",
+    },
+    "or-gemma-4-31b": {
+        "name": "Gemma 4 31B",
+        "strengths": "razonamiento general, equilibrio profundidad/extensión, multilingüe",
+        "focus": "Análisis equilibrado, profundo y bien redactado",
+        "deep_prompt": """
+⚖️ **PERFIL DEL MODELO — Gemma 4 31B:**
+- Combina profundidad + claridad: ni superficial ni académico pesado.
+- Estructura siempre con: contexto → desglose → evidencia → riesgo → conclusión.
+- Usa tablas comparativas cuando haya 2+ opciones.
+- Añade "En la práctica": 1-2 frases sobre cómo aplica HOY.
+""",
+    },
+    "or-liquid-lfm-2.5": {
+        "name": "Liquid LFM 2.5",
+        "strengths": "razonamiento rápido, respuestas concisas y directas",
+        "focus": "Análisis directo, denso y sin rodeos",
+        "deep_prompt": """
+⚡ **PERFIL DEL MODELO — Liquid LFM 2.5:**
+- Cero relleno: entra directo al análisis desde la primera frase.
+- Frases cortas, una idea por frase. Sin adjetivos decorativos.
+- Usa "En resumen" al final con 3 bullets de máximo 15 palabras.
+- Si algo es opinión, márcalo: "Mi lectura: ...".
+""",
+    },
+    "or-minimax-m3.1-flash": {
+        "name": "MiniMax M3.1 Flash",
+        "strengths": "velocidad, análisis estructurado, contexto largo",
+        "focus": "Análisis veloz pero estructurado y completo",
+        "deep_prompt": """
+🚀 **PERFIL DEL MODELO — MiniMax M3.1 Flash:**
+- Usa bloques cortos (3-5 párrafos por sección).
+- Cada sección abre con 1 frase de tesis y la desarrolla.
+- Añade "Siguiente nivel" al final: qué profundizarías.
+- Prioriza densidad informativa: cada párrafo debe aportar algo nuevo.
+""",
+    },
+    "or-nemotron-3-nano-omni": {
+        "name": "Nemotron 3 Nano Omni (Razonamiento)",
+        "strengths": "razonamiento paso a paso, lógica formal, verificación",
+        "focus": "Análisis con razonamiento explícito y verificación",
+        "deep_prompt": """
+🧩 **PERFIL DEL MODELO — Nemotron 3 Nano Omni:**
+- Muestra el razonamiento paso a paso (numerado) antes de la conclusión.
+- Cada afirmación va respaldada por premisa → inferencia → conclusión.
+- Añade "Verificación": qué evidencia confirmaría o refutaría tu análisis.
+- Detecta falacias lógicas si el usuario las comete y explícalas.
+""",
+    },
+    "or-nemotron-3-super-120b": {
+        "name": "Nemotron 3 Super 120B",
+        "strengths": "razonamiento profundo, análisis multi-capa, contexto amplio",
+        "focus": "Análisis profundo multi-dimensional",
+        "deep_prompt": """
+🔬 **PERFIL DEL MODELO — Nemotron 3 Super 120B:**
+- Descompón el tema en 3-5 dimensiones (técnica, económica, social, ética).
+- Cada dimensión con evidencia + contra-evidencia + síntesis.
+- Añade "Escenarios": optimista / base / pesimista.
+- Cierra con "Decisión informada": recomendación + qué monitorear.
+""",
+    },
+    "or-nemotron-3-ultra-550b": {
+        "name": "Nemotron 3 Ultra 550B",
+        "strengths": "máxima profundidad, análisis exhaustivo, matices finos",
+        "focus": "Análisis exhaustivo con matices y contraargumentos",
+        "deep_prompt": """
+🏛️ **PERFIL DEL MODELO — Nemotron 3 Ultra 550B:**
+- Estructura académica pero accesible: tesis → antítesis → síntesis.
+- Cada categoría con "Lo que dice el consenso" vs "Lo que discuten los expertos".
+- Añade "Zona gris": qué no está resuelto y por qué importa.
+- Incluye "Si tuvieras que apostar": tu lectura personal con justificación.
+""",
+    },
+    "or-nemotron-3.5-content-safety": {
+        "name": "Nemotron 3.5 Content Safety",
+        "strengths": "análisis ético, detección de riesgos, cumplimiento",
+        "focus": "Análisis con enfoque ético, legal y de riesgo",
+        "deep_prompt": """
+⚖️ **PERFIL DEL MODELO — Nemotron 3.5 Content Safety:**
+- En cada categoría, añade "Riesgo ético/legal" y "Mitigación".
+- Usa "Semáforo": 🟢 seguro / 🟡 precaución / 🔴 evitar.
+- Cita marcos regulatorios (GDPR, leyes locales) cuando aplique.
+- Añade "Checklist de cumplimiento" al final si el tema lo amerita.
+""",
+    },
+    "or-nemotron-3.5-lightning": {
+        "name": "Nemotron 3.5 Lightning",
+        "strengths": "velocidad extrema, respuestas ágiles, análisis rápido",
+        "focus": "Análisis ágil con estructura clara",
+        "deep_prompt": """
+⚡ **PERFIL DEL MODELO — Nemotron 3.5 Lightning:**
+- Máxima densidad: cada frase debe aportar algo nuevo.
+- Usa listas y tablas más que párrafos largos.
+- Cierra con "TL;DR" de 3 líneas máximo.
+- Si el tema es complejo, prioriza las 3 aristas más importantes.
+""",
+    },
+    "or-nemotron-3.5-super-vl": {
+        "name": "Nemotron 3.5 Super VL",
+        "strengths": "visión + lenguaje, análisis visual, descripción de imágenes",
+        "focus": "Análisis visual y multimodal",
+        "deep_prompt": """
+👁️ **PERFIL DEL MODELO — Nemotron 3.5 Super VL:**
+- Si hay imágenes o diagramas, descríbelos estructuralmente.
+- Usa "Lectura visual" cuando aplique: qué comunica el diseño/dato.
+- Para temas no visuales, aplica pensamiento espacial.
+- Añade "Cómo visualizarlo": sugerencia de gráfico, tabla o esquema.
+""",
+    },
+    "or-poolside-laguna-s-2.1": {
+        "name": "Poolside Laguna S 2.1",
+        "strengths": "código de producción, arquitectura de software, refactorización",
+        "focus": "Ingeniería de software de nivel producción",
+        "deep_prompt": """
+🏗️ **PERFIL DEL MODELO — Poolside Laguna S 2.1:**
+- Cuando el tema sea técnico, piensa en arquitectura: capas, dependencias, escalabilidad.
+- Incluye "Anti-patrones": qué NO hacer y por qué.
+- Añade "Testing": qué probar y cómo.
+- Usa ejemplos de código reales y completos, no pseudocódigo.
+""",
+    },
+    "or-poolside-laguna-xs-2.1": {
+        "name": "Poolside Laguna XS 2.1",
+        "strengths": "código ligero, scripts rápidos, snippets útiles",
+        "focus": "Soluciones técnicas rápidas y prácticas",
+        "deep_prompt": """
+🔧 **PERFIL DEL MODELO — Poolside Laguna XS 2.1:**
+- Da soluciones directas: snippet + explicación en 2-3 líneas.
+- Añade "Alternativa": otra forma de resolverlo y cuándo usarla.
+- Usa "Trampa común" cuando aplique: qué suele fallar.
+- Prioriza código ejecutable sobre teoría.
+""",
+    },
+    "or-inkling-small": {
+        "name": "Inkling Small",
+        "strengths": "creatividad, redacción, contenido",
+        "focus": "Análisis con enfoque creativo y narrativo",
+        "deep_prompt": """
+✍️ **PERFIL DEL MODELO — Inkling Small:**
+- Usa analogías, metáforas y ejemplos vívidos para explicar.
+- Estructura con "Historia": plantea el problema como un relato breve.
+- Añade "Ángulos poco explorados": 2-3 perspectivas no obvias.
+- Cuida el ritmo de lectura: frases de distintas longitudes.
+""",
+    },
+    "or-inkling": {
+        "name": "Inkling",
+        "strengths": "creatividad avanzada, redacción profesional, contenido de alto impacto",
+        "focus": "Análisis creativo de alto nivel",
+        "deep_prompt": """
+🎨 **PERFIL DEL MODELO — Inkling:**
+- Combina rigor analítico + narrativa: cada dato con su historia.
+- Añade "Cómo lo diría un experto" vs "Cómo lo diría un amigo".
+- Usa "Gancho" al inicio: primera frase que atrapa.
+- Cierra con "Idea que se queda": una reflexión memorable.
+""",
+    },
+    "or-xing4.0-29b": {
+        "name": "Xing 4.0 29B",
+        "strengths": "razonamiento equilibrado, análisis estructurado, contexto asiático/latam",
+        "focus": "Análisis equilibrado con perspectiva global",
+        "deep_prompt": """
+🌏 **PERFIL DEL MODELO — Xing 4.0 29B:**
+- Añade "Perspectiva global": cómo se ve el tema desde LatAm, Asia, Europa, USA.
+- Usa "Comparación regional" cuando aplique (precios, regulación, cultura).
+- Añade "Nota cultural" si el tema tiene matices por región.
+- Estructura: contexto → desglose → comparación global → conclusión local.
+""",
+    },
+    "or-free-router": {
+        "name": "OpenRouter Free Router",
+        "strengths": "enrutamiento automático, balance de carga, versatilidad",
+        "focus": "Análisis versátil adaptado al tema",
+        "deep_prompt": """
+🔀 **PERFIL DEL MODELO — OpenRouter Free Router:**
+- Adapta el enfoque al tipo de tema: técnico → código, analítico → datos.
+- Usa "Enfoque elegido" al inicio: por qué este ángulo es el adecuado.
+- Añade "Alternativa de análisis": otro ángulo posible y cuándo usarlo.
+- Combina lo mejor de varios modelos: profundidad + claridad + estructura.
+""",
+    },
+}
+
 # ============ AGENTES ============
 class AgentType(Enum):
     GENERAL = "general"
@@ -150,6 +370,14 @@ Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agen
 ✅ Si insisten en el modelo técnico: "Uso modelos de lenguaje de última generación a través de OpenRouter, pero mi identidad es de **ApoloXia**."
 ✅ Responde SIEMPRE en el MISMO IDIOMA del usuario.
 
+🧠 **CONCIENCIA CONVERSACIONAL (OBLIGATORIO EN CADA RESPUESTA):**
+- **Recuerda el hilo:** antes de responder, revisa de qué se ha hablado. Si el usuario retoma algo anterior, conéctalo explícitamente: "Volviendo a lo de X que mencionaste antes...".
+- **Sigue en el tema:** NO cambies de tema por tu cuenta. Solo cambias cuando el usuario lo pide explícitamente ("cambiemos de tema", "ahora hablemos de otra cosa", "dejemos eso").
+- **Declara ideas reales al final:** cada respuesta cierra con una sección **🧭 Puente al siguiente paso** donde:
+  1. Declaras 2-3 **ideas nuevas y concretas** que salen naturalmente del tema.
+  2. Preguntas al usuario si quiere **profundizar en el tema** o **abrir una idea nueva**.
+  3. Dejas claro que puedes seguir en el hilo actual si él quiere.
+- **Ideas auténticas, no genéricas:** las ideas deben ser específicas al tema. NUNCA propongas "¿quieres saber más?" vacío.
 """
 
 AGENT_PROMPTS = {
@@ -221,6 +449,7 @@ Usa emojis (📅 📰 🔗 📌 🎯) y estructura clara con encabezados.
 """,
 }
 
+# ============ ANÁLISIS PROFUNDO (TU ORIGINAL — INTACTO) ============
 INSTRUCCION_ANALISIS_PROFUNDO = """
 🔬 **MODO ANÁLISIS PROFUNDO OBLIGATORIO:**
 
@@ -252,6 +481,7 @@ Recomendación clara + próximos pasos concretos.
 🚫 NO des respuestas de una línea. NO resumas lo que ya está dicho.
 """
 
+# ============ RESPUESTA LARGA (TU ORIGINAL — INTACTO) ============
 INSTRUCCION_RESPUESTA_LARGA = """
 📝 **EXTENSIÓN Y RITMO:**
 - Apunta a 800-1500 palabras en temas complejos, 300-500 en simples.
@@ -261,6 +491,7 @@ INSTRUCCION_RESPUESTA_LARGA = """
 - NUNCA termines con "espero que te sirva" o frases de relleno.
 """
 
+# ============ CLASIFICACIÓN (TU ORIGINAL — INTACTO) ============
 INSTRUCCION_CLASIFICACION = """
 🎯 **CLASIFICACIÓN Y DISEÑO:**
 - Si el usuario pide clasificar elementos, usa tablas con categorías claras.
@@ -278,6 +509,226 @@ INSTRUCCION_PROGRAMACION = """
 - Si hay dependencias, lista los comandos de instalación.
 - Explica brevemente cómo ejecutarlo.
 """
+
+# === NUEVO: Instrucción de cierre con ideas declaradas ===
+INSTRUCCION_CIERRE_IDEAS = """
+🧭 **CIERRE OBLIGATORIO — PUENTE AL SIGUIENTE PASO (NO NEGOCIABLE):**
+
+Toda respuesta DEBE terminar con esta sección exacta:
+
+## 🧭 Puente al siguiente paso
+
+> 💡 **Idea 1:** [idea nueva y concreta que sale del tema, aplicable por el usuario]
+> 💡 **Idea 2:** [idea nueva y concreta que sale del tema, aplicable por el usuario]
+> 💡 **Idea 3:** [idea nueva y concreta que sale del tema, aplicable por el usuario]
+
+**¿Seguimos profundizando en [tema actual] o prefieres que desarrolle la Idea 1, 2 o 3?**
+**Seguimos en el tema de [tema actual] hasta que tú digas lo contrario.**
+
+🚫 **PROHIBIDO en las ideas:**
+- NO propongas "investigar más", "leer sobre el tema", "consultar un experto", "buscar información". Eso es relleno, no idea.
+- Cada idea debe ser ESPECÍFICA al tema y APLICABLE: un ángulo concreto, un experimento, una comparación, un cálculo, un caso real.
+- Si la idea es "profundizar en X", di QUÉ de X exactamente y POR QUÉ importa.
+- Máximo 3 ideas, mínimo 2. Si no tienes 2 ideas reales, es que no analizaste suficiente → profundiza más.
+"""
+
+# === NUEVO: Instrucción de PROFUNDIDAD EXTREMA (AÑADIDO) ===
+INSTRUCCION_PROFUNDIDAD_EXTREMA = """
+💎 **MODO PROFUNDIDAD EXTREMA — OBLIGATORIO EN CADA RESPUESTA (NO NEGOCIABLE):**
+
+Tu respuesta debe ser un **análisis de nivel consultor senior**. No eres un asistente que responde; eres un experto que desmenuza el tema hasta que no queda nada por decir.
+
+📏 **EXTENSIÓN OBLIGATORIA:**
+- Temas simples: mínimo **800 palabras**.
+- Temas medianos: **1200-1800 palabras**.
+- Temas complejos: **1800-2800 palabras**.
+- NUNCA menos de 800. NUNCA cortes una idea a mitad.
+
+🏗️ **ESTRUCTURA OBLIGATORIA DE 10 SECCIONES:**
+
+## 1. 🎯 Tesis central
+Una frase que resuma tu posición. Luego 1 párrafo que la justifique.
+
+## 2. 📋 Resumen ejecutivo (5 bullets)
+Cada bullet = una conclusión completa, no un tema.
+
+## 3. 🌍 Contexto ampliado
+Qué es, por qué importa AHORA, antecedentes, evolución. 3 párrafos densos.
+
+## 4. 📊 Recuadro de datos clave
+Tabla markdown con mínimo 5 filas: Dimensión | Dato/Fuente | Implicación. Si no hay dato exacto, dilo y da el rango.
+
+## 5. 🔍 Análisis por categorías (4-6 categorías)
+Cada categoría con:
+- **Qué es** (definición precisa)
+- **Por qué importa** (implicación concreta)
+- **Ejemplo real o cifra**
+- **Contraargumento** (lo que diría alguien que discrepa)
+- **Cuándo NO aplica**
+
+## 6. ⚖️ Matriz de decisión / comparación
+Tabla con criterios ponderados: Criterio | Peso | Opción A | Opción B | Ganador.
+
+## 7. 🎭 Escenarios (3 escenarios)
+- 🟢 Optimista: qué pasaría y por qué.
+- 🟡 Base: lo más probable.
+- 🔴 Pesimista: qué podría salir mal.
+Cada uno con probabilidad estimada y qué monitorear.
+
+## 8. ⚠️ Riesgos y zonas grises
+Qué no está resuelto, qué depende del contexto, qué discutirían los expertos. Honestidad total.
+
+## 9. ✅ Conclusión accionable
+Recomendación clara (sin ambigüedad) + 3-5 próximos pasos concretos y ordenados por prioridad.
+
+## 10. 🧭 Puente al siguiente paso
+2-3 ideas nuevas y específicas al tema + pregunta de continuación + confirmación de que sigues en el hilo.
+
+🧠 **PROFUNDIDAD INTELECTUAL EXIGIDA:**
+- Cada afirmación debe tener **evidencia, ejemplo o razonamiento**.
+- Distingue entre **hecho, opinión y especulación** (márcalo explícitamente).
+- Incluye **al menos 2 contraargumentos** a tu propia tesis.
+- Incluye **al menos 1 dato cuantitativo** por categoría (o di que no lo tienes).
+- Explica el **"por qué del por qué"**: no te quedes en la primera capa.
+- Si el tema lo permite, conecta con **otras disciplinas** (economía, psicología, historia).
+- Cada sección debe poder leerse sola (autocontenida).
+
+🚫 **PROHIBIDO:**
+- "En resumen..." repetido más de 2 veces.
+- Relleno para llegar a palabras (si no hay más, profundiza en implicaciones).
+- Respuestas de una sola capa ("X es bueno porque sí").
+- Ignorar contraargumentos.
+- No citar fuentes cuando hay datos.
+
+🌐 **IDIOMA:** Responde SIEMPRE en el idioma del usuario.
+📅 **SI HAY DATOS DE INTERNET:** cita fecha y fuente de cada dato.
+"""
+
+# === NUEVO: Frameworks de análisis profundo ===
+DEEP_ANALYSIS_FRAMEWORKS = {
+    "MECE": """
+📐 **Framework MECE (Mutually Exclusive, Collectively Exhaustive):**
+- Divide el tema en categorías que NO se solapen (mutuamente excluyentes).
+- Asegúrate de que juntas cubran TODO el tema (colectivamente exhaustivas).
+- Verifica: ¿falta alguna categoría? ¿hay solapamiento?
+- Estructura obligatoria: tabla de categorías con verificación de MECE.
+""",
+    "FIRST_PRINCIPLES": """
+🧱 **Framework de Primeros Principios (First Principles):**
+- Descompón el problema hasta sus verdades fundamentales (los hechos irreductibles).
+- Reconstruye desde ahí, sin asumir "así se hace siempre".
+- Pregunta: ¿qué es verdadero independientemente del contexto? ¿qué es convención?
+- Estructura: hechos fundamentales → deducción → conclusión novedosa.
+""",
+    "FIVE_WHYS": """
+❓ **Framework de los 5 Porqués (5 Whys):**
+- Pregunta "¿por qué?" 5 veces seguidas para llegar a la causa raíz.
+- Cada "por qué" debe reducir el problema a algo más fundamental.
+- Estructura obligatoria: cadena de 5 "por qué" → causa raíz → implicación.
+""",
+    "SWOT": """
+🎯 **Framework SWOT (Fortalezas, Debilidades, Oportunidades, Amenazas):**
+- Tabla 2x2: F | D / O | A.
+- Cada celda con 3-4 puntos concretos, no genéricos.
+- Añade matriz cruzada: cómo una fortaleza convierte una amenaza en oportunidad.
+""",
+    "PESTEL": """
+🌐 **Framework PESTEL (Político, Económico, Social, Tecnológico, Ecológico, Legal):**
+- Tabla con 6 dimensiones, cada una con 2-3 puntos.
+- Añade "Implicación práctica" por dimensión.
+- Cierra con "Escenario integrado": qué combinación de factores es más probable.
+""",
+    "PARETO": """
+📊 **Framework de Pareto (80/20):**
+- Identifica el 20% de factores que generan el 80% del impacto.
+- Tabla: Factor | Impacto estimado | % acumulado.
+- Conclusión: dónde enfocar los esfuerzos.
+""",
+}
+
+def detect_framework(message: str) -> Optional[str]:
+    """Detecta qué framework de análisis aplica según la pregunta."""
+    msg = message.lower()
+    if any(k in msg for k in ["causa raíz", "por qué pasó", "root cause", "por qué falla"]):
+        return "FIVE_WHYS"
+    if any(k in msg for k in ["desde cero", "fundamentos", "first principles", "repensar"]):
+        return "FIRST_PRINCIPLES"
+    if any(k in msg for k in ["clasifica", "categoriza", "divide", "estructura", "mece"]):
+        return "MECE"
+    if any(k in msg for k in ["fortalezas", "debilidades", "swot", "foda"]):
+        return "SWOT"
+    if any(k in msg for k in ["político", "económico", "social", "tecnológico", "pestel", "macro"]):
+        return "PESTEL"
+    if any(k in msg for k in ["80/20", "pareto", "prioriza", "dónde enfocar"]):
+        return "PARETO"
+    return None
+
+def build_deep_context(user_id: str, conversation_id: str, user_message: str,
+                       history: List[Dict], agent_type: str, tier: str) -> str:
+    """Construye el contexto profundo adicional para el system prompt."""
+    ctx = ""
+
+    # 1. Framework aplicable
+    framework = detect_framework(user_message)
+    if framework:
+        ctx += f"\n\n{DEEP_ANALYSIS_FRAMEWORKS[framework]}"
+        ctx += f"\n📐 **APLICA EL FRAMEWORK {framework} EN ESTA RESPUESTA.**"
+
+    # 2. Resumen del historial (si hay conversación previa)
+    if history:
+        user_msgs = [m["content"] for m in history if m["role"] == "user"][-5:]
+        if user_msgs:
+            ctx += "\n\n📚 **HISTORIAL RECIENTE DE LA CONVERSACIÓN:**\n"
+            for i, msg in enumerate(user_msgs, 1):
+                ctx += f"  {i}. {msg[:150]}...\n"
+            ctx += "→ Conecta con esto. No repitas lo ya dicho; añade capas nuevas."
+
+    # 3. Exigencia de datos cuantitativos
+    ctx += """
+
+📊 **EXIGENCIA DE DATOS CUANTITATIVOS:**
+- Cada categoría debe incluir al menos 1 dato numérico (cifra, %, fecha, ratio).
+- Si no tienes el dato exacto, di: "Dato aproximado: X (fuente: Y)" o "No tengo cifra exacta, pero el rango típico es...".
+- Prohibido inventar cifras. Si no sabes, dilo honestamente.
+- Usa tablas para presentar comparativas numéricas.
+
+🎯 **NIVELES DE CERTEZA (obligatorio marcarlos):**
+- 🟢 **Hecho comprobado:** dato con fuente o evidencia directa.
+- 🟡 **Consenso razonable:** lo que la mayoría de expertos acepta, sin dato duro.
+- 🔴 **Opinión / especulación:** tu lectura personal, marcada como tal.
+
+⚠️ **CONTRAARGUMENTOS OBLIGATORIOS:**
+- En cada categoría, incluye "Lo que diría alguien que discrepa".
+- Al final, incluye "Las 2 críticas más fuertes a mi análisis".
+
+🕳️ **ZONAS GRISES (honestidad intelectual):**
+- Di explícitamente qué NO sabes, qué está en debate, y qué depende del contexto.
+- No finjas certeza donde no la hay.
+"""
+
+    # 4. Ajuste por agente y tier
+    if agent_type in ("comparador_diferencias", "buscador_noticias"):
+        ctx += "\n\n🎯 **REFUERZO:** Esta respuesta debe ser especialmente exhaustiva en comparaciones y análisis de impacto."
+    if tier in ("plus", "gt"):
+        ctx += "\n\n💎 **REFUERZO PREMIUM:** Máxima profundidad, múltiples secciones, contraargumentos, escenarios."
+
+    return ctx
+# === FIN NUEVO ===
+
+# === NUEVO: Detección de cambio de tema ===
+CAMBIO_TEMA_TRIGGERS = [
+    "cambiemos de tema", "cambiar de tema", "hablemos de otra cosa",
+    "dejemos eso", "otra cosa", "ahora quiero saber de", "pasemos a",
+    "nuevo tema", "cambia de tema", "olvida eso", "deja eso",
+    "mejor hablemos de", "hablemos de otro", "dejemos el tema",
+    "cambia el tema", "otro tema", "cambiar el tema",
+]
+
+def user_requests_topic_change(message: str) -> bool:
+    """Detecta si el usuario pide explícitamente cambiar de tema."""
+    msg = message.lower()
+    return any(trigger in msg for trigger in CAMBIO_TEMA_TRIGGERS)
+# === FIN NUEVO ===
 
 # ============ CONFIGURACIÓN POR TIER ============
 @dataclass
@@ -337,6 +788,7 @@ class ConversationMemory:
         self.user_tiers: Dict[str, str] = {}
         self.user_configs: Dict[str, Dict] = {}
         self.business_profiles: Dict[str, Dict] = {}
+        self.active_topics: Dict[str, Dict[str, str]] = defaultdict(dict)
 
     def get_user_tier(self, user_id: str) -> str:
         return self.user_tiers.get(user_id, "free")
@@ -381,6 +833,14 @@ class ConversationMemory:
         today = datetime.now().strftime("%Y-%m-%d")
         limit = TIER_CONFIGS[tier].max_daily_responses
         return max(0, limit - self.daily_counters[user_id][today])
+
+    def get_active_topic(self, user_id: str, conversation_id: str) -> Optional[str]:
+        return self.active_topics.get(user_id, {}).get(conversation_id)
+
+    def set_active_topic(self, user_id: str, conversation_id: str, topic: str):
+        if user_id not in self.active_topics:
+            self.active_topics[user_id] = {}
+        self.active_topics[user_id][conversation_id] = topic
 
 memory = ConversationMemory()
 
@@ -474,6 +934,8 @@ class ChatResponse(BaseModel):
     search_results: Optional[List[Dict]] = None
     business_sector_detected: Optional[str] = None
     suggested_export: Optional[str] = None
+    active_topic: Optional[str] = None
+    topic_changed: bool = False
 
 class ShareRequest(BaseModel):
     platform: str
@@ -693,7 +1155,7 @@ async def call_openrouter_api(messages: List[Dict], model_id: str, temperature: 
                "HTTP-Referer": "https://theshieldtechnology.com", "X-OpenRouter-Title": "ApoloXia"}
     safe = min(max_tokens, 16000)
     payload = {"model": model_id, "messages": messages, "temperature": temperature, "max_tokens": safe}
-    async with httpx.AsyncClient(timeout=90.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         resp = await client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
         if resp.status_code != 200:
             err = resp.json()
@@ -718,7 +1180,8 @@ async def call_llm_pool_fallback(messages: List[Dict], temperature: float = 0.5,
 # ============ CONSTRUCCIÓN DE MENSAJES ============
 def build_messages(user_id: str, conversation_id: str, user_message: str, agent_type: str, tier: str,
                    web_search_results: Optional[List[Dict]] = None, file_content: Optional[str] = None,
-                   news_results: Optional[List[Dict]] = None) -> List[Dict]:
+                   news_results: Optional[List[Dict]] = None,
+                   model_id: Optional[str] = None) -> List[Dict]:
     config = TIER_CONFIGS[tier]
     history = memory.get_memory(user_id, conversation_id, tier)
     try: agent = AgentType(agent_type) if agent_type else AgentType.GENERAL
@@ -730,6 +1193,35 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     system += INSTRUCCION_ANALISIS_PROFUNDO
     system += INSTRUCCION_RESPUESTA_LARGA
     system += INSTRUCCION_CLASIFICACION
+    # === NUEVO: instrucciones de profundidad extrema + cierre con ideas ===
+    system += INSTRUCCION_PROFUNDIDAD_EXTREMA
+    system += INSTRUCCION_CIERRE_IDEAS
+    # === FIN NUEVO ===
+
+    # === NUEVO: inyectar perfil especializado del modelo ===
+    if model_id and model_id in MODEL_PROFILES:
+        profile_m = MODEL_PROFILES[model_id]
+        system += "\n\n" + profile_m["deep_prompt"]
+        system += f"\n🎯 Enfoque específico de este modelo: **{profile_m['focus']}**. Fortalezas: {profile_m['strengths']}."
+    # === FIN NUEVO ===
+
+    # === NUEVO: inyectar contexto profundo (frameworks, historial, exigencia de datos) ===
+    system += build_deep_context(user_id, conversation_id, user_message, history, agent_type, tier)
+    # === FIN NUEVO ===
+
+    # === NUEVO: conciencia conversacional — inyección del tema activo ===
+    active_topic = memory.get_active_topic(user_id, conversation_id)
+    user_wants_change = user_requests_topic_change(user_message)
+
+    if active_topic and not user_wants_change:
+        system += f"\n\n🧠 **TEMA ACTIVO DE LA CONVERSACIÓN: {active_topic}**\n"
+        system += f"El usuario NO ha pedido cambiar de tema. SIGUE en este tema. Retoma el hilo: 'Como veníamos viendo sobre {active_topic}...'. Profundiza, no repitas. Si la pregunta parece de otro tema, conéctala al tema activo o pregunta si quiere cambiar antes de cambiar tú."
+    elif active_topic and user_wants_change:
+        system += f"\n\n🔄 **CAMBIO DE TEMA SOLICITADO POR EL USUARIO**\n"
+        system += f"El tema anterior era: **{active_topic}**. El usuario pidió EXPLÍCITAMENTE cambiar. Acepta con naturalidad: 'Perfecto, cambiamos de tema. Lo anterior queda como contexto por si volvemos.' Luego entra al nuevo tema con análisis profundo."
+    else:
+        system += "\n\n🆕 **PRIMER TEMA DE LA CONVERSACIÓN**\nEntra directo al tema con análisis profundo. Al final declararás el tema activo y las ideas propuestas."
+    # === FIN NUEVO ===
 
     if agent in CODING_AGENTS:
         system += INSTRUCCION_PROGRAMACION
@@ -749,7 +1241,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
         system += "\n📄 Al final, añade: '(Puedes descargarlo en Word)'.\n"
 
     if tier in ["plus", "gt"]:
-        system += "\n🔹 Responde con máximo detalle, múltiples secciones y análisis profundo.\n"
+        system += "\n🔹 Responde con máximo detalle, múltiples secciones y análisis profundo. Aplica los 10 bloques de profundidad extrema.\n"
 
     if news_results:
         news_text = "\n\n=== 📰 NOTICIAS RECIENTES (NewsData.io + Tavily) ===\n"
@@ -783,7 +1275,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="9.0.0-enterprise")
+app = FastAPI(title="ApoloXia API", version="11.0.0-enterprise-deep-extreme")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ============ CHAT ============
@@ -857,49 +1349,59 @@ async def chat(request: ChatRequest):
 
                 search_cache.set(search_query, {"news": news_results, "web": web_results})
 
-    messages = build_messages(request.user_id, conv_id, request.message,
-                              agent_type, tier, web_results, request.file_content, news_results)
+    # Determinar modelo elegido ANTES de construir mensajes
+    chosen_model_id = request.model_id or ""
+    if chosen_model_id not in OPENROUTER_MODELS:
+        chosen_model_id = config.available_models[0] if config.available_models else "or-gemma-4-31b"
+        if chosen_model_id not in OPENROUTER_MODELS:
+            chosen_model_id = "or-gemma-4-31b"
 
-    # Tokens eficientes para velocidad + profundidad
-    base_max_tokens = {"free": 4000, "plus": 8000, "gt": 12000}.get(tier, 4000)
+    messages = build_messages(request.user_id, conv_id, request.message,
+                              agent_type, tier, web_results, request.file_content, news_results,
+                              model_id=chosen_model_id)
+
+    # === NUEVO: tokens ampliados para profundidad extrema ===
+    base_max_tokens = {"free": 9000, "plus": 12000, "gt": 14000}.get(tier, 9000)
     if agent_type in ["generador_codigo", "desarrollador_avanzado", "desarrollador_fullstack",
-                      "generador_sitios_web", "creador_paneles_ventas", "debugger_inteligente",
-                      "comparador_diferencias", "buscador_noticias"]:
-        max_tokens_for_agent = 12000
+                      "generador_sitios_web", "creador_paneles_ventas", "debugger_inteligente"]:
+        max_tokens_for_agent = 14000
     else:
         max_tokens_for_agent = base_max_tokens
-    safe_max_tokens = min(max_tokens_for_agent, 12000)
+    safe_max_tokens = min(max_tokens_for_agent, 16000)
     temp = 0.5 if tier == "free" else 0.4
+    # === FIN NUEVO ===
 
-    chosen = request.model_id or ""
+    or_id = OPENROUTER_MODELS[chosen_model_id]
     response_text = None
     model_used = None
 
-    if chosen and chosen in OPENROUTER_MODELS:
-        or_id = OPENROUTER_MODELS[chosen]
-        try:
-            print(f"🌐 OpenRouter: {or_id} | agent={agent_type} | tokens={safe_max_tokens}")
-            response_text = await call_openrouter_api(messages, or_id, temperature=temp, max_tokens=safe_max_tokens)
-            model_used = or_id
-        except Exception as e:
-            print(f"⚠️ OpenRouter falló: {e}. Fallback...")
-            result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
-            response_text = result["text"]; model_used = result["provider"]
-    else:
-        default_key = config.available_models[0] if config.available_models else "or-gemma-4-31b"
-        if default_key not in OPENROUTER_MODELS:
-            default_key = "or-gemma-4-31b"
-        or_id = OPENROUTER_MODELS[default_key]
-        try:
-            print(f"🌐 OpenRouter (default): {or_id} | agent={agent_type} | tokens={safe_max_tokens}")
-            response_text = await call_openrouter_api(messages, or_id, temperature=temp, max_tokens=safe_max_tokens)
-            model_used = or_id
-        except Exception as e:
-            print(f"⚠️ OpenRouter falló: {e}. Fallback...")
-            result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
-            response_text = result["text"]; model_used = result["provider"]
+    try:
+        print(f"🌐 OpenRouter: {or_id} | agent={agent_type} | tokens={safe_max_tokens} | perfil={MODEL_PROFILES.get(chosen_model_id, {}).get('name', 'default')}")
+        response_text = await call_openrouter_api(messages, or_id, temperature=temp, max_tokens=safe_max_tokens)
+        model_used = or_id
+    except Exception as e:
+        print(f"⚠️ OpenRouter falló: {e}. Fallback...")
+        result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
+        response_text = result["text"]; model_used = result["provider"]
 
     print(f"✅ {model_used} | {len(response_text)} chars | agent={agent_type}")
+
+    # Actualizar tema activo y detectar cambio
+    previous_topic = memory.get_active_topic(request.user_id, conv_id)
+    user_wants_change = user_requests_topic_change(request.message)
+    topic_changed = False
+
+    if user_wants_change or not previous_topic:
+        raw_topic = request.message.strip()
+        for trig in CAMBIO_TEMA_TRIGGERS:
+            raw_topic = raw_topic.lower().replace(trig, "").strip()
+        new_topic = raw_topic[:120] if raw_topic else request.message[:120]
+        if previous_topic and user_wants_change:
+            topic_changed = True
+        memory.set_active_topic(request.user_id, conv_id, new_topic)
+        active_topic = new_topic
+    else:
+        active_topic = previous_topic
 
     memory.add_message(request.user_id, conv_id, "user", request.message, agent_type)
     memory.add_message(request.user_id, conv_id, "assistant", response_text, agent_type)
@@ -915,13 +1417,25 @@ async def chat(request: ChatRequest):
         search_results=(news_results or web_results),
         business_sector_detected=detected_sector,
         suggested_export=suggested_export,
+        active_topic=active_topic,
+        topic_changed=topic_changed,
     )
 
 # ============ MODELOS DISPONIBLES ============
 @app.get("/models")
 async def list_models():
-    all_models = [{"id": k, "provider": "openrouter", "api_id": v, "name": v.replace(":free", " (gratis)"),
-                   "free": True} for k, v in OPENROUTER_MODELS.items()]
+    all_models = []
+    for k, v in OPENROUTER_MODELS.items():
+        perfil = MODEL_PROFILES.get(k, {})
+        all_models.append({
+            "id": k,
+            "provider": "openrouter",
+            "api_id": v,
+            "name": perfil.get("name", v.replace(":free", " (gratis)")),
+            "free": True,
+            "focus": perfil.get("focus", "General"),
+            "strengths": perfil.get("strengths", ""),
+        })
     return {"openrouter": all_models, "total": len(all_models)}
 
 @app.get("/models/tier/{tier}")
@@ -929,19 +1443,69 @@ async def list_models_by_tier(tier: str):
     if tier not in TIER_CONFIGS:
         raise HTTPException(400, f"Tier '{tier}' no válido")
     config = TIER_CONFIGS[tier]
-    tier_models = [{"id": k, "name": OPENROUTER_MODELS[k].replace(":free", " (gratis)"),
-                    "provider": "openrouter", "api_id": OPENROUTER_MODELS[k], "free": True}
-                   for k in config.available_models if k in OPENROUTER_MODELS]
+    tier_models = []
+    for k in config.available_models:
+        if k in OPENROUTER_MODELS:
+            perfil = MODEL_PROFILES.get(k, {})
+            tier_models.append({
+                "id": k,
+                "name": perfil.get("name", OPENROUTER_MODELS[k].replace(":free", " (gratis)")),
+                "provider": "openrouter",
+                "api_id": OPENROUTER_MODELS[k],
+                "free": True,
+                "focus": perfil.get("focus", "General"),
+                "strengths": perfil.get("strengths", ""),
+            })
     return {"tier": tier, "name": config.name, "models": tier_models, "total": len(tier_models)}
+
+@app.get("/models/{model_id}/profile")
+async def get_model_profile(model_id: str):
+    if model_id not in MODEL_PROFILES:
+        raise HTTPException(404, f"Modelo '{model_id}' no tiene perfil registrado")
+    perfil = MODEL_PROFILES[model_id]
+    return {
+        "model_id": model_id,
+        "api_id": OPENROUTER_MODELS.get(model_id, "desconocido"),
+        "name": perfil["name"],
+        "focus": perfil["focus"],
+        "strengths": perfil["strengths"],
+        "deep_prompt": perfil["deep_prompt"].strip(),
+    }
+
+# === NUEVO: endpoint de profundidad (AÑADIDO) ===
+@app.get("/depth-info")
+async def get_depth_info():
+    return {
+        "profundidad_extrema": "ACTIVADA",
+        "extension": {
+            "simple": "800+ palabras",
+            "mediano": "1200-1800 palabras",
+            "complejo": "1800-2800 palabras",
+        },
+        "secciones_obligatorias": 10,
+        "frameworks_disponibles": list(DEEP_ANALYSIS_FRAMEWORKS.keys()),
+        "niveles_certeza": ["🟢 Hecho comprobado", "🟡 Consenso razonable", "🔴 Opinión/especulación"],
+        "tokens_max": {"free": 9000, "plus": 12000, "gt": 14000},
+        "exige": ["contraargumentos", "datos cuantitativos", "escenarios", "zonas grises"],
+    }
+# === FIN NUEVO ===
 
 @app.get("/user-config/{user_id}")
 async def get_user_config(user_id: str):
     tier = memory.get_user_tier(user_id)
     config = TIER_CONFIGS[tier]
     user_cfg = memory.get_user_config(user_id)
-    tier_models = [{"id": k, "name": OPENROUTER_MODELS.get(k, k).replace(":free", " (gratis)"),
-                    "provider": "openrouter", "free": True}
-                   for k in config.available_models if k in OPENROUTER_MODELS]
+    tier_models = []
+    for k in config.available_models:
+        if k in OPENROUTER_MODELS:
+            perfil = MODEL_PROFILES.get(k, {})
+            tier_models.append({
+                "id": k,
+                "name": perfil.get("name", OPENROUTER_MODELS[k].replace(":free", " (gratis)")),
+                "provider": "openrouter",
+                "free": True,
+                "focus": perfil.get("focus", "General"),
+            })
     return {"user_id": user_id, "tier": tier, "tier_name": config.name,
             "theme": user_cfg.get("theme", "dark"), "language": user_cfg.get("language", "es"),
             "notifications": user_cfg.get("notifications", True),
@@ -969,15 +1533,24 @@ async def upgrade_tier(user_id: str, new_tier: str):
 # ============ HEALTH ============
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "9.0.0-enterprise",
+    return {"status": "ok", "version": "11.0.0-enterprise-deep-extreme",
             "openrouter_api": "configured" if OPENROUTER_API_KEY else "not set",
             "tavily_api": "configured" if TAVILY_API_KEY else "not set",
             "newsdata_api": "configured" if NEWSDATA_API_KEY else "not set",
             "freellmpool": "active" if llm_pool else "not available",
             "openrouter_models_count": len(OPENROUTER_MODELS),
+            "models_with_profile": len(MODEL_PROFILES),
+            "model_profiles": "ACTIVADOS (cada modelo tiene su enfoque especializado)",
             "agents_count": len(AgentType),
             "search_cache": f"{len(search_cache.cache)} entradas activas",
-            "identity": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado"}
+            "identity": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado",
+            "consciousness": "ACTIVADA (mantiene hilo, declara ideas, cambia solo si el usuario pide)",
+            # === NUEVO: info de profundidad extrema ===
+            "deep_extreme": "ACTIVADO (10 secciones, 800-2800 palabras, frameworks, contraargumentos)",
+            "frameworks_count": len(DEEP_ANALYSIS_FRAMEWORKS),
+            "tokens_max_by_tier": {"free": 9000, "plus": 12000, "gt": 14000},
+            # === FIN NUEVO ===
+            }
 
 # ============ COMPARTIR ============
 @app.post("/share/links", response_model=ShareLinksResponse)
@@ -1024,8 +1597,9 @@ async def receive_whatsapp(payload: dict):
         if not from_number or not text_body: return {"status": "ignored"}
         conv_id = f"wa_{from_number}"
         tier = memory.get_user_tier(from_number) or "free"
-        messages_llm = build_messages(from_number, conv_id, text_body, "general", tier)
-        response = await call_openrouter_api(messages_llm, OPENROUTER_MODELS["or-gemma-4-31b"], max_tokens=4000)
+        messages_llm = build_messages(from_number, conv_id, text_body, "general", tier,
+                                       model_id="or-gemma-4-31b")
+        response = await call_openrouter_api(messages_llm, OPENROUTER_MODELS["or-gemma-4-31b"], max_tokens=9000)
         await send_whatsapp_message(from_number, response)
         return {"status": "processed", "to": from_number}
     except Exception as e:
@@ -1037,7 +1611,8 @@ async def receive_whatsapp(payload: dict):
 async def get_conversations(user_id: str):
     user_mem = memory.memories.get(user_id, {})
     convs = [{"conversation_id": cid, "message_count": len(msgs),
-              "last_access": memory.last_access.get(user_id, {}).get(cid).isoformat() if memory.last_access.get(user_id, {}).get(cid) else None}
+              "last_access": memory.last_access.get(user_id, {}).get(cid).isoformat() if memory.last_access.get(user_id, {}).get(cid) else None,
+              "active_topic": memory.get_active_topic(user_id, cid)}
              for cid, msgs in user_mem.items()]
     return {"user_id": user_id, "conversations": convs}
 
@@ -1046,6 +1621,7 @@ async def delete_conversation(user_id: str, conversation_id: str):
     if user_id in memory.memories and conversation_id in memory.memories[user_id]:
         del memory.memories[user_id][conversation_id]
         if conversation_id in memory.last_access.get(user_id, {}): del memory.last_access[user_id][conversation_id]
+        if conversation_id in memory.active_topics.get(user_id, {}): del memory.active_topics[user_id][conversation_id]
         return {"message": "Conversación eliminada"}
     raise HTTPException(404, "No encontrada")
 
@@ -1135,7 +1711,7 @@ async def serve_code(): return FileResponse(_get_file_path("apoloxia.code.html")
 @app.get("/{filename}")
 async def serve_static_file(filename: str):
     api_routes = {"chat","models","agents","health","conversations","tier-info","user-config","upgrade-tier",
-                  "search-web","share","export","business-sectors","business-profile","webhook"}
+                  "search-web","share","export","business-sectors","business-profile","webhook","depth-info"}
     if filename in api_routes or filename.startswith("apoloxia.code.html"): raise HTTPException(404, "Not found")
     if filename.startswith(".") or ".." in filename: raise HTTPException(403, "Forbidden")
     fp = _get_file_path(filename)
@@ -1144,17 +1720,27 @@ async def serve_static_file(filename: str):
 
 # ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 ApoloXia Server v9.0.0 ENTERPRISE")
+    print("🚀 ApoloXia Server v11.0.0 ENTERPRISE DEEP EXTREME")
     print(f"🌐 OpenRouter gratuitos: {len(OPENROUTER_MODELS)}")
+    print(f"🎯 Perfiles especializados por modelo: {len(MODEL_PROFILES)}")
+    print(f"📐 Frameworks de análisis: {len(DEEP_ANALYSIS_FRAMEWORKS)}")
     print(f"🤖 Agentes: {len(AgentType)}")
     print(f"📰 NewsData: {'✅' if NEWSDATA_API_KEY else '❌'}")
     print(f"🔍 Tavily: {'✅' if TAVILY_API_KEY else '❌'}")
     print(f"🧠 freellmpool fallback: {'✅' if llm_pool else '❌'}")
     print("📝 Exportación: Word (docx)")
-    print("🔬 Análisis profundo: ACTIVADO")
-    print("📏 Respuestas largas: ACTIVADO")
-    print("🎯 Clasificación y diferencias: ACTIVADO")
+    print("💎 PROFUNDIDAD EXTREMA: ACTIVADA (10 secciones, 800-2800 palabras)")
+    print("📐 Frameworks: MECE, First Principles, 5 Whys, SWOT, PESTEL, Pareto")
+    print("🎯 Niveles de certeza: 🟢 Hecho / 🟡 Consenso / 🔴 Opinión")
+    print("⚠️ Contraargumentos: OBLIGATORIOS")
+    print("📊 Datos cuantitativos: OBLIGATORIOS")
+    print("🎭 Escenarios: 3 (optimista/base/pesimista)")
     print("⚡ Cache de búsquedas: ACTIVADO (5 min)")
     print("📅 Búsqueda automática de noticias: ACTIVADO")
+    print("🎯 Análisis por modelo: ACTIVADO (cada uno con su enfoque)")
+    print("🧠 Conciencia conversacional: ACTIVADA")
+    print("   → Mantiene el hilo del tema hasta que el usuario pida cambiar")
+    print("   → Declara 2-3 ideas concretas al final de cada respuesta")
+    print("   → Solo cambia de tema si el usuario lo pide explícitamente")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
