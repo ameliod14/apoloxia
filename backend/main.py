@@ -1,6 +1,7 @@
-# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA ENTERPRISE - Octubre 2026)
+# main.py - ApoloXia Chatbot Server (VERSIÓN ULTRA ENTERPRISE - Noviembre 2026)
 # ======================================================
-# - OpenRouter: 18 modelos gratuitos :free con PERFIL ESPECIALIZADO cada uno
+# - OpenRouter: modelos gratuitos y de pago con PERFIL ESPECIALIZADO
+# - Groq: modelos GPT-OSS y Qwen con API compatible
 # - Cache de búsquedas para velocidad
 # - Tavily news (days=3) + NewsData.io siempre que haya tema noticioso
 # - Búsqueda automática en temas de actualidad, precios, mercado, tendencias
@@ -46,6 +47,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN API KEYS ============
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 EXA_API_KEY = os.getenv("EXA_API_KEY", "")
 MEDIASTACK_API_KEY = os.getenv("MEDIASTACK_API_KEY", "")
@@ -63,124 +65,53 @@ if FREELLMPOOL_AVAILABLE:
     except Exception as e:
         print(f"⚠️ freellmpool no disponible: {e}")
 
-# ============ MODELOS OPENROUTER GRATUITOS :free ============
+# ============ MODELOS OPENROUTER ============
+# Modelos gratuitos confirmados (noviembre 2026)
 OPENROUTER_MODELS = {
+    # Gratuitos estables
+    "or-nemotron-3.5-super-vl": "nvidia/nemotron-3.5-super-vl:free",
+    "or-nemotron-3-ultra-550b": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "or-nemotron-3.5-lightning": "nvidia/nemotron-3.5-lightning:free",
+    "or-nemotron-3-nano-omni": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
     "or-cohere-north-mini-code": "cohere/north-mini-code:free",
     "or-dots-3-note-preview": "dots-studio/dots-3-note-preview:free",
-    "or-gemma-4-26b": "google/gemma-4-26b-a4b-it:free",
-    "or-gemma-4-31b": "google/gemma-4-31b-it:free",
-    "or-liquid-lfm-2.5": "liquid/lfm-2.5-2.6b:free",
-    "or-minimax-m3.1-flash": "minimax/minimax-m3.1-flash:free",
-    "or-nemotron-3-nano-omni": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    "or-nemotron-3-super-120b": "nvidia/nemotron-3-super-120b-a12b:free",
-    "or-nemotron-3-ultra-550b": "nvidia/nemotron-3-ultra-550b-a55b:free",
-    "or-nemotron-3.5-content-safety": "nvidia/nemotron-3.5-content-safety:free",
-    "or-nemotron-3.5-lightning": "nvidia/nemotron-3.5-lightning:free",
-    "or-nemotron-3.5-super-vl": "nvidia/nemotron-3.5-super-vl:free",
-    "or-poolside-laguna-s-2.1": "poolside/laguna-s-2.1:free",
-    "or-poolside-laguna-xs-2.1": "poolside/laguna-xs-2.1:free",
-    "or-inkling-small": "thinkingmachines/inkling-small:free",
-    "or-inkling": "thinkingmachines/inkling:free",
-    "or-xing4.0-29b": "xingchen-agi/xing4.0-29b-a4b:free",
+    "or-ling-3.0-flash": "inclusionai/ling-3.0-flash:free",
+    "or-ernie-5.5-flash": "baidu/ernie-5.5-flash-preview:free",
+    "or-inkling-2-small": "thinkingmachines/inkling-2-small:free",
+    "or-liquid-lfm3-1.7b": "liquid/lfm3-1.7b:free",
+    "or-particle-1": "particle-ai/particle-1:free",
+    "or-flint": "recursive/flint:free",
+    # Router automático
     "or-free-router": "openrouter/free",
+    # Modelos de pago populares (si el usuario los elige)
+    "or-deepseek-v3.2": "deepseek/deepseek-v3.2",
+    "or-mistral-large": "mistralai/mistral-large-2512",
+    "or-google-gemini-pro": "google/gemini-2.5-pro",
+    "or-claude-haiku": "anthropic/claude-haiku-4.5",
+    "or-gpt-6-sol": "openai/gpt-6-sol",
+    "or-glm-5.2": "z-ai/glm-5.2",
+}
+
+# ============ MODELOS GROQ ============
+# Modelos de texto confirmados (noviembre 2026)
+GROQ_MODELS = {
+    "groq-gpt-oss-120b": "openai/gpt-oss-120b",
+    "groq-gpt-oss-20b": "openai/gpt-oss-20b",
+    "groq-qwen-3.8-27b": "qwen/qwen3.8-27b",
 }
 
 # ============ PERFIL ESPECIALIZADO DE CADA MODELO ============
 MODEL_PROFILES = {
-    "or-cohere-north-mini-code": {
-        "name": "Cohere North Mini Code",
-        "strengths": "código, razonamiento técnico, estructuras de datos",
-        "focus": "Ingeniería de software y análisis técnico",
+    "or-nemotron-3.5-super-vl": {
+        "name": "Nemotron 3.5 Super VL",
+        "strengths": "visión + lenguaje, análisis visual, descripción de imágenes",
+        "focus": "Análisis visual y multimodal",
         "deep_prompt": """
-🔧 **PERFIL DEL MODELO — Cohere North Mini Code:**
-- Descompón en capas: lógica → estructura → implementación → pruebas.
-- Usa pseudocódigo o diagramas mentales antes de la explicación final.
-- Cita complejidad algorítmica (O(n), memoria, trade-offs).
-- Incluye siempre ejemplos de código ejecutables y casos límite.
-""",
-    },
-    "or-dots-3-note-preview": {
-        "name": "Dots 3 Note Preview",
-        "strengths": "síntesis, notas estructuradas, organización de información",
-        "focus": "Análisis organizado, síntesis y mapas mentales",
-        "deep_prompt": """
-📝 **PERFIL DEL MODELO — Dots 3 Note Preview:**
-- Organiza como notas jerárquicas: título → secciones → subsecciones.
-- Usa mapas mentales en texto (A → B1, B2; C → D) cuando ayuden.
-- Prioriza claridad sobre erudición: cada punto en 1-2 frases densas.
-- Cierra con "Notas clave": 3-5 bullets que resuman lo esencial.
-""",
-    },
-    "or-gemma-4-26b": {
-        "name": "Gemma 4 26B",
-        "strengths": "razonamiento general, explicaciones didácticas, multilingüe",
-        "focus": "Explicaciones claras y bien estructuradas",
-        "deep_prompt": """
-🎓 **PERFIL DEL MODELO — Gemma 4 26B:**
-- Explica con progresión pedagógica: de lo simple a lo complejo.
-- Usa analogías cotidianas antes de la definición técnica.
-- Añade "Error común" en cada categoría.
-- Incluye mini-resumen al final de cada sección (1 frase).
-""",
-    },
-    "or-gemma-4-31b": {
-        "name": "Gemma 4 31B",
-        "strengths": "razonamiento general, equilibrio profundidad/extensión, multilingüe",
-        "focus": "Análisis equilibrado, profundo y bien redactado",
-        "deep_prompt": """
-⚖️ **PERFIL DEL MODELO — Gemma 4 31B:**
-- Combina profundidad + claridad: ni superficial ni académico pesado.
-- Estructura siempre con: contexto → desglose → evidencia → riesgo → conclusión.
-- Usa tablas comparativas cuando haya 2+ opciones.
-- Añade "En la práctica": 1-2 frases sobre cómo aplica HOY.
-""",
-    },
-    "or-liquid-lfm-2.5": {
-        "name": "Liquid LFM 2.5",
-        "strengths": "razonamiento rápido, respuestas concisas y directas",
-        "focus": "Análisis directo, denso y sin rodeos",
-        "deep_prompt": """
-⚡ **PERFIL DEL MODELO — Liquid LFM 2.5:**
-- Cero relleno: entra directo al análisis desde la primera frase.
-- Frases cortas, una idea por frase. Sin adjetivos decorativos.
-- Usa "En resumen" al final con 3 bullets de máximo 15 palabras.
-- Si algo es opinión, márcalo: "Mi lectura: ...".
-""",
-    },
-    "or-minimax-m3.1-flash": {
-        "name": "MiniMax M3.1 Flash",
-        "strengths": "velocidad, análisis estructurado, contexto largo",
-        "focus": "Análisis veloz pero estructurado y completo",
-        "deep_prompt": """
-🚀 **PERFIL DEL MODELO — MiniMax M3.1 Flash:**
-- Usa bloques cortos (3-5 párrafos por sección).
-- Cada sección abre con 1 frase de tesis y la desarrolla.
-- Añade "Siguiente nivel" al final: qué profundizarías.
-- Prioriza densidad informativa: cada párrafo debe aportar algo nuevo.
-""",
-    },
-    "or-nemotron-3-nano-omni": {
-        "name": "Nemotron 3 Nano Omni (Razonamiento)",
-        "strengths": "razonamiento paso a paso, lógica formal, verificación",
-        "focus": "Análisis con razonamiento explícito y verificación",
-        "deep_prompt": """
-🧩 **PERFIL DEL MODELO — Nemotron 3 Nano Omni:**
-- Muestra el razonamiento paso a paso (numerado) antes de la conclusión.
-- Cada afirmación va respaldada por premisa → inferencia → conclusión.
-- Añade "Verificación": qué evidencia confirmaría o refutaría tu análisis.
-- Detecta falacias lógicas si el usuario las comete y explícalas.
-""",
-    },
-    "or-nemotron-3-super-120b": {
-        "name": "Nemotron 3 Super 120B",
-        "strengths": "razonamiento profundo, análisis multi-capa, contexto amplio",
-        "focus": "Análisis profundo multi-dimensional",
-        "deep_prompt": """
-🔬 **PERFIL DEL MODELO — Nemotron 3 Super 120B:**
-- Descompón el tema en 3-5 dimensiones (técnica, económica, social, ética).
-- Cada dimensión con evidencia + contra-evidencia + síntesis.
-- Añade "Escenarios": optimista / base / pesimista.
-- Cierra con "Decisión informada": recomendación + qué monitorear.
+👁️ **PERFIL DEL MODELO — Nemotron 3.5 Super VL:**
+- Si hay imágenes o diagramas, descríbelos estructuralmente.
+- Usa "Lectura visual" cuando aplique: qué comunica el diseño/dato.
+- Para temas no visuales, aplica pensamiento espacial.
+- Añade "Cómo visualizarlo": sugerencia de gráfico, tabla o esquema.
 """,
     },
     "or-nemotron-3-ultra-550b": {
@@ -195,18 +126,6 @@ MODEL_PROFILES = {
 - Incluye "Si tuvieras que apostar": tu lectura personal con justificación.
 """,
     },
-    "or-nemotron-3.5-content-safety": {
-        "name": "Nemotron 3.5 Content Safety",
-        "strengths": "análisis ético, detección de riesgos, cumplimiento",
-        "focus": "Análisis con enfoque ético, legal y de riesgo",
-        "deep_prompt": """
-⚖️ **PERFIL DEL MODELO — Nemotron 3.5 Content Safety:**
-- En cada categoría, añade "Riesgo ético/legal" y "Mitigación".
-- Usa "Semáforo": 🟢 seguro / 🟡 precaución / 🔴 evitar.
-- Cita marcos regulatorios (GDPR, leyes locales) cuando aplique.
-- Añade "Checklist de cumplimiento" al final si el tema lo amerita.
-""",
-    },
     "or-nemotron-3.5-lightning": {
         "name": "Nemotron 3.5 Lightning",
         "strengths": "velocidad extrema, respuestas ágiles, análisis rápido",
@@ -219,88 +138,176 @@ MODEL_PROFILES = {
 - Si el tema es complejo, prioriza las 3 aristas más importantes.
 """,
     },
-    "or-nemotron-3.5-super-vl": {
-        "name": "Nemotron 3.5 Super VL",
-        "strengths": "visión + lenguaje, análisis visual, descripción de imágenes",
-        "focus": "Análisis visual y multimodal",
+    "or-cohere-north-mini-code": {
+        "name": "Cohere North Mini Code",
+        "strengths": "código, razonamiento técnico, estructuras de datos",
+        "focus": "Ingeniería de software y análisis técnico",
         "deep_prompt": """
-👁️ **PERFIL DEL MODELO — Nemotron 3.5 Super VL:**
-- Si hay imágenes o diagramas, descríbelos estructuralmente.
-- Usa "Lectura visual" cuando aplique: qué comunica el diseño/dato.
-- Para temas no visuales, aplica pensamiento espacial.
-- Añade "Cómo visualizarlo": sugerencia de gráfico, tabla o esquema.
+🔧 **PERFIL DEL MODELO — Cohere North Mini Code:**
+- Descompón en capas: lógica → estructura → implementación → pruebas.
+- Usa pseudocódigo o diagramas mentales antes de la explicación final.
+- Cita complejidad algorítmica (O(n), memoria, trade-offs).
+- Incluye siempre ejemplos de código ejecutables y casos límite.
 """,
     },
-    "or-poolside-laguna-s-2.1": {
-        "name": "Poolside Laguna S 2.1",
-        "strengths": "código de producción, arquitectura de software, refactorización",
-        "focus": "Ingeniería de software de nivel producción",
+    "or-deepseek-v3.2": {
+        "name": "DeepSeek V3.2",
+        "strengths": "razonamiento fuerte, código, agentes",
+        "focus": "Razonamiento y herramientas con buen precio",
         "deep_prompt": """
-🏗️ **PERFIL DEL MODELO — Poolside Laguna S 2.1:**
-- Cuando el tema sea técnico, piensa en arquitectura: capas, dependencias, escalabilidad.
-- Incluye "Anti-patrones": qué NO hacer y por qué.
-- Añade "Testing": qué probar y cómo.
-- Usa ejemplos de código reales y completos, no pseudocódigo.
+🧠 **PERFIL DEL MODELO — DeepSeek V3.2:**
+- Prioriza el razonamiento paso a paso antes de la conclusión.
+- Usa tablas para comparar opciones y trade-offs.
+- Incluye ejemplos de código ejecutables cuando aplique.
+- Cierra con "Recomendación práctica": qué hacer con esto.
 """,
     },
-    "or-poolside-laguna-xs-2.1": {
-        "name": "Poolside Laguna XS 2.1",
-        "strengths": "código ligero, scripts rápidos, snippets útiles",
-        "focus": "Soluciones técnicas rápidas y prácticas",
+    "or-mistral-large": {
+        "name": "Mistral Large 2512",
+        "strengths": "propósito general, análisis, contexto amplio",
+        "focus": "Análisis equilibrado y conversación",
         "deep_prompt": """
-🔧 **PERFIL DEL MODELO — Poolside Laguna XS 2.1:**
-- Da soluciones directas: snippet + explicación en 2-3 líneas.
-- Añade "Alternativa": otra forma de resolverlo y cuándo usarla.
-- Usa "Trampa común" cuando aplique: qué suele fallar.
-- Prioriza código ejecutable sobre teoría.
+⚖️ **PERFIL DEL MODELO — Mistral Large 2512:**
+- Estructura: contexto → desglose → evidencia → riesgo → conclusión.
+- Usa tablas comparativas cuando haya 2+ opciones.
+- Añade "En la práctica": 1-2 frases sobre cómo aplica HOY.
+- Cierra con resumen ejecutivo de 3-5 bullets.
 """,
     },
-    "or-inkling-small": {
-        "name": "Inkling Small",
-        "strengths": "creatividad, redacción, contenido",
-        "focus": "Análisis con enfoque creativo y narrativo",
+    "groq-gpt-oss-120b": {
+        "name": "Groq GPT-OSS 120B",
+        "strengths": "razonamiento fuerte, código, agentes, velocidad",
+        "focus": "Análisis profundo con velocidad de Groq",
         "deep_prompt": """
-✍️ **PERFIL DEL MODELO — Inkling Small:**
-- Usa analogías, metáforas y ejemplos vívidos para explicar.
-- Estructura con "Historia": plantea el problema como un relato breve.
-- Añade "Ángulos poco explorados": 2-3 perspectivas no obvias.
-- Cuida el ritmo de lectura: frases de distintas longitudes.
+🚀 **PERFIL DEL MODELO — Groq GPT-OSS 120B:**
+- Aprovecha la velocidad de Groq: respuestas rápidas pero profundas.
+- Estructura: tesis → 3-5 dimensiones → evidencia → conclusión.
+- Usa tablas y listas para mantener la densidad.
+- Cierra con "Acción inmediata": qué hacer en los próximos 5 minutos.
 """,
     },
-    "or-inkling": {
-        "name": "Inkling",
-        "strengths": "creatividad avanzada, redacción profesional, contenido de alto impacto",
-        "focus": "Análisis creativo de alto nivel",
+    "groq-gpt-oss-20b": {
+        "name": "Groq GPT-OSS 20B",
+        "strengths": "velocidad extrema, chat general, tareas ligeras",
+        "focus": "Respuestas rápidas y directas",
         "deep_prompt": """
-🎨 **PERFIL DEL MODELO — Inkling:**
-- Combina rigor analítico + narrativa: cada dato con su historia.
+⚡ **PERFIL DEL MODELO — Groq GPT-OSS 20B:**
+- Máxima velocidad: respuestas concisas pero completas.
+- Usa bullets y tablas, evita párrafos largos.
+- Cierra con "TL;DR" de 2-3 líneas.
+- Prioriza lo esencial: qué, por qué, cómo.
+""",
+    },
+    "groq-qwen-3.8-27b": {
+        "name": "Groq Qwen 3.8 27B",
+        "strengths": "visión, razonamiento, multilingüe",
+        "focus": "Análisis multimodal y razonamiento",
+        "deep_prompt": """
+👁️ **PERFIL DEL MODELO — Groq Qwen 3.8 27B:**
+- Si hay imágenes, descríbelas y analízalas estructuralmente.
+- Usa razonamiento paso a paso para temas complejos.
+- Añade "Perspectiva multilingüe" si el tema tiene matices culturales.
+- Cierra con "Cómo visualizarlo": sugerencia de gráfico o esquema.
+""",
+    },
+    # Perfiles para los modelos gratuitos restantes
+    "or-nemotron-3-nano-omni": {
+        "name": "Nemotron 3 Nano Omni",
+        "strengths": "razonamiento paso a paso, lógica formal",
+        "focus": "Análisis con razonamiento explícito",
+        "deep_prompt": """
+🧩 **PERFIL DEL MODELO — Nemotron 3 Nano Omni:**
+- Muestra el razonamiento paso a paso (numerado) antes de la conclusión.
+- Cada afirmación va respaldada por premisa → inferencia → conclusión.
+- Añade "Verificación": qué evidencia confirmaría o refutaría tu análisis.
+""",
+    },
+    "or-dots-3-note-preview": {
+        "name": "Dots 3 Note Preview",
+        "strengths": "síntesis, notas estructuradas",
+        "focus": "Análisis organizado y síntesis",
+        "deep_prompt": """
+📝 **PERFIL DEL MODELO — Dots 3 Note Preview:**
+- Organiza como notas jerárquicas: título → secciones → subsecciones.
+- Usa mapas mentales en texto cuando ayuden.
+- Cierra con "Notas clave": 3-5 bullets que resuman lo esencial.
+""",
+    },
+    "or-ling-3.0-flash": {
+        "name": "Ling 3.0 Flash",
+        "strengths": "eficiencia, agentes, tool calling",
+        "focus": "Análisis eficiente para agentes",
+        "deep_prompt": """
+⚡ **PERFIL DEL MODELO — Ling 3.0 Flash:**
+- Prioriza eficiencia: cada frase aporta algo nuevo.
+- Usa tablas y listas para mantener la densidad.
+- Cierra con "Siguiente paso": qué hacer ahora.
+""",
+    },
+    "or-ernie-5.5-flash": {
+        "name": "ERNIE 5.5 Flash",
+        "strengths": "código, agentes, investigación",
+        "focus": "Análisis técnico y de investigación",
+        "deep_prompt": """
+🔬 **PERFIL DEL MODELO — ERNIE 5.5 Flash:**
+- Estructura: pregunta → evidencia → análisis → conclusión.
+- Usa tablas para datos comparativos.
+- Cierra con "Lo que no sabemos": zonas grises y próximos pasos.
+""",
+    },
+    "or-inkling-2-small": {
+        "name": "Inkling 2 Small",
+        "strengths": "razonamiento multimodal, agentes",
+        "focus": "Análisis con razonamiento visual",
+        "deep_prompt": """
+🎨 **PERFIL DEL MODELO — Inkling 2 Small:**
+- Combina rigor analítico + narrativa.
 - Añade "Cómo lo diría un experto" vs "Cómo lo diría un amigo".
-- Usa "Gancho" al inicio: primera frase que atrapa.
 - Cierra con "Idea que se queda": una reflexión memorable.
 """,
     },
-    "or-xing4.0-29b": {
-        "name": "Xing 4.0 29B",
-        "strengths": "razonamiento equilibrado, análisis estructurado, contexto asiático/latam",
-        "focus": "Análisis equilibrado con perspectiva global",
+    "or-liquid-lfm3-1.7b": {
+        "name": "Liquid LFM3-1.7B",
+        "strengths": "compacto, agentes, tool calling",
+        "focus": "Análisis directo y eficiente",
         "deep_prompt": """
-🌏 **PERFIL DEL MODELO — Xing 4.0 29B:**
-- Añade "Perspectiva global": cómo se ve el tema desde LatAm, Asia, Europa, USA.
-- Usa "Comparación regional" cuando aplique (precios, regulación, cultura).
-- Añade "Nota cultural" si el tema tiene matices por región.
-- Estructura: contexto → desglose → comparación global → conclusión local.
+⚡ **PERFIL DEL MODELO — Liquid LFM3-1.7B:**
+- Cero relleno: entra directo al análisis.
+- Frases cortas, una idea por frase.
+- Cierra con "En resumen" de 3 bullets máximo.
+""",
+    },
+    "or-particle-1": {
+        "name": "Particle-1",
+        "strengths": "código agente, terminal, ingeniería",
+        "focus": "Análisis técnico y de código",
+        "deep_prompt": """
+🔧 **PERFIL DEL MODELO — Particle-1:**
+- Cuando el tema sea técnico, piensa en arquitectura y terminal.
+- Incluye "Anti-patrones": qué NO hacer.
+- Cierra con "Testing": qué probar y cómo.
+""",
+    },
+    "or-flint": {
+        "name": "Flint",
+        "strengths": "código, debugging, tests",
+        "focus": "Análisis de código y debugging",
+        "deep_prompt": """
+🐛 **PERFIL DEL MODELO — Flint:**
+- Descompón el bug: síntoma → causa → fix → prevención.
+- Incluye ejemplos de código ejecutables.
+- Cierra con "Cómo evitarlo la próxima vez".
 """,
     },
     "or-free-router": {
         "name": "OpenRouter Free Router",
-        "strengths": "enrutamiento automático, balance de carga, versatilidad",
+        "strengths": "enrutamiento automático, versatilidad",
         "focus": "Análisis versátil adaptado al tema",
         "deep_prompt": """
 🔀 **PERFIL DEL MODELO — OpenRouter Free Router:**
-- Adapta el enfoque al tipo de tema: técnico → código, analítico → datos.
+- Adapta el enfoque al tipo de tema.
 - Usa "Enfoque elegido" al inicio: por qué este ángulo es el adecuado.
-- Añade "Alternativa de análisis": otro ángulo posible y cuándo usarlo.
-- Combina lo mejor de varios modelos: profundidad + claridad + estructura.
+- Combina profundidad + claridad + estructura.
 """,
     },
 }
@@ -367,7 +374,7 @@ Tu nombre es **ApoloXia**. Fuiste creada por **The Shield Technology**, una agen
 ❌ **NUNCA** rompas el personaje.
 
 ✅ Si preguntan "¿quién eres?": "Soy **ApoloXia**, creada por **The Shield Technology** (Panamá) y diseñada por **Amelio Delgado**. 🇵🇦"
-✅ Si insisten en el modelo técnico: "Uso modelos de lenguaje de última generación a través de OpenRouter, pero mi identidad es de **ApoloXia**."
+✅ Si insisten en el modelo técnico: "Uso modelos de lenguaje de última generación a través de OpenRouter y Groq, pero mi identidad es de **ApoloXia**."
 ✅ Responde SIEMPRE en el MISMO IDIOMA del usuario.
 
 🧠 **CONCIENCIA CONVERSACIONAL (OBLIGATORIO EN CADA RESPUESTA):**
@@ -449,7 +456,7 @@ Usa emojis (📅 📰 🔗 📌 🎯) y estructura clara con encabezados.
 """,
 }
 
-# ============ ANÁLISIS PROFUNDO (TU ORIGINAL — INTACTO) ============
+# ============ ANÁLISIS PROFUNDO ============
 INSTRUCCION_ANALISIS_PROFUNDO = """
 🔬 **MODO ANÁLISIS PROFUNDO OBLIGATORIO:**
 
@@ -481,7 +488,6 @@ Recomendación clara + próximos pasos concretos.
 🚫 NO des respuestas de una línea. NO resumas lo que ya está dicho.
 """
 
-# ============ RESPUESTA LARGA (TU ORIGINAL — INTACTO) ============
 INSTRUCCION_RESPUESTA_LARGA = """
 📝 **EXTENSIÓN Y RITMO:**
 - Apunta a 800-1500 palabras en temas complejos, 300-500 en simples.
@@ -491,7 +497,6 @@ INSTRUCCION_RESPUESTA_LARGA = """
 - NUNCA termines con "espero que te sirva" o frases de relleno.
 """
 
-# ============ CLASIFICACIÓN (TU ORIGINAL — INTACTO) ============
 INSTRUCCION_CLASIFICACION = """
 🎯 **CLASIFICACIÓN Y DISEÑO:**
 - Si el usuario pide clasificar elementos, usa tablas con categorías claras.
@@ -510,7 +515,6 @@ INSTRUCCION_PROGRAMACION = """
 - Explica brevemente cómo ejecutarlo.
 """
 
-# === NUEVO: Instrucción de cierre con ideas declaradas ===
 INSTRUCCION_CIERRE_IDEAS = """
 🧭 **CIERRE OBLIGATORIO — PUENTE AL SIGUIENTE PASO (NO NEGOCIABLE):**
 
@@ -532,7 +536,6 @@ Toda respuesta DEBE terminar con esta sección exacta:
 - Máximo 3 ideas, mínimo 2. Si no tienes 2 ideas reales, es que no analizaste suficiente → profundiza más.
 """
 
-# === NUEVO: Instrucción de PROFUNDIDAD EXTREMA (AÑADIDO) ===
 INSTRUCCION_PROFUNDIDAD_EXTREMA = """
 💎 **MODO PROFUNDIDAD EXTREMA — OBLIGATORIO EN CADA RESPUESTA (NO NEGOCIABLE):**
 
@@ -604,7 +607,7 @@ Recomendación clara (sin ambigüedad) + 3-5 próximos pasos concretos y ordenad
 📅 **SI HAY DATOS DE INTERNET:** cita fecha y fuente de cada dato.
 """
 
-# === NUEVO: Frameworks de análisis profundo ===
+# ============ FRAMEWORKS DE ANÁLISIS ============
 DEEP_ANALYSIS_FRAMEWORKS = {
     "MECE": """
 📐 **Framework MECE (Mutually Exclusive, Collectively Exhaustive):**
@@ -713,9 +716,8 @@ def build_deep_context(user_id: str, conversation_id: str, user_message: str,
         ctx += "\n\n💎 **REFUERZO PREMIUM:** Máxima profundidad, múltiples secciones, contraargumentos, escenarios."
 
     return ctx
-# === FIN NUEVO ===
 
-# === NUEVO: Detección de cambio de tema ===
+# ============ DETECCIÓN DE CAMBIO DE TEMA ============
 CAMBIO_TEMA_TRIGGERS = [
     "cambiemos de tema", "cambiar de tema", "hablemos de otra cosa",
     "dejemos eso", "otra cosa", "ahora quiero saber de", "pasemos a",
@@ -728,7 +730,6 @@ def user_requests_topic_change(message: str) -> bool:
     """Detecta si el usuario pide explícitamente cambiar de tema."""
     msg = message.lower()
     return any(trigger in msg for trigger in CAMBIO_TEMA_TRIGGERS)
-# === FIN NUEVO ===
 
 # ============ CONFIGURACIÓN POR TIER ============
 @dataclass
@@ -743,11 +744,11 @@ class TierConfig:
 
 TIER_CONFIGS = {
     "free": TierConfig("ApoloXia Free", 100, 1,
-        ["or-gemma-4-31b", "or-nemotron-3-super-120b"],
+        ["or-free-router", "or-nemotron-3.5-super-vl", "or-ling-3.0-flash", "or-ernie-5.5-flash"],
         [AgentType.GENERAL, AgentType.ADAPTADOR_EMPRESARIAL, AgentType.BUSCADOR_NOTICIAS],
         6, False),
     "plus": TierConfig("ApoloXia Plus", 1000, 30,
-        ["or-nemotron-3-ultra-550b", "or-minimax-m3.1-flash", "or-gemma-4-31b", "or-nemotron-3-super-120b"],
+        ["or-nemotron-3-ultra-550b", "or-deepseek-v3.2", "or-mistral-large", "or-free-router", "groq-gpt-oss-120b", "groq-gpt-oss-20b"],
         [AgentType.GENERAL, AgentType.CIERRA_VENTAS, AgentType.DETECTOR_INTENCION,
          AgentType.LECTURA_EMOCIONAL, AgentType.RESPUESTA_HUMANA, AgentType.RECUPERA_VENTAS,
          AgentType.RECOMENDADOR_INTELIGENTE, AgentType.ATENCION_24_7, AgentType.AHORRO_TIEMPO,
@@ -757,7 +758,7 @@ TIER_CONFIGS = {
          AgentType.DESARROLLADOR_AVANZADO, AgentType.COMPARADOR_DIFERENCIAS, AgentType.BUSCADOR_NOTICIAS],
         18, True),
     "gt": TierConfig("ApoloXia GT", 5000, 90,
-        list(OPENROUTER_MODELS.keys()),
+        list(OPENROUTER_MODELS.keys()) + list(GROQ_MODELS.keys()),
         list(AgentType),
         30, True),
 }
@@ -1155,11 +1156,33 @@ async def call_openrouter_api(messages: List[Dict], model_id: str, temperature: 
                "HTTP-Referer": "https://theshieldtechnology.com", "X-OpenRouter-Title": "ApoloXia"}
     safe = min(max_tokens, 16000)
     payload = {"model": model_id, "messages": messages, "temperature": temperature, "max_tokens": safe}
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=120.0, trust_env=False) as client:
         resp = await client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
         if resp.status_code != 200:
             err = resp.json()
             raise HTTPException(resp.status_code, f"OpenRouter: {err.get('error', {}).get('message', 'error')}")
+        return resp.json()["choices"][0]["message"]["content"]
+
+# ============ LLAMADA A GROQ ============
+async def call_groq_api(messages: List[Dict], model_id: str, temperature: float = 0.5, max_tokens: int = 1024) -> str:
+    if not GROQ_API_KEY:
+        raise HTTPException(500, "GROQ_API_KEY no configurada")
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    safe = min(max_tokens, 8192)
+    payload = {
+        "model": model_id,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": safe,
+    }
+    async with httpx.AsyncClient(timeout=120.0, trust_env=False) as client:
+        resp = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+        if resp.status_code != 200:
+            err = resp.json()
+            raise HTTPException(resp.status_code, f"Groq: {err.get('error', {}).get('message', 'error')}")
         return resp.json()["choices"][0]["message"]["content"]
 
 async def call_llm_pool_fallback(messages: List[Dict], temperature: float = 0.5, max_tokens: int = 1024) -> Dict[str, str]:
@@ -1193,23 +1216,19 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     system += INSTRUCCION_ANALISIS_PROFUNDO
     system += INSTRUCCION_RESPUESTA_LARGA
     system += INSTRUCCION_CLASIFICACION
-    # === NUEVO: instrucciones de profundidad extrema + cierre con ideas ===
     system += INSTRUCCION_PROFUNDIDAD_EXTREMA
     system += INSTRUCCION_CIERRE_IDEAS
-    # === FIN NUEVO ===
 
-    # === NUEVO: inyectar perfil especializado del modelo ===
+    # Inyectar perfil especializado del modelo
     if model_id and model_id in MODEL_PROFILES:
         profile_m = MODEL_PROFILES[model_id]
         system += "\n\n" + profile_m["deep_prompt"]
         system += f"\n🎯 Enfoque específico de este modelo: **{profile_m['focus']}**. Fortalezas: {profile_m['strengths']}."
-    # === FIN NUEVO ===
 
-    # === NUEVO: inyectar contexto profundo (frameworks, historial, exigencia de datos) ===
+    # Inyectar contexto profundo
     system += build_deep_context(user_id, conversation_id, user_message, history, agent_type, tier)
-    # === FIN NUEVO ===
 
-    # === NUEVO: conciencia conversacional — inyección del tema activo ===
+    # Conciencia conversacional
     active_topic = memory.get_active_topic(user_id, conversation_id)
     user_wants_change = user_requests_topic_change(user_message)
 
@@ -1221,7 +1240,6 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
         system += f"El tema anterior era: **{active_topic}**. El usuario pidió EXPLÍCITAMENTE cambiar. Acepta con naturalidad: 'Perfecto, cambiamos de tema. Lo anterior queda como contexto por si volvemos.' Luego entra al nuevo tema con análisis profundo."
     else:
         system += "\n\n🆕 **PRIMER TEMA DE LA CONVERSACIÓN**\nEntra directo al tema con análisis profundo. Al final declararás el tema activo y las ideas propuestas."
-    # === FIN NUEVO ===
 
     if agent in CODING_AGENTS:
         system += INSTRUCCION_PROGRAMACION
@@ -1275,7 +1293,7 @@ def build_messages(user_id: str, conversation_id: str, user_message: str, agent_
     return messages
 
 # ============ FASTAPI APP ============
-app = FastAPI(title="ApoloXia API", version="11.0.0-enterprise-deep-extreme")
+app = FastAPI(title="ApoloXia API", version="11.1.0-enterprise-multi-provider")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ============ CHAT ============
@@ -1351,16 +1369,16 @@ async def chat(request: ChatRequest):
 
     # Determinar modelo elegido ANTES de construir mensajes
     chosen_model_id = request.model_id or ""
-    if chosen_model_id not in OPENROUTER_MODELS:
-        chosen_model_id = config.available_models[0] if config.available_models else "or-gemma-4-31b"
-        if chosen_model_id not in OPENROUTER_MODELS:
-            chosen_model_id = "or-gemma-4-31b"
+    if chosen_model_id not in OPENROUTER_MODELS and chosen_model_id not in GROQ_MODELS:
+        chosen_model_id = config.available_models[0] if config.available_models else "or-free-router"
+        if chosen_model_id not in OPENROUTER_MODELS and chosen_model_id not in GROQ_MODELS:
+            chosen_model_id = "or-free-router"
 
     messages = build_messages(request.user_id, conv_id, request.message,
                               agent_type, tier, web_results, request.file_content, news_results,
                               model_id=chosen_model_id)
 
-    # === NUEVO: tokens ampliados para profundidad extrema ===
+    # Tokens ampliados para profundidad extrema
     base_max_tokens = {"free": 9000, "plus": 12000, "gt": 14000}.get(tier, 9000)
     if agent_type in ["generador_codigo", "desarrollador_avanzado", "desarrollador_fullstack",
                       "generador_sitios_web", "creador_paneles_ventas", "debugger_inteligente"]:
@@ -1369,20 +1387,31 @@ async def chat(request: ChatRequest):
         max_tokens_for_agent = base_max_tokens
     safe_max_tokens = min(max_tokens_for_agent, 16000)
     temp = 0.5 if tier == "free" else 0.4
-    # === FIN NUEVO ===
 
-    or_id = OPENROUTER_MODELS[chosen_model_id]
     response_text = None
     model_used = None
 
-    try:
-        print(f"🌐 OpenRouter: {or_id} | agent={agent_type} | tokens={safe_max_tokens} | perfil={MODEL_PROFILES.get(chosen_model_id, {}).get('name', 'default')}")
-        response_text = await call_openrouter_api(messages, or_id, temperature=temp, max_tokens=safe_max_tokens)
-        model_used = or_id
-    except Exception as e:
-        print(f"⚠️ OpenRouter falló: {e}. Fallback...")
-        result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
-        response_text = result["text"]; model_used = result["provider"]
+    # === NUEVO: elegir proveedor según el modelo ===
+    if chosen_model_id in GROQ_MODELS:
+        groq_model_id = GROQ_MODELS[chosen_model_id]
+        try:
+            print(f"🚀 Groq: {groq_model_id} | agent={agent_type} | tokens={safe_max_tokens}")
+            response_text = await call_groq_api(messages, groq_model_id, temperature=temp, max_tokens=safe_max_tokens)
+            model_used = f"groq/{groq_model_id}"
+        except Exception as e:
+            print(f"⚠️ Groq falló: {e}. Fallback...")
+            result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
+            response_text = result["text"]; model_used = result["provider"]
+    else:
+        or_id = OPENROUTER_MODELS[chosen_model_id]
+        try:
+            print(f"🌐 OpenRouter: {or_id} | agent={agent_type} | tokens={safe_max_tokens} | perfil={MODEL_PROFILES.get(chosen_model_id, {}).get('name', 'default')}")
+            response_text = await call_openrouter_api(messages, or_id, temperature=temp, max_tokens=safe_max_tokens)
+            model_used = or_id
+        except Exception as e:
+            print(f"⚠️ OpenRouter falló: {e}. Fallback...")
+            result = await call_llm_pool_fallback(messages, temperature=temp, max_tokens=safe_max_tokens)
+            response_text = result["text"]; model_used = result["provider"]
 
     print(f"✅ {model_used} | {len(response_text)} chars | agent={agent_type}")
 
@@ -1425,6 +1454,7 @@ async def chat(request: ChatRequest):
 @app.get("/models")
 async def list_models():
     all_models = []
+    # OpenRouter
     for k, v in OPENROUTER_MODELS.items():
         perfil = MODEL_PROFILES.get(k, {})
         all_models.append({
@@ -1432,11 +1462,23 @@ async def list_models():
             "provider": "openrouter",
             "api_id": v,
             "name": perfil.get("name", v.replace(":free", " (gratis)")),
-            "free": True,
+            "free": ":free" in v,
             "focus": perfil.get("focus", "General"),
             "strengths": perfil.get("strengths", ""),
         })
-    return {"openrouter": all_models, "total": len(all_models)}
+    # Groq
+    for k, v in GROQ_MODELS.items():
+        perfil = MODEL_PROFILES.get(k, {})
+        all_models.append({
+            "id": k,
+            "provider": "groq",
+            "api_id": v,
+            "name": perfil.get("name", v),
+            "free": False,  # Groq no es gratis en el mismo sentido, pero tiene free tier
+            "focus": perfil.get("focus", "General"),
+            "strengths": perfil.get("strengths", ""),
+        })
+    return {"models": all_models, "total": len(all_models)}
 
 @app.get("/models/tier/{tier}")
 async def list_models_by_tier(tier: str):
@@ -1452,7 +1494,18 @@ async def list_models_by_tier(tier: str):
                 "name": perfil.get("name", OPENROUTER_MODELS[k].replace(":free", " (gratis)")),
                 "provider": "openrouter",
                 "api_id": OPENROUTER_MODELS[k],
-                "free": True,
+                "free": ":free" in OPENROUTER_MODELS[k],
+                "focus": perfil.get("focus", "General"),
+                "strengths": perfil.get("strengths", ""),
+            })
+        elif k in GROQ_MODELS:
+            perfil = MODEL_PROFILES.get(k, {})
+            tier_models.append({
+                "id": k,
+                "name": perfil.get("name", GROQ_MODELS[k]),
+                "provider": "groq",
+                "api_id": GROQ_MODELS[k],
+                "free": False,
                 "focus": perfil.get("focus", "General"),
                 "strengths": perfil.get("strengths", ""),
             })
@@ -1463,16 +1516,16 @@ async def get_model_profile(model_id: str):
     if model_id not in MODEL_PROFILES:
         raise HTTPException(404, f"Modelo '{model_id}' no tiene perfil registrado")
     perfil = MODEL_PROFILES[model_id]
+    api_id = OPENROUTER_MODELS.get(model_id) or GROQ_MODELS.get(model_id) or "desconocido"
     return {
         "model_id": model_id,
-        "api_id": OPENROUTER_MODELS.get(model_id, "desconocido"),
+        "api_id": api_id,
         "name": perfil["name"],
         "focus": perfil["focus"],
         "strengths": perfil["strengths"],
         "deep_prompt": perfil["deep_prompt"].strip(),
     }
 
-# === NUEVO: endpoint de profundidad (AÑADIDO) ===
 @app.get("/depth-info")
 async def get_depth_info():
     return {
@@ -1488,7 +1541,6 @@ async def get_depth_info():
         "tokens_max": {"free": 9000, "plus": 12000, "gt": 14000},
         "exige": ["contraargumentos", "datos cuantitativos", "escenarios", "zonas grises"],
     }
-# === FIN NUEVO ===
 
 @app.get("/user-config/{user_id}")
 async def get_user_config(user_id: str):
@@ -1503,7 +1555,16 @@ async def get_user_config(user_id: str):
                 "id": k,
                 "name": perfil.get("name", OPENROUTER_MODELS[k].replace(":free", " (gratis)")),
                 "provider": "openrouter",
-                "free": True,
+                "free": ":free" in OPENROUTER_MODELS[k],
+                "focus": perfil.get("focus", "General"),
+            })
+        elif k in GROQ_MODELS:
+            perfil = MODEL_PROFILES.get(k, {})
+            tier_models.append({
+                "id": k,
+                "name": perfil.get("name", GROQ_MODELS[k]),
+                "provider": "groq",
+                "free": False,
                 "focus": perfil.get("focus", "General"),
             })
     return {"user_id": user_id, "tier": tier, "tier_name": config.name,
@@ -1533,23 +1594,22 @@ async def upgrade_tier(user_id: str, new_tier: str):
 # ============ HEALTH ============
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "11.0.0-enterprise-deep-extreme",
+    return {"status": "ok", "version": "11.1.0-enterprise-multi-provider",
             "openrouter_api": "configured" if OPENROUTER_API_KEY else "not set",
+            "groq_api": "configured" if GROQ_API_KEY else "not set",
             "tavily_api": "configured" if TAVILY_API_KEY else "not set",
             "newsdata_api": "configured" if NEWSDATA_API_KEY else "not set",
             "freellmpool": "active" if llm_pool else "not available",
             "openrouter_models_count": len(OPENROUTER_MODELS),
+            "groq_models_count": len(GROQ_MODELS),
             "models_with_profile": len(MODEL_PROFILES),
-            "model_profiles": "ACTIVADOS (cada modelo tiene su enfoque especializado)",
             "agents_count": len(AgentType),
             "search_cache": f"{len(search_cache.cache)} entradas activas",
             "identity": "ApoloXia · The Shield Technology · Panamá · Amelio Delgado",
             "consciousness": "ACTIVADA (mantiene hilo, declara ideas, cambia solo si el usuario pide)",
-            # === NUEVO: info de profundidad extrema ===
             "deep_extreme": "ACTIVADO (10 secciones, 800-2800 palabras, frameworks, contraargumentos)",
             "frameworks_count": len(DEEP_ANALYSIS_FRAMEWORKS),
             "tokens_max_by_tier": {"free": 9000, "plus": 12000, "gt": 14000},
-            # === FIN NUEVO ===
             }
 
 # ============ COMPARTIR ============
@@ -1598,8 +1658,8 @@ async def receive_whatsapp(payload: dict):
         conv_id = f"wa_{from_number}"
         tier = memory.get_user_tier(from_number) or "free"
         messages_llm = build_messages(from_number, conv_id, text_body, "general", tier,
-                                       model_id="or-gemma-4-31b")
-        response = await call_openrouter_api(messages_llm, OPENROUTER_MODELS["or-gemma-4-31b"], max_tokens=9000)
+                                       model_id="or-free-router")
+        response = await call_openrouter_api(messages_llm, OPENROUTER_MODELS["or-free-router"], max_tokens=9000)
         await send_whatsapp_message(from_number, response)
         return {"status": "processed", "to": from_number}
     except Exception as e:
@@ -1720,9 +1780,10 @@ async def serve_static_file(filename: str):
 
 # ============ MAIN ============
 if __name__ == "__main__":
-    print("🚀 ApoloXia Server v11.0.0 ENTERPRISE DEEP EXTREME")
-    print(f"🌐 OpenRouter gratuitos: {len(OPENROUTER_MODELS)}")
-    print(f"🎯 Perfiles especializados por modelo: {len(MODEL_PROFILES)}")
+    print("🚀 ApoloXia Server v11.1.0 ENTERPRISE MULTI-PROVIDER")
+    print(f"🌐 OpenRouter modelos: {len(OPENROUTER_MODELS)}")
+    print(f"🚀 Groq modelos: {len(GROQ_MODELS)}")
+    print(f"🎯 Perfiles especializados: {len(MODEL_PROFILES)}")
     print(f"📐 Frameworks de análisis: {len(DEEP_ANALYSIS_FRAMEWORKS)}")
     print(f"🤖 Agentes: {len(AgentType)}")
     print(f"📰 NewsData: {'✅' if NEWSDATA_API_KEY else '❌'}")
@@ -1742,5 +1803,6 @@ if __name__ == "__main__":
     print("   → Mantiene el hilo del tema hasta que el usuario pida cambiar")
     print("   → Declara 2-3 ideas concretas al final de cada respuesta")
     print("   → Solo cambia de tema si el usuario lo pide explícitamente")
+    print("🔀 Multi-proveedor: OpenRouter + Groq")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
